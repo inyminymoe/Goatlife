@@ -1,26 +1,53 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  /* Primary Colors (Blue) */
+  --color-primary-100: hsl(207 100% 93%); /* #DAEFFF */
+  --color-primary-500: hsl(212 100% 60%); /* #2F88FF */
+  --color-primary-900: hsl(216 65% 20%); /* #122D53 */
+
+  /* Accent Colors */
+  --color-accent-green-200: hsl(93 100% 79%); /* #C0FF94 */
+  --color-accent-green-500: hsl(167 100% 60%); /* #2FFFD5 */
+  --color-accent-green-600: hsl(101 77% 47%); /* #69D71B */
+
+  --color-accent-orange-100: hsl(21 100% 93%); /* #FFE9DA */
+  --color-accent-orange-400: hsl(25 83% 70%); /* #F3A774 */
+
+  --color-accent-magenta-100: hsl(296 100% 94%); /* #FCDEFF */
+  --color-accent-magenta-300: hsl(296 94% 77%); /* #F18DFB */
+
+  /* Grey Scale */
+  --color-grey-100: hsl(210 18% 96%); /* #F2F4F6 */
+  --color-grey-200: hsl(0 0% 92%); /* #EAEAEA */
+  --color-grey-300: hsl(0 0% 78%); /* #C8C8C8 */
+  --color-grey-500: hsl(0 0% 48%); /* #7A7A7A */
+  --color-grey-700: hsl(0 0% 28%); /* #484848 */
+  --color-grey-900: hsl(0 0% 21%); /* #363636 */
+
+  /* Base Colors */
+  --color-white: hsl(0 0% 100%); /* #FFFFFF */
+  --color-black: hsl(0 0% 0%); /* #000000 */
+
+  /* 갓생상사 전용 시맨틱 컬러 */
+  --color-office-bg: var(--color-white);
+  --color-office-text: var(--color-grey-900);
+  --color-office-border: var(--color-grey-200);
+  --color-office-subtle: var(--color-grey-100);
+
+  --color-status-checkin: var(--color-primary-500); /* 출근 */
+  --color-status-working: var(--color-accent-green-500); /* 공휴일 및 휴가 */
+  --color-status-break: var(--color-accent-orange-400); /* 조퇴 및 지각 */
+  --color-status-danger: var(--color-accent-magenta-300); /* 결근 */
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-office-bg);
+  color: var(--color-office-text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui,
+    sans-serif;
 }
