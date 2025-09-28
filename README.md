@@ -75,6 +75,25 @@ npm install
 # 개발 서버 실행
 npm run dev
 
+## 📁 프로젝트 구조
+
+현재 **Component-by-Type** 구조를 사용하고 있습니다. Next.js의 표준 관례를 따르며, 작은-중간 규모 프로젝트에 적합합니다.
+
+### 폴더 구조 원칙
+
+- **app/**: Next.js App Router를 활용한 파일 기반 라우팅
+- **components/**: 기능별로 분류된 재사용 가능한 컴포넌트
+- **lib/**: 비즈니스 로직, 유틸리티, 설정 파일
+- **public/**: 정적 파일 (이미지, 아이콘 등)
+
+### 컴포넌트 네이밍 규칙
+
+- **PascalCase**: 컴포넌트 파일명 (`Header.tsx`)
+- **camelCase**: 함수, 변수명 (`isLoggedIn`)
+- **kebab-case**: 파일/폴더명 (assets의 경우)
+
+> 프로젝트 규모가 커지면 Feature-Sliced Design 등의 구조로 리팩토링을 고려할 예정입니다.
+
 #
 
 ## README.md (English)
