@@ -1,36 +1,143 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 갓생상사 (Goatlife Inc.)
+> 나의 값진 시간을 팝니다. 갓생상사.
 
-## Getting Started
+## 🏢 서비스 소개
+갓생상사는 **의지박약형 인간을 위한 루틴 강제 커뮤니티**입니다. 
+혼자서는 작심삼일로 끝나는 사람들도 '회사 출근' 컨셉으로 지속 가능하게 목표를 달성할 수 있도록 도와줍니다.
 
-First, run the development server:
+### 핵심 컨셉
+- **자율 입사 방식**: 누구나 지원서 없이 입사 가능
+- **온라인 독서실 + 스터디 + 정보공유** 통합 플랫폼
+- **9-6 또는 3교대** 일정으로 체계적인 루틴 관리
+- **업무 보고 & 승진 시스템**을 통한 게임화
+- **디스코드 기반** 실시간 캠스터디
 
-```bash
+### 차별화 포인트
+1. **회사 컨셉**: 단순 To-Do가 아닌 '출근'이라는 책임감 부여
+2. **커뮤니티**: 같은 목적을 가진 사람들과 함께
+3. **게임화**: 직급 시스템과 승진을 통한 동기부여
+4. **통합 관리**: 일-식사-운동 루틴을 한 번에
+
+## 🎯 주요 기능
+
+### 출퇴근 시스템
+- 정시 출근/퇴근 체크 (버튼 클릭 또는 명령어)
+- 3교대 근무 시간 선택 (야간반/주간반/오후반)
+- 점심시간 및 휴게시간 관리
+
+### 승진 시스템
+- 인턴 → 사원 → 대리 → 과장 → 부장
+- 근속일, 업무보고, 기여도 기반 자동 승진
+- 직급별 전용 채널 및 권한 부여
+
+### 업무 보고
+- 매일 오전 업무계획 + 퇴근 전 결과 보고
+- 출근율 및 목표 달성률 추적
+- 주간/월간 랭킹 시스템
+
+### 커뮤니티 공간
+- 부서별 전문 채널
+- 챌린지 및 미션 참여
+- 성과 인증 및 정보 공유
+
+## 🛠 기술 스택
+
+### Frontend
+- **Framework**: Next.js 15.5.4 (App Router)
+- **Language**: TypeScript 5
+- **Styling**: Tailwind CSS 4.1.13
+- **State Management**: Redux Toolkit 2.9.0 + React Redux 9.2.0
+- **Database**: Supabase 2.58.0
+- **Animation**: Framer Motion 12.23.22
+- **Icons**: Iconify React 6.0.2
+
+### Development
+- **Package Manager**: npm
+- **Node Version**: 20+
+- **Linting**: ESLint 9 + Next.js config
+- **CSS Processing**: PostCSS + Autoprefixer
+- 
+### Backend & Database
+- **Database**: Supabase (PostgreSQL-based)
+- **Authentication**: Supabase Auth
+- **Real-time**: Supabase Realtime
+- **Storage**: Supabase Storage (이미지/파일)
+  
+## 🚀 로컬 개발
+
+# 저장소 클론
+git clone https://github.com/inyminymoe/Goatlife.git
+cd goatlife
+
+# 의존성 설치
+npm install
+
+# 개발 서버 실행
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+===============================================================
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## README.md (English)
+```markdown
+# Goatlife Inc.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+> We sell our precious time. Goatlife Inc.
 
-## Learn More
+## 🏢 Service Overview
 
-To learn more about Next.js, take a look at the following resources:
+Goatlife Inc. is a **routine enforcement community for willpower-challenged individuals**. 
+It helps people who usually give up after three days achieve their goals sustainably through a 'corporate work' concept.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Core Concept
+- **Open Recruitment**: Anyone can join without application
+- **Integrated Platform**: Online study room + community + information sharing
+- **Structured Schedule**: 9-6 or 3-shift system for systematic routine management
+- **Gamified System**: Work reporting & promotion system
+- **Discord-based** real-time community
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Key Differentiators
+1. **Corporate Concept**: Responsibility through 'going to work', not just to-do lists
+2. **Community**: Together with people sharing the same goals
+3. **Gamification**: Motivation through rank system and promotions
+4. **Integrated Management**: Work-meal-exercise routines in one place
 
-## Deploy on Vercel
+## 🎯 Main Features
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### Check-in/Check-out System
+- Punctual work attendance tracking (button click or commands)
+- 3-shift options (night/day/afternoon shift)
+- Lunch break and rest time management
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Promotion System
+- Intern → Employee → Assistant Manager → Manager → Director → Executive
+- Auto-promotion based on attendance, reports, and contributions
+- Rank-specific channels and privileges
+
+### Work Reporting
+- Daily morning plans + evening results reporting
+- Attendance rate and goal achievement tracking
+- Weekly/monthly ranking system
+
+### Community Spaces
+- Department-specific professional channels
+- Challenge and mission participation
+- Achievement verification and information sharing
+
+## 🛠 Tech Stack
+
+- **Frontend**: Next.js 14, TypeScript, Tailwind CSS
+- **Backend**: Discord Bot API (planned)
+- **Database**: PostgreSQL (planned)
+- **Deployment**: Vercel (planned)
+
+## 🚀 Local Development
+```bash
+# Clone repository
+git clone https://github.com/inyminymoe/Goatlife.git
+cd goatlife
+
+# Install dependencies
+npm install
+
+# Run development server
+npm run dev
