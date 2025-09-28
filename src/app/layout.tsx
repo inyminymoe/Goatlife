@@ -1,34 +1,25 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { brandFont, bodyFont } from "../lib/fonts";
 import Providers from "../components/Providers";
+import LayoutWrapper from "../components/LayoutWrapper";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
 export const metadata: Metadata = {
-  title: "🍀갓생상사🍀",
-  description: "✨GoatLife Inc. - 갓생완성 3주 프로젝트✨",
+  title: "갓생상사 - Goatlift Inc.",
+  description: "24시간 OPEN! 갓생이들의 온라인 회사",
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
-    <html lang="ko">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <Providers>{children}</Providers>
+    <html lang="ko" className={`${brandFont.variable} ${bodyFont.variable}`}>
+      <body>
+        <Providers>
+          <LayoutWrapper>{children}</LayoutWrapper>
+        </Providers>
       </body>
     </html>
   );

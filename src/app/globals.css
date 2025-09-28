@@ -1,53 +1,192 @@
 @import "tailwindcss";
 
+html,
+body {
+  height: 100%;
+  overflow-x: hidden; /* 가로 스크롤 방지 */
+}
+
 @theme {
-  /* Primary Colors (Blue) */
-  --color-primary-100: hsl(207 100% 93%); /* #DAEFFF */
-  --color-primary-500: hsl(212 100% 60%); /* #2F88FF */
-  --color-primary-900: hsl(216 65% 20%); /* #122D53 */
+  --color-primary-100: hsl(207 100% 93%);
+  --color-primary-500: hsl(212 100% 60%);
+  --color-primary-900: hsl(216 65% 20%);
 
-  /* Accent Colors */
-  --color-accent-green-200: hsl(93 100% 79%); /* #C0FF94 */
-  --color-accent-green-500: hsl(167 100% 60%); /* #2FFFD5 */
-  --color-accent-green-600: hsl(101 77% 47%); /* #69D71B */
+  --color-accent-green-200: hsl(93 100% 79%);
+  --color-accent-green-500: hsl(167 100% 60%);
+  --color-accent-green-600: hsl(101 77% 47%);
 
-  --color-accent-orange-100: hsl(21 100% 93%); /* #FFE9DA */
-  --color-accent-orange-400: hsl(25 83% 70%); /* #F3A774 */
+  --color-accent-orange-100: hsl(21 100% 93%);
+  --color-accent-orange-400: hsl(25 83% 70%);
 
-  --color-accent-magenta-100: hsl(296 100% 94%); /* #FCDEFF */
-  --color-accent-magenta-300: hsl(296 94% 77%); /* #F18DFB */
+  --color-accent-magenta-100: hsl(296 100% 94%);
+  --color-accent-magenta-300: hsl(296 94% 77%);
 
-  /* Grey Scale */
-  --color-grey-100: hsl(210 18% 96%); /* #F2F4F6 */
-  --color-grey-200: hsl(0 0% 92%); /* #EAEAEA */
-  --color-grey-300: hsl(0 0% 78%); /* #C8C8C8 */
-  --color-grey-500: hsl(0 0% 48%); /* #7A7A7A */
-  --color-grey-700: hsl(0 0% 28%); /* #484848 */
-  --color-grey-900: hsl(0 0% 21%); /* #363636 */
+  --color-grey-100: hsl(210 18% 96%);
+  --color-grey-200: hsl(0 0% 92%);
+  --color-grey-300: hsl(0 0% 78%);
+  --color-grey-500: hsl(0 0% 48%);
+  --color-grey-700: hsl(0 0% 28%);
+  --color-grey-900: hsl(0 0% 21%);
 
-  /* Base Colors */
-  --color-white: hsl(0 0% 100%); /* #FFFFFF */
-  --color-black: hsl(0 0% 0%); /* #000000 */
+  --color-white: hsl(0 0% 100%);
+  --color-black: hsl(0 0% 0%);
 
-  /* 갓생상사 전용 시맨틱 컬러 */
   --color-office-bg: var(--color-white);
   --color-office-text: var(--color-grey-900);
   --color-office-border: var(--color-grey-200);
   --color-office-subtle: var(--color-grey-100);
 
-  --color-status-checkin: var(--color-primary-500); /* 출근 */
-  --color-status-working: var(--color-accent-green-500); /* 공휴일 및 휴가 */
-  --color-status-break: var(--color-accent-orange-400); /* 조퇴 및 지각 */
-  --color-status-danger: var(--color-accent-magenta-300); /* 결근 */
+  --color-status-holiday: var(--color-accent-green-600);
+  --color-status-working: var(--color-primary-500);
+  --color-status-break: var(--color-accent-orange-400);
+  --color-status-absence: var(--color-accent-magenta-300);
 }
 
-* {
-  box-sizing: border-box;
+:root {
+  --font-brand: "DNF Bit Bit v2", system-ui, sans-serif;
+  --font-body: "S-Core Dream", system-ui, sans-serif;
+}
+
+@layer utilities {
+  .font-brand {
+    font-family: var(--font-brand);
+    font-weight: 400;
+  }
+  .font-body {
+    font-family: var(--font-body);
+  }
+}
+
+@layer utilities {
+  .text-10 {
+    font-size: 0.625rem;
+    line-height: 1.25rem;
+  }
+  .text-12 {
+    font-size: 0.75rem;
+    line-height: 1.375rem;
+  }
+  .text-14 {
+    font-size: 0.875rem;
+    line-height: 1.5rem;
+  }
+  .text-16 {
+    font-size: 1rem;
+    line-height: 1.625rem;
+  }
+  .text-18 {
+    font-size: 1.125rem;
+    line-height: 1.75rem;
+  }
+  .text-20 {
+    font-size: 1.25rem;
+    line-height: 1.875rem;
+  }
+  .text-24 {
+    font-size: 1.5rem;
+    line-height: 2.125rem;
+  }
+
+  /* 독립 line-height 유틸 */
+  .leading-20 {
+    line-height: 1.25rem;
+  }
+  .leading-22 {
+    line-height: 1.375rem;
+  }
+  .leading-24 {
+    line-height: 1.5rem;
+  }
+  .leading-26 {
+    line-height: 1.625rem;
+  }
+  .leading-28 {
+    line-height: 1.75rem;
+  }
+  .leading-30 {
+    line-height: 1.875rem;
+  }
+  .leading-34 {
+    line-height: 2.125rem;
+  }
+}
+
+@layer utilities {
+  .brand-h1 {
+    font-family: var(--font-brand);
+    font-weight: 400;
+    font-size: 1.5rem;
+    line-height: 2.125rem;
+  } /* 24/34 */
+  .brand-h2 {
+    font-family: var(--font-brand);
+    font-weight: 400;
+    font-size: 1.25rem;
+    line-height: 1.875rem;
+  } /* 20/30 */
+  .brand-h3 {
+    font-family: var(--font-brand);
+    font-weight: 400;
+    font-size: 1rem;
+    line-height: 1.625rem;
+  } /* 16/26 */
+  .brand-h4 {
+    font-family: var(--font-brand);
+    font-weight: 400;
+    font-size: 0.875rem;
+    line-height: 1.5rem;
+  } /* 14/24 */
+  .brand-h5 {
+    font-family: var(--font-brand);
+    font-weight: 400;
+    font-size: 0.75rem;
+    line-height: 1.375rem;
+  } /* 12/22 */
+  .brand-h6 {
+    font-family: var(--font-brand);
+    font-weight: 400;
+    font-size: 0.625rem;
+    line-height: 1.25rem;
+  } /* 10/20 */
+}
+
+@layer utilities {
+  .body-xl {
+    font-family: var(--font-body);
+    font-size: 1.5rem;
+    line-height: 2.125rem;
+  } /* 24/34 */
+  .body-lg {
+    font-family: var(--font-body);
+    font-size: 1.25rem;
+    line-height: 1.875rem;
+  } /* 20/30 */
+  .body-base {
+    font-family: var(--font-body);
+    font-size: 1rem;
+    line-height: 1.625rem;
+  } /* 16/26 */
+  .body-sm {
+    font-family: var(--font-body);
+    font-size: 0.875rem;
+    line-height: 1.5rem;
+  } /* 14/24 */
+  .body-xs {
+    font-family: var(--font-body);
+    font-size: 0.75rem;
+    line-height: 1.375rem;
+  } /* 12/22 */
+  .body-2xs {
+    font-family: var(--font-body);
+    font-size: 0.625rem;
+    line-height: 1.25rem;
+  } /* 10/20 */
 }
 
 body {
+  font-family: var(--font-body);
+  font-size: 1rem;
+  line-height: 1.625rem;
   background-color: var(--color-office-bg);
   color: var(--color-office-text);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui,
-    sans-serif;
 }
