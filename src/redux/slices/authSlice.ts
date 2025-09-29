@@ -1,4 +1,4 @@
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 interface User {
   id: string;
@@ -20,7 +20,7 @@ const initialState: AuthState = {
 };
 
 const authSlice = createSlice({
-  name: "auth",
+  name: 'auth',
   initialState,
   reducers: {
     setUser: (state, action: PayloadAction<User>) => {
@@ -28,7 +28,7 @@ const authSlice = createSlice({
       state.isLoggedIn = true;
       state.loading = false;
     },
-    logout: (state) => {
+    logout: state => {
       state.user = null;
       state.isLoggedIn = false;
       state.loading = false;

@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 html,
 body {
@@ -43,8 +43,8 @@ body {
 }
 
 :root {
-  --font-brand: "DNF Bit Bit v2", system-ui, sans-serif;
-  --font-body: "S-Core Dream", system-ui, sans-serif;
+  --font-brand: 'DNF Bit Bit v2', system-ui, sans-serif;
+  --font-body: 'S-Core Dream', system-ui, sans-serif;
 }
 
 @layer utilities {

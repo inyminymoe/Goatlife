@@ -1,8 +1,8 @@
-"use client";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { Icon } from "@iconify/react";
-import IconLogo from "../ui/icons/IconLogo";
+'use client';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { Icon } from '@iconify/react';
+import IconLogo from '../ui/icons/IconLogo';
 
 interface HeaderProps {
   isLoggedIn?: boolean;
@@ -10,15 +10,15 @@ interface HeaderProps {
     name: string;
     avatar?: string;
   };
-  locale?: "ko" | "en";
-  variant?: "default" | "minimal";
+  locale?: 'ko' | 'en';
+  variant?: 'default' | 'minimal';
 }
 
 export default function Header({
   isLoggedIn = false,
   userProfile,
-  locale = "ko",
-  variant = "default",
+  locale = 'ko',
+  variant = 'default',
 }: HeaderProps) {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const router = useRouter();
@@ -32,7 +32,7 @@ export default function Header({
   };
 
   // 로그인 페이지용 미니멀 헤더
-  if (variant === "minimal") {
+  if (variant === 'minimal') {
     return (
       <header className="w-fullpx-4 py-3 md:px-8 md:py-4">
         <div className="max-w-7xl mx-auto">
@@ -63,8 +63,8 @@ export default function Header({
         <div className="flex-shrink-0">
           <IconLogo
             className="cursor-pointer"
-            width={locale === "ko" ? 80 : 100}
-            height={locale === "ko" ? 29 : 16}
+            width={locale === 'ko' ? 80 : 100}
+            height={locale === 'ko' ? 29 : 16}
             variant={locale}
             isDarkMode={isDarkMode}
           />
@@ -78,7 +78,7 @@ export default function Header({
             className="p-2 rounded-lg text-grey-500 hover:text-grey-700 hover:bg-grey-100 transition-colors duration-200"
           >
             <Icon
-              icon={isDarkMode ? "lucide:sun" : "lucide:moon"}
+              icon={isDarkMode ? 'lucide:sun' : 'lucide:moon'}
               className="w-5 h-5 md:w-6 md:h-6"
             />
           </button>

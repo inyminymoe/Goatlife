@@ -1,4 +1,4 @@
-import IconLogo from "../ui/icons/IconLogo";
+import IconLogo from '../ui/icons/IconLogo';
 
 export default function Footer() {
   return (

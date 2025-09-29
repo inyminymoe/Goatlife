@@ -1,11 +1,11 @@
-"use client";
-import { useState, useEffect } from "react";
-import IconClover from "../ui/icons/IconClover";
+'use client';
+import { useState, useEffect } from 'react';
+import IconClover from '../ui/icons/IconClover';
 
 const messages = [
-  "나의 값진 시간을 팝니다. 갓생상사.",
-  "24시간 신입 사원 절찬 모집중",
-  "대충 시작부터 하는 성장캐 구합니다",
+  '나의 값진 시간을 팝니다. 갓생상사.',
+  '24시간 신입 사원 절찬 모집중',
+  '대충 시작부터 하는 성장캐 구합니다',
 ];
 
 export default function TopBanner() {
@@ -13,7 +13,7 @@ export default function TopBanner() {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setCurrentMessage((prev) => (prev + 1) % messages.length);
+      setCurrentMessage(prev => (prev + 1) % messages.length);
     }, 4000);
 
     return () => clearInterval(interval);
