@@ -34,7 +34,7 @@ export default function Header({
   // 로그인 페이지용 미니멀 헤더
   if (variant === 'minimal') {
     return (
-      <header className="w-fullpx-4 py-3 md:px-8 md:py-4">
+      <header className="w-full px-4 py-3 md:px-8 md:py-4">
         <div className="max-w-7xl mx-auto">
           <button
             onClick={handleBack}
@@ -95,7 +95,6 @@ export default function Header({
   );
 }
 
-// 나머지 컴포넌트들...
 function LoginButton() {
   return (
     <button className="text-grey-900 body-sm font-medium hover:text-primary-500 transition-colors duration-200 px-2 py-1">
@@ -109,6 +108,9 @@ function UserProfileSection({
 }: {
   userProfile: { name: string; avatar?: string };
 }) {
-  // 기존 프로필 섹션 코드...
-  return <div>프로필</div>;
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-sm">{userProfile.name}</span>
+    </div>
+  );
 }
