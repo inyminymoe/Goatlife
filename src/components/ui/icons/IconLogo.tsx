@@ -1,3 +1,5 @@
+import Image from 'next/image';
+
 interface IconLogoProps {
   className?: string;
   width?: number;
@@ -14,19 +16,12 @@ export default function IconLogo({
   isDarkMode = false,
 }: IconLogoProps) {
   const getLogoSrc = () => {
-    if (variant === 'ko') {
-      return '/images/logo-ko.svg'; // 다크/라이트 모드 공용
-    }
-
-    if (variant === 'en') {
-      return isDarkMode ? '/images/logo-en-white.svg' : '/images/logo-en.svg';
-    }
-
-    return '/images/logo-ko.svg';
+    if (variant === 'ko') return '/images/logo-ko.svg';
+    return isDarkMode ? '/images/logo-en-white.svg' : '/images/logo-en.svg';
   };
 
   return (
-    <img
+    <Image
       src={getLogoSrc()}
       alt={variant === 'ko' ? '갓생상사' : 'GOATLIFE'}
       width={width}
