@@ -13,12 +13,10 @@ export default function LayoutWrapper({
   const isLoginPage = pathname === '/login';
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-dvh flex flex-col">
       <TopBanner />
       <Header variant={isLoginPage ? 'minimal' : 'default'} />
-
-      <main className="flex-1">{children}</main>
-
+      <main className="flex-1 min-h-0 flex flex-col">{children}</main>
       <Footer />
     </div>
   );
