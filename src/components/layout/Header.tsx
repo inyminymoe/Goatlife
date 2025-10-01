@@ -34,16 +34,16 @@ export default function Header({
   // 로그인 페이지용 미니멀 헤더
   if (variant === 'minimal') {
     return (
-      <header className="w-full px-4 py-3 md:px-8 md:py-4">
+      <header className="w-full bg-transparent px-4 py-3 md:px-8 md:py-4 absolute top-10 left-0 z-50">
         <div className="max-w-7xl mx-auto">
           <button
             onClick={handleBack}
             className="
-              flex items-center justify-center
-              w-10 h-10 rounded-lg
-              text-grey-700 hover:bg-grey-100
-              transition-colors duration-200
-            "
+            flex items-center justify-center
+            w-10 h-10 rounded-lg
+            text-white hover:bg-white/10
+            transition-colors duration-200
+          "
             aria-label="뒤로가기"
           >
             <Icon
@@ -57,7 +57,7 @@ export default function Header({
   }
 
   return (
-    <header className="w-full bg-white border-b border-grey-200 px-4 py-3 md:px-8 md:py-4 lg:px-16">
+    <header className="w-full  px-4 py-3 md:px-8 md:py-4 lg:px-16">
       <div className="max-w-7xl mx-auto flex items-center justify-between">
         {/* 브랜드 로고 */}
         <div className="flex-shrink-0">
@@ -96,8 +96,12 @@ export default function Header({
 }
 
 function LoginButton() {
+  const router = useRouter();
   return (
-    <button className="text-grey-900 body-sm font-medium hover:text-primary-500 transition-colors duration-200 px-2 py-1">
+    <button
+      onClick={() => router.push('/login')}
+      className="text-grey-900 body-sm font-medium hover:text-primary-500 transition-colors duration-200 px-2 py-1"
+    >
       로그인
     </button>
   );
