@@ -46,17 +46,14 @@
 - **Framework**: Next.js 15.5.4 (App Router)
 - **Language**: TypeScript 5
 - **Styling**: Tailwind CSS 4.1.13
-- **State Management**: Redux Toolkit 2.9.0 + React Redux 9.2.0
+- **State Management**: Jotai 2.15.0 (atoms-based)
+- **Server State**: TanStack Query 5.90.2
+- **Form Handling**: React Hook Form 7.63.0 + Zod 4.1.11
 - **Database**: Supabase 2.58.0
 - **Animation**: Framer Motion 12.23.22
 - **Icons**: Iconify React 6.0.2
+- **Development Tools**: ESLint 9, Prettier 3.6.2, Husky 9.1.7
 
-### Development
-- **Package Manager**: npm
-- **Node Version**: 20+
-- **Linting**: ESLint 9 + Next.js config
-- **CSS Processing**: PostCSS + Autoprefixer
-- 
 ### Backend & Database
 - **Database**: Supabase (PostgreSQL-based)
 - **Authentication**: Supabase Auth
@@ -144,10 +141,23 @@ It helps people who usually give up after three days achieve their goals sustain
 
 ## 🛠 Tech Stack
 
-- **Frontend**: Next.js 14, TypeScript, Tailwind CSS
-- **Backend**: Discord Bot API (planned)
-- **Database**: PostgreSQL (planned)
-- **Deployment**: Vercel (planned)
+### Frontend
+- **Framework**: Next.js 15.5.4 (App Router)
+- **Language**: TypeScript 5
+- **Styling**: Tailwind CSS 4.1.13
+- **State Management**: Jotai 2.15.0 (atoms-based)
+- **Server State**: TanStack Query 5.90.2
+- **Form Handling**: React Hook Form 7.63.0 + Zod 4.1.11
+- **Database**: Supabase 2.58.0
+- **Animation**: Framer Motion 12.23.22
+- **Icons**: Iconify React 6.0.2
+- **Development Tools**: ESLint 9, Prettier 3.6.2, Husky 9.1.7
+
+### Backend & Database
+- **Database**: Supabase (PostgreSQL-based)
+- **Authentication**: Supabase Auth
+- **Real-time**: Supabase Realtime
+- **Storage**: Supabase Storage (이미지/파일)
 
 ## 🚀 Local Development
 ```bash
