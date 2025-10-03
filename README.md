@@ -67,10 +67,10 @@ git clone https://github.com/inyminymoe/Goatlife.git
 cd goatlife
 
 # 의존성 설치
-npm install
+pnpm install
 
 # 개발 서버 실행
-npm run dev
+pnpm run dev
 
 ## 📁 프로젝트 구조
 
@@ -166,7 +166,7 @@ git clone https://github.com/inyminymoe/Goatlife.git
 cd goatlife
 
 # Install dependencies
-npm install
+pnpm install
 
 # Run development server
-npm run dev
+pnpm run dev
