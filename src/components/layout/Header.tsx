@@ -36,8 +36,8 @@ export default function Header({
   // 로그인 페이지용 미니멀 헤더
   if (variant === 'minimal') {
     return (
-      <header className="w-full bg-transparent px-4 py-3 md:px-8 md:py-4 absolute top-10 left-0 z-50">
-        <div className="max-w-7xl mx-auto">
+      <header className="w-full bg-transparent">
+        <div className="app-container py-3">
           <button
             onClick={handleBack}
             className="

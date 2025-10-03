@@ -25,8 +25,10 @@ export default function LayoutWrapper({
   if (isAuthPage) {
     return (
       <div className="min-h-dvh flex flex-col">
+        <TopBanner />
         <Header variant="minimal" />
         <main className="flex-1 min-h-0 flex flex-col">{children}</main>
+        <Footer />
       </div>
     );
   }
