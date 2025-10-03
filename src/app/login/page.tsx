@@ -138,8 +138,14 @@ export default function LoginPage() {
             </Button>
 
             <div className="flex mb-3 gap-1">
-              <Icon icon="icon-park:frog" className="w-6 h-6 text-white" />
-              <span className="brand-h5 font-brand text-white whitespace-nowrap">
+              <Image
+                src="/images/icons/icon-park_white-frog.svg"
+                alt="frog"
+                width={24}
+                height={24}
+                className="flex-shrink-0"
+              />
+              <span className="brand-h4 font-brand text-white whitespace-nowrap">
                 갓생상사의 일원이 되세요!
               </span>
             </div>
