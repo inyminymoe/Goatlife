@@ -59,7 +59,7 @@ export default function Header({
   }
 
   return (
-    <header className="w-full bg-white shadow-sm mt-2">
+    <header className="w-full bg-white mt-2">
       <div className="app-container flex items-center justify-between py-3">
         <div className="flex items-center gap-3">
           {/* tablet, mobile only */}
