@@ -48,6 +48,9 @@ body {
 }
 
 @layer utilities {
+  .app-container {
+    @apply max-w-[1440px] mx-auto px-6;
+  }
   .font-brand {
     font-family: var(--font-brand);
     font-weight: 400;

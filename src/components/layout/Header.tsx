@@ -12,6 +12,7 @@ interface HeaderProps {
   };
   locale?: 'ko' | 'en';
   variant?: 'default' | 'minimal';
+  onMenuToggle?: () => void;
 }
 
 export default function Header({
@@ -19,6 +20,7 @@ export default function Header({
   userProfile,
   locale = 'ko',
   variant = 'default',
+  onMenuToggle,
 }: HeaderProps) {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const router = useRouter();
@@ -57,22 +59,30 @@ export default function Header({
   }
 
   return (
-    <header className="w-full  px-4 py-3 md:px-8 md:py-4 lg:px-16">
-      <div className="max-w-7xl mx-auto flex items-center justify-between">
-        {/* 브랜드 로고 */}
-        <div className="flex-shrink-0">
-          <IconLogo
-            className="cursor-pointer"
-            width={locale === 'ko' ? 80 : 100}
-            height={locale === 'ko' ? 29 : 16}
-            variant={locale}
-            isDarkMode={isDarkMode}
-          />
+    <header className="w-full bg-white shadow-sm mt-2">
+      <div className="app-container flex items-center justify-between py-3">
+        <div className="flex items-center gap-3">
+          {/* tablet, mobile only */}
+          <button
+            onClick={onMenuToggle}
+            className="lg:hidden p-2 rounded-lg text-grey-700 hover:bg-grey-100 transition-colors"
+            aria-label="메뉴 열기"
+          >
+            <Icon icon="icon-park:hamburger-button" className="w-6 h-6" />
+          </button>
+
+          <div className="flex-shrink-0">
+            <IconLogo
+              className="cursor-pointer"
+              width={locale === 'ko' ? 80 : 100}
+              height={locale === 'ko' ? 29 : 16}
+              variant={locale}
+              isDarkMode={isDarkMode}
+            />
+          </div>
         </div>
 
-        {/* 우측 액션 영역 */}
         <div className="flex items-center gap-3 md:gap-4">
-          {/* 다크모드 토글 */}
           <button
             onClick={toggleTheme}
             className="p-2 rounded-lg text-grey-500 hover:text-grey-700 hover:bg-grey-100 transition-colors duration-200"
@@ -83,7 +93,6 @@ export default function Header({
             />
           </button>
 
-          {/* 로그인/프로필 영역 */}
           {isLoggedIn && userProfile ? (
             <UserProfileSection userProfile={userProfile} />
           ) : (
