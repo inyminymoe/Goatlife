@@ -18,13 +18,11 @@ export default function Sidebar({
 }: SidebarProps) {
   const isMobile = variant === 'mobile';
 
-  // Mobile: 전체화면 오버레이
   if (isMobile) {
     return (
       <AnimatePresence>
         {isOpen && (
           <>
-            {/* 배경 오버레이 */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -33,16 +31,14 @@ export default function Sidebar({
               className="fixed inset-0 bg-black/50 z-40 lg:hidden"
             />
 
-            {/* 슬라이딩 사이드바 */}
             <motion.aside
               initial={{ x: '-100%' }}
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed left-0 top-0 w-[276px] bg-grey-100 z-50 lg:hidden overflow-y-auto"
+              className="fixed inset-0 w-[276px] h-full bg-grey-100 z-50 lg:hidden overflow-y-auto shadow-xl"
             >
               <div className="p-6">
-                {/* 닫기 버튼 */}
                 <button
                   onClick={onClose}
                   className="absolute top-4 right-4 p-2 hover:bg-grey-200 rounded-lg transition-colors"
@@ -63,7 +59,6 @@ export default function Sidebar({
     );
   }
 
-  // Desktop: 고정 사이드바
   return (
     <aside className="h-fit w-[276px] flex-shrink-0 bg-grey-100 rounded-[5px] sticky top-6 ">
       <div className="p-6">
