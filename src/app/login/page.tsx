@@ -8,7 +8,6 @@ import { auth } from '@/lib/supabase';
 import Image from 'next/image';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
-import { Icon } from '@iconify/react';
 import { useAtom } from 'jotai';
 import { userAtom } from '@/store/auth';
 
@@ -23,7 +22,6 @@ const loginSchema = z.object({
 type LoginForm = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
-  const [user, setUser] = useAtom(userAtom);
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);

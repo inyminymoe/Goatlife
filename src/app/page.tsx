@@ -1,7 +1,6 @@
 'use client';
 import { useState } from 'react';
 import Button from '@/components/ui/Button';
-import ExternalLinkButton from '@/components/ui/ExternalLinkButton';
 import TodoItem from '@/components/ui/TodoItem';
 
 export default function Home() {
