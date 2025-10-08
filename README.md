@@ -94,7 +94,7 @@ pnpm run dev
 #
 
 ## README.md (English)
-```
+
 # Goatlife Inc.
 
 > We sell our precious time. Goatlife Inc.
@@ -160,7 +160,7 @@ It helps people who usually give up after three days achieve their goals sustain
 - **Storage**: Supabase Storage (이미지/파일)
 
 ## 🚀 Local Development
-
+```bash
 # Clone repository
 git clone https://github.com/inyminymoe/Goatlife.git
 cd goatlife
@@ -170,4 +170,3 @@ pnpm install
 
 # Run development server
 pnpm run dev
-```
