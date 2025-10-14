@@ -6,6 +6,14 @@ body {
   overflow-x: hidden; /* 가로 스크롤 방지 */
 }
 
+body {
+  font-family: var(--font-body);
+  font-size: 1rem;
+  line-height: 1.625rem;
+  background-color: var(--color-office-bg);
+  color: var(--color-office-text);
+}
+
 @theme {
   --color-primary-100: hsl(207 100% 93%);
   --color-primary-500: hsl(212 100% 60%);
@@ -43,8 +51,8 @@ body {
 }
 
 :root {
-  --font-brand: 'DNF Bit Bit v2', system-ui, sans-serif;
-  --font-body: 'S-Core Dream', system-ui, sans-serif;
+  --gl-font-brand: var(--font-body, 'DNF Bit Bit v2, system-ui, sans-serif');
+  --gl-font-body: var(--font-body, 'S-Core Dream, system-ui, sans-serif');
 }
 
 @layer utilities {
@@ -52,11 +60,11 @@ body {
     @apply max-w-[1440px] mx-auto px-6;
   }
   .font-brand {
-    font-family: var(--font-brand);
+    font-family: var(--gl-font-brand);
     font-weight: 400;
   }
   .font-body {
-    font-family: var(--font-body);
+    font-family: var(--gl-font-body);
   }
 }
 
@@ -116,37 +124,37 @@ body {
 
 @layer utilities {
   .brand-h1 {
-    font-family: var(--font-brand);
+    font-family: var(--gl-font-brand);
     font-weight: 400;
     font-size: 1.5rem;
     line-height: 2.125rem;
   } /* 24/34 */
   .brand-h2 {
-    font-family: var(--font-brand);
+    font-family: var(--gl-font-brand);
     font-weight: 400;
     font-size: 1.25rem;
     line-height: 1.875rem;
   } /* 20/30 */
   .brand-h3 {
-    font-family: var(--font-brand);
+    font-family: var(--gl-font-brand);
     font-weight: 400;
     font-size: 1rem;
     line-height: 1.625rem;
   } /* 16/26 */
   .brand-h4 {
-    font-family: var(--font-brand);
+    font-family: var(--gl-font-brand);
     font-weight: 400;
     font-size: 0.875rem;
     line-height: 1.5rem;
   } /* 14/24 */
   .brand-h5 {
-    font-family: var(--font-brand);
+    font-family: var(--gl-font-brand);
     font-weight: 400;
     font-size: 0.75rem;
     line-height: 1.375rem;
   } /* 12/22 */
   .brand-h6 {
-    font-family: var(--font-brand);
+    font-family: var(--gl-font-brand);
     font-weight: 400;
     font-size: 0.625rem;
     line-height: 1.25rem;
@@ -155,41 +163,42 @@ body {
 
 @layer utilities {
   .body-xl {
-    font-family: var(--font-body);
+    font-family: var(--gl-font-body);
     font-size: 1.5rem;
     line-height: 2.125rem;
   } /* 24/34 */
   .body-lg {
-    font-family: var(--font-body);
+    font-family: var(--gl-font-body);
     font-size: 1.25rem;
     line-height: 1.875rem;
   } /* 20/30 */
   .body-base {
-    font-family: var(--font-body);
+    font-family: var(--gl-font-body);
     font-size: 1rem;
     line-height: 1.625rem;
   } /* 16/26 */
   .body-sm {
-    font-family: var(--font-body);
+    font-family: var(--gl-font-body);
     font-size: 0.875rem;
     line-height: 1.5rem;
   } /* 14/24 */
   .body-xs {
-    font-family: var(--font-body);
+    font-family: var(--gl-font-body);
     font-size: 0.75rem;
     line-height: 1.375rem;
   } /* 12/22 */
   .body-2xs {
-    font-family: var(--font-body);
+    font-family: var(--gl-font-body);
     font-size: 0.625rem;
     line-height: 1.25rem;
   } /* 10/20 */
 }
 
-body {
-  font-family: var(--font-body);
-  font-size: 1rem;
-  line-height: 1.625rem;
-  background-color: var(--color-office-bg);
-  color: var(--color-office-text);
+.brand-h1,
+.brand-h2,
+.brand-h3,
+.brand-h4,
+.brand-h5,
+.brand-h6 {
+  font-family: var(--font-brand);
 }

@@ -1,5 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { brandFont } from '@/lib/fonts';
 import IconClover from '../ui/icons/IconClover';
 
 const messages = [
@@ -32,11 +33,12 @@ export default function TopBanner() {
     "
     >
       <div
-        className="
+        className={`
         flex items-center gap-2
         text-white font-brand
         max-w-7xl w-full justify-center
-      "
+        ${brandFont.className}
+      `}
       >
         {/* Clover Left */}
         <IconClover
