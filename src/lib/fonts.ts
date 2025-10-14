@@ -1,8 +1,10 @@
 import localFont from 'next/font/local';
 
 export const brandFont = localFont({
-  src: '../assets/fonts/DNFBitBitV2.woff2',
+  src: '../assets/fonts/DNFBitBitv2.woff2',
   variable: '--font-brand',
+  weight: '400',
+  display: 'swap',
 });
 
 export const bodyFont = localFont({
@@ -24,4 +26,5 @@ export const bodyFont = localFont({
     },
   ],
   variable: '--font-body',
+  display: 'swap',
 });
