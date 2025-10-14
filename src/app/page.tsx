@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import Button from '@/components/ui/Button';
 import TodoItem from '@/components/ui/TodoItem';
+import Badge from '@/components/ui/Badge';
 
 export default function Home() {
   const [todos, setTodos] = useState([
@@ -34,7 +35,7 @@ export default function Home() {
           <Button variant="primary" fullWidth className=" py-2">
             출근하기
           </Button>
-          <Button variant="secondary" fullWidth className=" py-2">
+          <Button variant="text" fullWidth className=" py-2">
             퇴근하기
           </Button>
         </div>

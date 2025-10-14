@@ -38,15 +38,15 @@ export default function Button({
       case 'plain':
         return '';
       case 'primary':
-        return 'bg-primary-500 text-white hover:bg-primary-900 disabled:opacity-50';
+        return 'bg-primary-500 text-white hover:bg-primary-900 disabled:opacity-50 transition-colors duration-150';
       case 'secondary':
-        return 'bg-grey-700 text-white hover:bg-grey-900 disabled:opacity-50';
+        return 'bg-grey-700 text-white hover:bg-grey-900 disabled:opacity-50 transition-colors duration-150';
       case 'text':
-        return 'bg-white text-grey-700 hover:bg-grey-100 disabled:opacity-50';
+        return 'bg-white text-grey-900 hover:bg-grey-500 hover:text-white disabled:opacity-50 transition-colors duration-150';
       case 'outline':
-        return 'bg-white text-grey-900 border border-grey-200 hover:bg-grey-100 disabled:opacity-50';
+        return 'bg-white text-grey-900 border border-grey-200 hover:bg-grey-100 disabled:opacity-50 transition-colors duration-150';
       case 'ghost':
-        return 'bg-transparent text-grey-900 hover:bg-grey-100 disabled:opacity-50';
+        return 'bg-transparent text-grey-900 hover:bg-grey-100 disabled:opacity-50 transition-colors duration-150';
       case 'filter':
         return active
           ? 'bg-grey-900 text-white border border-grey-900 hover:bg-grey-800 disabled:opacity-50 px-4 py-2 body-xs font-medium'
