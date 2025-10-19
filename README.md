@@ -170,3 +170,4 @@ pnpm install
 
 # Run development server
 pnpm run dev
+🎉Deployed to https://goatlife.app 🍀
