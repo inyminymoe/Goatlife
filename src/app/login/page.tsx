@@ -8,8 +8,6 @@ import { auth } from '@/lib/supabase';
 import Image from 'next/image';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
-import { useAtom } from 'jotai';
-import { userAtom } from '@/store/auth';
 
 const loginSchema = z.object({
   email: z

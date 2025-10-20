@@ -60,14 +60,16 @@ export default function LayoutWrapper({
         </div>
 
         {/* Mobile/Tablet Layout */}
-        <div className="lg:hidden flex flex-col min-h-full">
+        <div className="lg:hidden min-h-full">
           <Sidebar
             variant="mobile"
             isOpen={isMobileSidebarOpen}
             onClose={() => setIsMobileSidebarOpen(false)}
             isLoggedIn={isLoggedIn}
           />
-          <main className="flex-1 p-4">{children}</main>
+          <main className="flex-1 p-4 grid grid-cols-1 md:grid-cols-2 gap-5">
+            {children}
+          </main>
         </div>
       </div>
 
