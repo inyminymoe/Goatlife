@@ -1,6 +1,8 @@
 'use client';
 import { useState } from 'react';
 import { usePathname } from 'next/navigation';
+import { useAtom } from 'jotai';
+import { userAtom } from '@/store/atoms';
 import TopBanner from './layout/TopBanner';
 import Header from './layout/Header';
 import Footer from './layout/Footer';
@@ -14,14 +16,15 @@ export default function LayoutWrapper({
   const pathname = usePathname();
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
+  // Jotai에서 유저 정보 가져오기
+  const [user] = useAtom(userAtom);
+  const isLoggedIn = !!user;
+
   const isLoginPage = pathname === '/login';
   const isSignupPage = pathname === '/signup';
   const isAuthPage = isLoginPage || isSignupPage;
 
-  // TODO: Jotai userAtom에서 실제 인증 상태 가져오기
-  const isLoggedIn = false; // 임시
-
-  // 로그인/회원가입 페이지: 미니멀 레이아웃 (Sidebar 없음)
+  // 로그인/회원가입 페이지: 미니멀 레이아웃
   if (isAuthPage) {
     return (
       <div className="min-h-dvh flex flex-col">
@@ -33,14 +36,21 @@ export default function LayoutWrapper({
     );
   }
 
-  // 기본 레이아웃: TopBanner + Header + Sidebar + Content + Footer
+  // 기본 레이아웃
   return (
     <div className="min-h-dvh flex flex-col">
       <TopBanner />
       <Header
         variant="default"
         isLoggedIn={isLoggedIn}
-        userProfile={isLoggedIn ? { name: '강 인턴' } : undefined}
+        userProfile={
+          isLoggedIn && user
+            ? {
+                name: user.name,
+                avatar: user.avatar,
+              }
+            : undefined
+        }
         onMenuToggle={() => setIsMobileSidebarOpen(true)}
       />
 
@@ -49,10 +59,7 @@ export default function LayoutWrapper({
         {/* Desktop Grid Layout */}
         <div className="hidden lg:block app-container pt-2 pb-4">
           <div className="grid grid-cols-[276px_1fr] gap-6">
-            {/* Sidebar */}
             <Sidebar variant="desktop" isLoggedIn={isLoggedIn} />
-
-            {/* Main Content - 2열 Grid */}
             <main className="grid grid-cols-2 gap-5 auto-rows-min">
               {children}
             </main>

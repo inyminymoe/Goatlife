@@ -10,22 +10,32 @@ import TodoItem from '@/components/ui/TodoItem';
 import Toast from '@/components/ui/Toast';
 import Image from 'next/image';
 import { Icon } from '@iconify/react';
+import TodoDrawer from '@/components/TodoDrawer';
 
 export default function Home() {
   // TODO: 실제 supabase/auth 상태와 연동
   const [isMember] = useState(false);
 
-  // 데모용 상태
+  // 테스트용 Toast 상태
   const [toast1, setToast1] = useState(false);
   const [toast2, setToast2] = useState(false);
   const [toast3, setToast3] = useState(false);
 
+  // 테스트용 Todo 상태
   const [todos, setTodos] = useState([
     { id: '1', text: '멋드러지게 숨쉬기', completed: false },
     { id: '2', text: '죽여주는 점심식사하기', completed: false },
     { id: '3', text: '끝내주게 산책하기', completed: false },
     { id: '4', text: '고양이 밥주기', completed: false },
   ]);
+
+  // Drawer 상태
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [selectedTodo, setSelectedTodo] = useState<{
+    id: string;
+    text: string;
+    completed: boolean;
+  } | null>(null);
 
   const handleToggle = (id: string) => {
     setTodos(prev =>
@@ -36,7 +46,11 @@ export default function Home() {
   };
 
   const handleSettings = (id: string) => {
-    console.log('Settings clicked for:', id);
+    const todo = todos.find(t => t.id === id);
+    if (todo) {
+      setSelectedTodo(todo);
+      setDrawerOpen(true);
+    }
   };
 
   return (
@@ -184,7 +198,7 @@ export default function Home() {
               />
               <h2 className="brand-h3 text-grey-900">공지사항</h2>
             </div>
-            <p className="body-base text-grey-700">최신 공지사항</p>
+            <p className="body-base text-grey-700">최신 공지사항 불러오기...</p>
           </section>
 
           {/* 게시판2 - 커뮤니티 */}
@@ -196,7 +210,9 @@ export default function Home() {
               />
               <h2 className="brand-h3 text-grey-900">커뮤니티</h2>
             </div>
-            <p className="body-base text-grey-700">전사게시판 최신글</p>
+            <p className="body-base text-grey-700">
+              전사게시판 최신글 불러오기...
+            </p>
           </section>
         </>
       )}
@@ -224,6 +240,13 @@ export default function Home() {
         </div>
         <p className="body-base text-grey-700">1호 갓생이가 되어주세요🐹</p>
       </section>
+      {isMember && (
+        <TodoDrawer
+          isOpen={drawerOpen}
+          onClose={() => setDrawerOpen(false)}
+          todo={selectedTodo}
+        />
+      )}
     </>
   );
 }

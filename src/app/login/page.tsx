@@ -89,6 +89,7 @@ export default function LoginPage() {
                 autoComplete="username"
                 pattern="[a-z0-9]*"
                 label="사원 아이디"
+                variant="dark"
                 placeholder="아이디를 입력하세요"
                 error={errors.email?.message}
               />
@@ -99,6 +100,7 @@ export default function LoginPage() {
                 {...register('password')}
                 type={showPassword ? 'text' : 'password'}
                 label="비밀번호"
+                variant="dark"
                 placeholder="*********"
                 error={errors.password?.message}
                 showPasswordToggle

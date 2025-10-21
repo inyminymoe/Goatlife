@@ -9,6 +9,7 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   showPasswordToggle?: boolean;
   onPasswordToggle?: () => void;
   showPassword?: boolean;
+  variant?: 'light' | 'dark';
 }
 
 const Input = forwardRef<HTMLInputElement, InputProps>(
@@ -22,11 +23,16 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
       onPasswordToggle,
       showPassword,
       disabled,
+      variant = 'light',
       className = '',
       ...props
     },
     ref
   ) => {
+    const getLabelColor = () => {
+      return variant === 'dark' ? 'text-white' : 'text-grey-900';
+    };
+
     const getInputBorderColor = () => {
       if (error) return 'border-accent-magenta-300';
       if (success) return 'border-primary-500';
@@ -34,16 +40,18 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
     };
 
     const getHelperTextColor = () => {
-      if (error) return 'text-accent-white';
+      if (error) return 'text-accent-magenta-300';
       if (success) return 'text-primary-500';
-      return 'text-grey-100';
+      return 'text-grey-500';
     };
 
     return (
       <div className="w-full flex flex-col gap-2">
         {/* Label */}
         {label && (
-          <label className="body-sm font-medium font-body text-white">
+          <label
+            className={`body-sm font-regular font-body ${getLabelColor()}`}
+          >
             {label}
           </label>
         )}
