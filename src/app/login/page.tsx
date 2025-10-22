@@ -8,12 +8,17 @@ import { auth } from '@/lib/supabase';
 import Image from 'next/image';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
+import { Icon } from '@iconify/react';
 
 const loginSchema = z.object({
   email: z
     .string()
-    .min(1, '아이디를 입력하세요')
-    .regex(/^[a-z0-9]+$/, '아이디는 영문 소문자와 숫자만 입력 가능합니다'),
+    .min(3, '아이디는 3자 이상이어야 합니다')
+    .max(20, '아이디는 20자 이하여야 합니다')
+    .regex(
+      /^[a-z0-9_-]+$/,
+      '아이디는 영문 소문자, 숫자, 언더스코어(_), 하이픈(-)만 가능합니다'
+    ),
   password: z.string().min(8, '비밀번호는 8자 이상이어야 합니다'),
 });
 
@@ -32,6 +37,7 @@ export default function LoginPage() {
     resolver: zodResolver(loginSchema),
   });
 
+  // TODO: 아이디(username) → 이메일 매핑 로직이 필요할 수도 있음.
   const onSubmit = async (data: LoginForm) => {
     setIsLoading(true);
     const { error } = await auth.signIn(data.email, data.password);
@@ -43,9 +49,9 @@ export default function LoginPage() {
   };
 
   return (
-    <>
+    <div className="relative flex flex-col flex-1">
       {/* 배경 이미지 */}
-      <div className="fixed inset-0 -z-10">
+      <div className="fixed inset-0 z-0 pointer-events-none select-none">
         <Image
           src="/images/login-background.jpg"
           alt="login background"
@@ -56,7 +62,24 @@ export default function LoginPage() {
         />
       </div>
 
-      <div className="w-full flex-1 flex items-center justify-center p-4">
+      {/* 뒤로가기 버튼 */}
+      <div className="absolute top-0 left-0 z-30 w-full">
+        <div className="app-container py-3">
+          <button
+            onClick={() => router.back()}
+            className="flex items-center justify-center w-10 h-10 rounded-lg text-white hover:bg-white/10 transition-colors"
+            aria-label="뒤로가기"
+          >
+            <Icon
+              icon="material-symbols:arrow-back-ios-rounded"
+              className="w-6 h-6"
+            />
+          </button>
+        </div>
+      </div>
+
+      {/* 로그인 폼 */}
+      <div className="relative z-10 flex-1 flex items-center justify-center p-4">
         <div
           className="w-80 p-6 flex flex-col relative"
           style={{
@@ -65,7 +88,7 @@ export default function LoginPage() {
             boxShadow: '4px 4px 4px 0 rgba(241, 141, 251, 0.10)',
           }}
         >
-          {/* Glassmorphism  */}
+          {/* Glassmorphism */}
           <div
             className="absolute inset-0 -z-10"
             style={{
@@ -76,9 +99,14 @@ export default function LoginPage() {
             }}
           />
 
-          <h1 className="brand-h2 font-brand text-white mb-6">로그인</h1>
+          <h1 className="brand-h2 font-brand text-white mb-6 relative z-10">
+            로그인
+          </h1>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col">
+          <form
+            onSubmit={handleSubmit(onSubmit)}
+            className="flex flex-col relative z-10"
+          >
             <div className="mb-6">
               <Input
                 {...register('email', {
@@ -87,7 +115,8 @@ export default function LoginPage() {
                 type="text"
                 inputMode="text"
                 autoComplete="username"
-                pattern="[a-z0-9]*"
+                pattern="[a-z0-9_-]*"
+                maxLength={20}
                 label="사원 아이디"
                 variant="dark"
                 placeholder="아이디를 입력하세요"
@@ -160,6 +189,6 @@ export default function LoginPage() {
           </form>
         </div>
       </div>
-    </>
+    </div>
   );
 }

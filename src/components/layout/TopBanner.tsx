@@ -23,10 +23,10 @@ export default function TopBanner() {
   return (
     <div
       className="
-      w-full bg-grey-900 
+      w-full bg-[hsl(0_0%_21%)]
       flex items-center justify-center
       px-4 py-1.5
-      md:px-8 
+      md:px-8
       lg:px-16
       overflow-hidden
       relative
