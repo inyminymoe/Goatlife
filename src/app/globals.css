@@ -4,17 +4,28 @@ html,
 body {
   height: 100%;
   overflow-x: hidden; /* 가로 스크롤 방지 */
+  background-color: var(--color-dark-bg);
+  color: var(--color-dark-text);
 }
 
 body {
   font-family: var(--font-body);
   font-size: 1rem;
   line-height: 1.625rem;
-  background-color: var(--color-office-bg);
-  color: var(--color-office-text);
 }
 
 @theme {
+  /* Light mode tokens */
+  --color-grey-100: hsl(0 0% 96%);
+  --color-grey-200: hsl(0 0% 90%);
+  --color-grey-300: hsl(0 0% 80%);
+  --color-grey-500: hsl(0 0% 60%);
+  --color-grey-700: hsl(0 0% 40%);
+  --color-grey-900: hsl(0 0% 10%);
+  --color-primary: hsl(220 90% 56%);
+  --color-primary-dark: hsl(220 90% 46%);
+  --color-primary-light: hsl(220 90% 66%);
+
   --color-primary-100: hsl(207 100% 93%);
   --color-primary-500: hsl(212 100% 60%);
   --color-primary-900: hsl(216 65% 20%);
@@ -39,11 +50,6 @@ body {
   --color-white: hsl(0 0% 100%);
   --color-black: hsl(0 0% 0%);
 
-  --color-office-bg: var(--color-white);
-  --color-office-text: var(--color-grey-900);
-  --color-office-border: var(--color-grey-200);
-  --color-office-subtle: var(--color-grey-100);
-
   --color-status-holiday: var(--color-accent-green-600);
   --color-status-working: var(--color-primary-500);
   --color-status-break: var(--color-accent-orange-400);
@@ -51,8 +57,42 @@ body {
 }
 
 :root {
-  --gl-font-brand: var(--font-body, 'DNF Bit Bit v2, system-ui, sans-serif');
-  --gl-font-body: var(--font-body, 'S-Core Dream, system-ui, sans-serif');
+  /* Enable UA to pick proper default form controls & scrollbars per theme */
+  color-scheme: light dark;
+
+  /* Correct font variable wiring */
+  --gl-font-brand: var(--font-brand, 'DNF Bit Bit v2'), system-ui, sans-serif;
+  --gl-font-body: var(--font-body, 'S-Core Dream'), system-ui, sans-serif;
+
+  /* Light mode defaults */
+  --color-dark-bg: hsl(0 0% 100%);
+  --color-dark-text: hsl(0 0% 21%);
+  --color-dark-border: hsl(0 0% 92%);
+  --color-dark-subtle: hsl(210 18% 96%);
+}
+:root.dark {
+  /* Theme surface variables */
+  --color-dark-bg: hsl(0 0% 28%); /* grey-700 for body and header */
+  --color-dark-text: hsl(0 0% 96%);
+  --color-dark-border: hsl(0 0% 40%);
+  --color-dark-subtle: hsl(0 0% 14%); /* around grey-100 but for dark */
+  /* Flip core greys so existing utilities adapt in dark mode */
+  --color-grey-100: hsl(0 0% 14%); /* light-mode 100 -> dark surface subtle */
+  --color-grey-200: hsl(0 0% 20%);
+  --color-grey-300: hsl(0 0% 28%);
+  --color-grey-500: hsl(0 0% 60%);
+  --color-grey-700: hsl(0 0% 78%);
+  --color-grey-900: hsl(0 0% 100%); /* white in dark mode */
+  /* Flip primary colors */
+  --color-primary-100: hsl(216 65% 20%); /* swap with primary-900 */
+  --color-primary-900: hsl(207 100% 93%); /* swap with primary-100 */
+}
+/* Fixed footer background token (remains the same in both light and dark mode) */
+:root {
+  --color-footer-bg: hsl(216 65% 20%);
+}
+:root.dark {
+  --color-footer-bg: hsl(216 65% 20%);
 }
 
 @layer utilities {
@@ -201,4 +241,30 @@ body {
 .brand-h5,
 .brand-h6 {
   font-family: var(--font-brand);
+}
+
+@layer utilities {
+  .bg-dark {
+    background-color: var(--color-dark-bg);
+  }
+  .text-dark {
+    color: var(--color-dark-text);
+  }
+  .border-dark {
+    border-color: var(--color-dark-border);
+  }
+  .bg-dark-subtle {
+    background-color: var(--color-dark-subtle);
+  }
+
+  /* Fixed colors that don't change with theme */
+  .gl-bg-banner {
+    background-color: hsl(0 0% 21%);
+  }
+  .gl-text-footer {
+    color: hsl(0 0% 100%);
+  }
+  .gl-bg-footer {
+    background-color: var(--color-footer-bg);
+  }
 }

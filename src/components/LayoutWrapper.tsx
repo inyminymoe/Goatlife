@@ -27,11 +27,16 @@ export default function LayoutWrapper({
   // 로그인/회원가입 페이지: 미니멀 레이아웃
   if (isAuthPage) {
     return (
-      <div className="min-h-dvh flex flex-col">
-        <TopBanner />
-        <Header variant="minimal" />
-        <main className="flex-1 min-h-0 flex flex-col">{children}</main>
-        <Footer />
+      <div className="relative min-h-dvh flex flex-col">
+        <div className="relative z-20">
+          <TopBanner />
+        </div>
+        <main className="relative z-10 flex-1 min-h-0 flex flex-col">
+          {children}
+        </main>
+        <div className="relative z-20">
+          <Footer />
+        </div>
       </div>
     );
   }
@@ -41,7 +46,6 @@ export default function LayoutWrapper({
     <div className="min-h-dvh flex flex-col">
       <TopBanner />
       <Header
-        variant="default"
         isLoggedIn={isLoggedIn}
         userProfile={
           isLoggedIn && user
@@ -55,7 +59,7 @@ export default function LayoutWrapper({
       />
 
       {/* Grid 컨테이너 */}
-      <div className="flex-1 min-h-0 bg-white">
+      <div className="flex-1 min-h-0">
         {/* Desktop Grid Layout */}
         <div className="hidden lg:block app-container pt-2 pb-4">
           <div className="grid grid-cols-[276px_1fr] gap-6">
