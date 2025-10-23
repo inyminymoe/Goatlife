@@ -69,6 +69,8 @@ body {
   --color-dark-text: hsl(0 0% 21%);
   --color-dark-border: hsl(0 0% 92%);
   --color-dark-subtle: hsl(210 18% 96%);
+  /* Banner background (semantic token) */
+  --color-banner-bg: var(--color-primary-100);
 }
 :root.dark {
   /* Theme surface variables */
@@ -83,9 +85,12 @@ body {
   --color-grey-500: hsl(0 0% 60%);
   --color-grey-700: hsl(0 0% 78%);
   --color-grey-900: hsl(0 0% 100%); /* white in dark mode */
-  /* Flip primary colors */
-  --color-primary-100: hsl(216 65% 20%); /* swap with primary-900 */
-  --color-primary-900: hsl(207 100% 93%); /* swap with primary-100 */
+  /* Keep primary scale consistent across themes (100 = lightest, 900 = darkest) */
+  --color-primary-100: hsl(207 100% 93%);
+  --color-primary-500: hsl(212 100% 60%);
+  --color-primary-900: hsl(216 65% 20%);
+  /* Dark-mode banner deeper blue*/
+  --color-banner-bg: hsl(216 45% 28%);
 }
 /* Fixed footer background token (remains the same in both light and dark mode) */
 :root {
@@ -93,6 +98,19 @@ body {
 }
 :root.dark {
   --color-footer-bg: hsl(216 65% 20%);
+}
+
+/* 모든 UI 컴포넌트는 라이트 모드 적용 */
+.ui-component {
+  --color-grey-100: hsl(210, 18%, 96%) !important;
+  --color-grey-200: hsl(0, 0%, 92%) !important;
+  --color-grey-300: hsl(0, 0%, 78%) !important;
+  --color-grey-500: hsl(0, 0%, 48%) !important;
+  --color-grey-700: hsl(0, 0%, 28%) !important;
+  --color-grey-900: hsl(0, 0%, 21%) !important;
+  --color-white: hsl(0, 0%, 100%) !important;
+  --color-primary-500: hsl(212, 100%, 60%) !important;
+  --color-yellow-300: hsl(48, 100%, 50%) !important;
 }
 
 @layer utilities {
@@ -259,7 +277,7 @@ body {
 
   /* Fixed colors that don't change with theme */
   .gl-bg-banner {
-    background-color: hsl(0 0% 21%);
+    background-color: var(--color-banner-bg);
   }
   .gl-text-footer {
     color: hsl(0 0% 100%);

@@ -159,7 +159,7 @@ export default function Home() {
         /* ===================== 게스트 레이아웃 ===================== */
         <>
           {/* 마케팅 배너 (2칸) */}
-          <section className="md:col-span-2 bg-primary-100 rounded-[5px] p-8 md:p-12 md:min-h-[176px] relative overflow-hidden">
+          <section className="md:col-span-2 gl-bg-banner rounded-[5px] p-8 md:p-12 md:min-h-[176px] relative overflow-hidden">
             <div className="relative z-10 max-w-xl">
               <h2 className="brand-h2 text-grey-900 mb-4 leading-loose">
                 나의 업무 유형 테스트하고

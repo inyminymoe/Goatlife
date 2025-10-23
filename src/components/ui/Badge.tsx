@@ -39,6 +39,7 @@ export function Badge({
   ...rest
 }: BadgeProps) {
   const classes = [
+    'ui-component',
     base,
     sizeStyles[size],
     variantStyles[variant],

@@ -49,7 +49,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="relative flex flex-col flex-1">
+    <div className="relative flex flex-col flex-1 pt-14 md:pt-0">
       {/* 배경 이미지 */}
       <div className="fixed inset-0 z-0 pointer-events-none select-none">
         <Image
@@ -80,22 +80,19 @@ export default function LoginPage() {
 
       {/* 로그인 폼 */}
       <div className="relative z-10 flex-1 flex items-center justify-center p-4">
-        <div
-          className="w-80 p-6 flex flex-col relative"
-          style={{
-            borderRadius: '15px',
-            background: 'rgba(0, 0, 0, 0.00)',
-            boxShadow: '4px 4px 4px 0 rgba(241, 141, 251, 0.10)',
-          }}
-        >
-          {/* Glassmorphism */}
+        <div className="w-80 p-6 flex flex-col relative">
+          {/* Glassmorphism  */}
           <div
-            className="absolute inset-0 -z-10"
+            className="absolute inset-0 -z-10 rounded-2xl"
             style={{
-              borderRadius: '12px',
-              background: 'rgba(255, 255, 255, 0.05)',
-              backdropFilter: 'blur(2px)',
-              border: '0.1px solid rgba(255, 255, 255, 0.1)',
+              background: 'rgba(241, 141, 251, 0.08)',
+              backdropFilter: 'blur(3px) saturate(100%)',
+              WebkitBackdropFilter: 'blur(3px) saturate(100%)' /* Safari */,
+              border: '1px solid rgba(255, 255, 255, 0.15)',
+              boxShadow: `
+              4px 4px 20px 0 rgba(256, 256, 256, 0.10),
+              inset 1px 1px 1px 0 rgba(255, 255, 255, 0.15)
+              `,
             }}
           />
 
@@ -159,7 +156,7 @@ export default function LoginPage() {
               type="button"
               variant="plain"
               fullWidth
-              className="mb-6 bg-yellow-300 text-grey-900 hover:bg-yellow-400 disabled:opacity-50"
+              className="mb-6 bg-yellow-300 text-grey-900 hover:bg-yellow-200 disabled:opacity-50"
             >
               카카오톡으로 로그인
             </Button>

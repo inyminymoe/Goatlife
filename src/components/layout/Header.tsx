@@ -36,16 +36,16 @@ export default function Header({
           {/* tablet, mobile only */}
           <button
             onClick={onMenuToggle}
-            className="lg:hidden p-2 rounded-lg text-dark hover:bg-dark-subtle transition-colors"
+            className="lg:hidden p-2 rounded-lg text-dark transition-colors"
             aria-label="메뉴 열기"
           >
-            <Icon icon="icon-park:hamburger-button" className="w-6 h-6" />
+            <Icon icon="lucide:menu" className="w-6 h-6" />
           </button>
 
           <div className="flex-shrink-0">
             <IconLogo
               className="cursor-pointer"
-              width={locale === 'ko' ? 80 : 100}
+              width={locale === 'ko' ? 90 : 100}
               height={locale === 'ko' ? 29 : 16}
               variant={locale}
               isDarkMode={isDarkMode}
