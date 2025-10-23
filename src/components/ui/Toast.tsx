@@ -67,7 +67,7 @@ export default function Toast({
             max-w-sm
           "
         >
-          <div className="bg-grey-700 rounded-xl px-3 py-4 shadow-lg">
+          <div className="ui-component bg-grey-700 rounded-xl px-3 py-4 shadow-lg">
             {/* 아이콘 + 메시지 */}
             {!action ? (
               <div className="flex items-center gap-2">

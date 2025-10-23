@@ -46,7 +46,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
     };
 
     return (
-      <div className="w-full flex flex-col gap-2">
+      <div className="ui-component w-full flex flex-col gap-2">
         {/* Label */}
         {label && (
           <label

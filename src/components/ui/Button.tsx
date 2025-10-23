@@ -85,6 +85,7 @@ export default function Button({
       disabled={disabled}
       aria-pressed={variant === 'filter' ? !!active : undefined}
       className={`
+        ui-component
         ${radiusClass}
         font-body
         inline-flex items-center justify-center gap-2
