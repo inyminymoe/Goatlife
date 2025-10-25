@@ -3,7 +3,7 @@ import IconLogo from '../ui/icons/IconLogo';
 
 export default function Footer() {
   return (
-    <footer className="w-full bg-[hsl(216_65%_20%)] text-white px-4 py-4 md:px-16 lg:px-64 flex flex-col md:flex-row items-center justify-center gap-4">
+    <footer className="w-full bg-[hsl(216_65%_20%)] text-white px-4 py-4 md:px-16 lg:px-64 flex flex-col md:flex-row items-center justify-center gap-4 mt-5">
       <IconLogo
         variant="en"
         width={112}
