@@ -156,7 +156,7 @@ export default function LoginPage() {
               type="button"
               variant="plain"
               fullWidth
-              className="mb-6 bg-yellow-300 text-grey-900 hover:bg-yellow-200 disabled:opacity-50"
+              className="mb-6 bg-yellow-300 text-fixed-grey-900 hover:bg-yellow-400 disabled:opacity-50"
             >
               카카오톡으로 로그인
             </Button>

@@ -3,7 +3,6 @@
 html,
 body {
   height: 100%;
-  overflow-x: hidden; /* 가로 스크롤 방지 */
   background-color: var(--color-dark-bg);
   color: var(--color-dark-text);
 }
@@ -15,16 +14,29 @@ body {
 }
 
 @theme {
-  /* Light mode tokens */
-  --color-grey-100: hsl(0 0% 96%);
-  --color-grey-200: hsl(0 0% 90%);
-  --color-grey-300: hsl(0 0% 80%);
-  --color-grey-500: hsl(0 0% 60%);
-  --color-grey-700: hsl(0 0% 40%);
-  --color-grey-900: hsl(0 0% 10%);
-  --color-primary: hsl(220 90% 56%);
-  --color-primary-dark: hsl(220 90% 46%);
-  --color-primary-light: hsl(220 90% 66%);
+  /* ===== 1. 고정 색상 (컴포넌트용) ===== */
+  --color-fixed-white: hsl(0 0% 100%);
+  --color-fixed-grey-100: hsl(210 18% 96%);
+  --color-fixed-grey-200: hsl(0 0% 92%);
+  --color-fixed-grey-300: hsl(0 0% 78%);
+  --color-fixed-grey-500: hsl(0 0% 48%);
+  --color-fixed-grey-700: hsl(0 0% 28%);
+  --color-fixed-grey-900: hsl(0 0% 21%);
+
+  --color-fixed-primary-100: hsl(207 100% 93%);
+  --color-fixed-primary-500: hsl(212 100% 60%);
+  --color-fixed-primary-900: hsl(216 65% 20%);
+
+  --color-fixed-yellow-300: hsl(48 100% 50%);
+  --color-fixed-accent-magenta-300: hsl(296 94% 77%);
+
+  /* ===== 2. 반응형 색상 (Layout용) ===== */
+  --color-grey-100: hsl(210 18% 96%);
+  --color-grey-200: hsl(0 0% 92%);
+  --color-grey-300: hsl(0 0% 78%);
+  --color-grey-500: hsl(0 0% 48%);
+  --color-grey-700: hsl(0 0% 28%);
+  --color-grey-900: hsl(0 0% 21%);
 
   --color-primary-100: hsl(207 100% 93%);
   --color-primary-500: hsl(212 100% 60%);
@@ -33,23 +45,15 @@ body {
   --color-accent-green-200: hsl(93 100% 79%);
   --color-accent-green-500: hsl(167 100% 60%);
   --color-accent-green-600: hsl(101 77% 47%);
-
   --color-accent-orange-100: hsl(21 100% 93%);
   --color-accent-orange-400: hsl(25 83% 70%);
-
   --color-accent-magenta-100: hsl(296 100% 94%);
   --color-accent-magenta-300: hsl(296 94% 77%);
-
-  --color-grey-100: hsl(210 18% 96%);
-  --color-grey-200: hsl(0 0% 92%);
-  --color-grey-300: hsl(0 0% 78%);
-  --color-grey-500: hsl(0 0% 48%);
-  --color-grey-700: hsl(0 0% 28%);
-  --color-grey-900: hsl(0 0% 21%);
 
   --color-white: hsl(0 0% 100%);
   --color-black: hsl(0 0% 0%);
 
+  /* Status colors */
   --color-status-holiday: var(--color-accent-green-600);
   --color-status-working: var(--color-primary-500);
   --color-status-break: var(--color-accent-orange-400);
@@ -57,66 +61,48 @@ body {
 }
 
 :root {
-  /* Enable UA to pick proper default form controls & scrollbars per theme */
-  color-scheme: light dark;
+  color-scheme: light;
 
-  /* Correct font variable wiring */
+  /* Font variables */
   --gl-font-brand: var(--font-brand, 'DNF Bit Bit v2'), system-ui, sans-serif;
   --gl-font-body: var(--font-body, 'S-Core Dream'), system-ui, sans-serif;
 
-  /* Light mode defaults */
+  /* Semantic tokens - Light mode */
   --color-dark-bg: hsl(0 0% 100%);
   --color-dark-text: hsl(0 0% 21%);
   --color-dark-border: hsl(0 0% 92%);
   --color-dark-subtle: hsl(210 18% 96%);
-  /* Banner background (semantic token) */
   --color-banner-bg: var(--color-primary-100);
+  --color-footer-bg: hsl(216 65% 20%);
 }
+
 :root.dark {
-  /* Theme surface variables */
-  --color-dark-bg: hsl(0 0% 28%); /* grey-700 for body and header */
+  color-scheme: dark;
+
+  /* Semantic tokens - Dark mode */
+  --color-dark-bg: hsl(0 0% 28%);
   --color-dark-text: hsl(0 0% 96%);
   --color-dark-border: hsl(0 0% 40%);
-  --color-dark-subtle: hsl(0 0% 14%); /* around grey-100 but for dark */
-  /* Flip core greys so existing utilities adapt in dark mode */
-  --color-grey-100: hsl(0 0% 14%); /* light-mode 100 -> dark surface subtle */
+  --color-dark-subtle: hsl(0 0% 14%);
+  --color-banner-bg: hsl(216 45% 28%);
+
+  /* Layout 색상만 반전 (고정 색상은 그대로!) */
+  --color-grey-100: hsl(0 0% 14%);
   --color-grey-200: hsl(0 0% 20%);
   --color-grey-300: hsl(0 0% 28%);
   --color-grey-500: hsl(0 0% 60%);
   --color-grey-700: hsl(0 0% 78%);
-  --color-grey-900: hsl(0 0% 100%); /* white in dark mode */
-  /* Keep primary scale consistent across themes (100 = lightest, 900 = darkest) */
-  --color-primary-100: hsl(207 100% 93%);
-  --color-primary-500: hsl(212 100% 60%);
-  --color-primary-900: hsl(216 65% 20%);
-  /* Dark-mode banner deeper blue*/
-  --color-banner-bg: hsl(216 45% 28%);
-}
-/* Fixed footer background token (remains the same in both light and dark mode) */
-:root {
-  --color-footer-bg: hsl(216 65% 20%);
-}
-:root.dark {
-  --color-footer-bg: hsl(216 65% 20%);
+  --color-grey-900: hsl(0 0% 100%);
 }
 
-/* 모든 UI 컴포넌트는 라이트 모드 적용 */
-.ui-component {
-  --color-grey-100: hsl(210, 18%, 96%) !important;
-  --color-grey-200: hsl(0, 0%, 92%) !important;
-  --color-grey-300: hsl(0, 0%, 78%) !important;
-  --color-grey-500: hsl(0, 0%, 48%) !important;
-  --color-grey-700: hsl(0, 0%, 28%) !important;
-  --color-grey-900: hsl(0, 0%, 21%) !important;
-  --color-white: hsl(0, 0%, 100%) !important;
-  --color-primary-500: hsl(212, 100%, 60%) !important;
-  --color-yellow-300: hsl(48, 100%, 50%) !important;
-}
-
+/* ===== Utility Classes ===== */
 @layer utilities {
+  /* Container */
   .app-container {
     @apply max-w-[1440px] mx-auto px-6;
   }
+
+  /* Fonts */
   .font-brand {
     font-family: var(--gl-font-brand);
     font-weight: 400;
@@ -124,9 +110,44 @@ body {
   .font-body {
     font-family: var(--gl-font-body);
   }
+
+  /* Semantic colors */
+  .bg-dark {
+    background-color: var(--color-dark-bg);
+  }
+  .text-dark {
+    color: var(--color-dark-text);
+  }
+  .border-dark {
+    border-color: var(--color-dark-border);
+  }
+  .bg-dark-subtle {
+    background-color: var(--color-dark-subtle);
+  }
+
+  /* Banner & Footer */
+  .gl-bg-banner {
+    background-color: var(--color-banner-bg);
+  }
+  .gl-bg-footer {
+    background-color: var(--color-footer-bg);
+  }
+  .gl-text-footer {
+    color: hsl(0 0% 100%);
+  }
+
+  /* Safe Area */
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
 }
 
+/* ===== Typography ===== */
 @layer utilities {
+  /* Font sizes */
   .text-10 {
     font-size: 0.625rem;
     line-height: 1.25rem;
@@ -156,133 +177,73 @@ body {
     line-height: 2.125rem;
   }
 
-  /* 독립 line-height 유틸 */
-  .leading-20 {
-    line-height: 1.25rem;
-  }
-  .leading-22 {
-    line-height: 1.375rem;
-  }
-  .leading-24 {
-    line-height: 1.5rem;
-  }
-  .leading-26 {
-    line-height: 1.625rem;
-  }
-  .leading-28 {
-    line-height: 1.75rem;
-  }
-  .leading-30 {
-    line-height: 1.875rem;
-  }
-  .leading-34 {
-    line-height: 2.125rem;
-  }
-}
-
-@layer utilities {
+  /* Brand headings */
   .brand-h1 {
     font-family: var(--gl-font-brand);
     font-weight: 400;
     font-size: 1.5rem;
     line-height: 2.125rem;
-  } /* 24/34 */
+  }
   .brand-h2 {
     font-family: var(--gl-font-brand);
     font-weight: 400;
     font-size: 1.25rem;
     line-height: 1.875rem;
-  } /* 20/30 */
+  }
   .brand-h3 {
     font-family: var(--gl-font-brand);
     font-weight: 400;
     font-size: 1rem;
     line-height: 1.625rem;
-  } /* 16/26 */
+  }
   .brand-h4 {
     font-family: var(--gl-font-brand);
     font-weight: 400;
     font-size: 0.875rem;
     line-height: 1.5rem;
-  } /* 14/24 */
+  }
   .brand-h5 {
     font-family: var(--gl-font-brand);
     font-weight: 400;
     font-size: 0.75rem;
     line-height: 1.375rem;
-  } /* 12/22 */
+  }
   .brand-h6 {
     font-family: var(--gl-font-brand);
     font-weight: 400;
     font-size: 0.625rem;
     line-height: 1.25rem;
-  } /* 10/20 */
-}
+  }
 
-@layer utilities {
+  /* Body text */
   .body-xl {
     font-family: var(--gl-font-body);
     font-size: 1.5rem;
     line-height: 2.125rem;
-  } /* 24/34 */
+  }
   .body-lg {
     font-family: var(--gl-font-body);
     font-size: 1.25rem;
     line-height: 1.875rem;
-  } /* 20/30 */
+  }
   .body-base {
     font-family: var(--gl-font-body);
     font-size: 1rem;
     line-height: 1.625rem;
-  } /* 16/26 */
+  }
   .body-sm {
     font-family: var(--gl-font-body);
     font-size: 0.875rem;
     line-height: 1.5rem;
-  } /* 14/24 */
+  }
   .body-xs {
     font-family: var(--gl-font-body);
     font-size: 0.75rem;
     line-height: 1.375rem;
-  } /* 12/22 */
+  }
   .body-2xs {
     font-family: var(--gl-font-body);
     font-size: 0.625rem;
     line-height: 1.25rem;
-  } /* 10/20 */
-}
-
-.brand-h1,
-.brand-h2,
-.brand-h3,
-.brand-h4,
-.brand-h5,
-.brand-h6 {
-  font-family: var(--font-brand);
-}
-
-@layer utilities {
-  .bg-dark {
-    background-color: var(--color-dark-bg);
-  }
-  .text-dark {
-    color: var(--color-dark-text);
-  }
-  .border-dark {
-    border-color: var(--color-dark-border);
-  }
-  .bg-dark-subtle {
-    background-color: var(--color-dark-subtle);
-  }
-
-  /* Fixed colors that don't change with theme */
-  .gl-bg-banner {
-    background-color: var(--color-banner-bg);
-  }
-  .gl-text-footer {
-    color: hsl(0 0% 100%);
-  }
-  .gl-bg-footer {
-    background-color: var(--color-footer-bg);
   }
 }
