@@ -116,7 +116,7 @@ export default function SignupPage() {
             {...register('email')}
             label="사원 이메일"
             type="email"
-            placeholder="아이디를 입력하세요"
+            placeholder="이메일을 입력하세요"
             error={errors.email?.message}
           />
 
