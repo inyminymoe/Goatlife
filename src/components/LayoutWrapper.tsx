@@ -21,8 +21,7 @@ export default function LayoutWrapper({
   const isLoggedIn = !!user;
 
   const isLoginPage = pathname === '/login';
-  const isSignupPage = pathname === '/signup';
-  const isAuthPage = isLoginPage || isSignupPage;
+  const isAuthPage = isLoginPage;
 
   // 로그인/회원가입 페이지: 미니멀 레이아웃
   if (isAuthPage) {

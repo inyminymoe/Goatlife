@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Icon } from '@iconify/react';
 import IconLogo from '../ui/icons/IconLogo';
+import Avatar from '../ui/Avatar';
 
 interface HeaderProps {
   isLoggedIn?: boolean;
@@ -33,7 +34,6 @@ export default function Header({
     <header className="w-full bg-dark mt-2">
       <div className="app-container flex items-center justify-between py-3">
         <div className="flex items-center gap-3">
-          {/* tablet, mobile only */}
           <button
             onClick={onMenuToggle}
             className="lg:hidden p-2 rounded-lg text-dark transition-colors"
@@ -42,7 +42,11 @@ export default function Header({
             <Icon icon="lucide:menu" className="w-6 h-6" />
           </button>
 
-          <div className="flex-shrink-0">
+          <button
+            onClick={() => router.push('/')}
+            className="flex-shrink-0"
+            aria-label="홈으로"
+          >
             <IconLogo
               className="cursor-pointer"
               width={locale === 'ko' ? 90 : 100}
@@ -50,13 +54,13 @@ export default function Header({
               variant={locale}
               isDarkMode={isDarkMode}
             />
-          </div>
+          </button>
         </div>
 
         <div className="flex items-center gap-3 md:gap-4">
           <button
             onClick={toggleTheme}
-            className="p-2 rounded-lg text-dark hover:bg-dark-subtle transition-colors duration-200"
+            className="p-2 rounded-lg text-dark hover:bg-dark-subtle transition-colors"
           >
             <Icon
               icon={isDarkMode ? 'lucide:sun' : 'lucide:moon'}
@@ -65,36 +69,22 @@ export default function Header({
           </button>
 
           {isLoggedIn && userProfile ? (
-            <UserProfileSection userProfile={userProfile} />
+            <Avatar
+              src={userProfile.avatar}
+              name={userProfile.name}
+              size="sm"
+              showName={true}
+            />
           ) : (
-            <LoginButton />
+            <button
+              onClick={() => router.push('/login')}
+              className="text-dark body-sm font-medium hover:text-primary-500 transition-colors px-2 py-1"
+            >
+              로그인
+            </button>
           )}
         </div>
       </div>
     </header>
-  );
-}
-
-function LoginButton() {
-  const router = useRouter();
-  return (
-    <button
-      onClick={() => router.push('/login')}
-      className="text-dark body-sm font-medium hover:text-primary-500 transition-colors duration-200 px-2 py-1"
-    >
-      로그인
-    </button>
-  );
-}
-
-function UserProfileSection({
-  userProfile,
-}: {
-  userProfile: { name: string; avatar?: string };
-}) {
-  return (
-    <div className="flex items-center gap-2">
-      <span className="text-sm text-dark">{userProfile.name}</span>
-    </div>
   );
 }
