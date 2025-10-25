@@ -22,58 +22,19 @@ export default function TopBanner() {
 
   return (
     <div
-      className="
-      w-full bg-[hsl(0_0%_21%)]
-      flex items-center justify-center
-      px-4 py-1.5
-      md:px-8
-      lg:px-16
-      overflow-hidden
-      relative
-    "
+      className={`w-full bg-[hsl(0_0%_21%)] flex items-center justify-center gap-2 px-4 py-1.5 md:px-8 lg:px-16 text-white ${brandFont.className}`}
     >
-      <div
-        className={`
-        flex items-center gap-2
-        text-white font-brand
-        max-w-7xl w-full justify-center
-        ${brandFont.className}
-      `}
-      >
-        {/* Clover Left */}
-        <IconClover
-          className="
-            w-4 h-4 text-white flex-shrink-0
-            md:w-4 md:h-4
-            transition-transform duration-700 ease-in-out
-            hover:scale-110
-          "
-          size={16}
-        />
-
-        {/* Main Copyright */}
-        <span
-          className="
-          text-center transition-all duration-700 ease-in-out
-          text-14 md:text-14 lg:text-16
-          min-h-[1.2em]
-          font-normal
-        "
-        >
-          {messages[currentMessage]}
-        </span>
-
-        {/* Clover Right */}
-        <IconClover
-          className="
-            w-4 h-4 text-white flex-shrink-0
-            md:w-4 md:h-4
-            transition-transform duration-700 ease-in-out
-            hover:scale-110
-          "
-          size={16}
-        />
-      </div>
+      <IconClover
+        className="w-4 h-4 flex-shrink-0 transition-transform duration-700 hover:scale-110"
+        size={16}
+      />
+      <span className="text-center text-14 md:text-14 lg:text-16 min-h-[1.2em] transition-all duration-700">
+        {messages[currentMessage]}
+      </span>
+      <IconClover
+        className="w-4 h-4 flex-shrink-0 transition-transform duration-700 hover:scale-110"
+        size={16}
+      />
     </div>
   );
 }

@@ -1,3 +1,4 @@
+'use client';
 import { forwardRef, InputHTMLAttributes, ReactNode } from 'react';
 import { Icon } from '@iconify/react';
 
@@ -10,6 +11,12 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   onPasswordToggle?: () => void;
   showPassword?: boolean;
   variant?: 'light' | 'dark';
+
+  // 특수 모드
+  mode?: 'input' | 'withButton' | 'disabled';
+  buttonLabel?: string;
+  onButtonClick?: () => void;
+  displayText?: string; // withButton/disabled 모드에서 표시할 텍스트
 }
 
 const Input = forwardRef<HTMLInputElement, InputProps>(
@@ -25,86 +32,137 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
       disabled,
       variant = 'light',
       className = '',
+      mode = 'input',
+      buttonLabel = 'TEST',
+      onButtonClick,
+      displayText,
       ...props
     },
     ref
   ) => {
-    const getLabelColor = () => {
-      return variant === 'dark' ? 'text-white' : 'text-grey-900';
-    };
-
-    const getInputBorderColor = () => {
-      if (error) return 'border-accent-magenta-300';
-      if (success) return 'border-primary-500';
-      return 'border-grey-300 focus:border-primary-500';
-    };
-
-    const getHelperTextColor = () => {
-      if (error) return 'text-accent-magenta-300';
-      if (success) return 'text-primary-500';
-      return 'text-grey-500';
-    };
-
     return (
       <div className="ui-component w-full flex flex-col gap-2">
         {/* Label */}
         {label && (
           <label
-            className={`body-sm font-regular font-body ${getLabelColor()}`}
+            className="body-sm font-medium font-body"
+            style={{
+              color:
+                variant === 'dark'
+                  ? 'hsl(0, 0%, 100%)'
+                  : 'var(--color-dark-text)',
+            }}
           >
             {label}
           </label>
         )}
 
-        {/* Input Container */}
-        <div className="relative">
-          <input
-            ref={ref}
-            disabled={disabled}
-            className={`
-              w-full px-3 py-2
-              bg-white rounded-[5px]
-              border ${getInputBorderColor()}
-              body-xs font-regular font-body text-grey-900
-              placeholder:text-grey-300
-              focus:outline-none
-              disabled:bg-grey-200 disabled:text-grey-500 disabled:cursor-not-allowed
-              transition-colors
-              ${className}
-            `}
-            {...props}
-          />
+        {/* Input Variants */}
+        {mode === 'withButton' ? (
+          // input_text+button
+          <div className="px-3 py-2 bg-grey-200 rounded-[5px] flex items-center justify-between gap-2">
+            <span className="body-sm text-grey-500 font-medium truncate flex-1">
+              {displayText || '업무유형 테스트 결과가 없습니다'}
+            </span>
+            <button
+              type="button"
+              onClick={onButtonClick}
+              className="btn-fixed px-3 py-2 rounded-[5px] body-xs font-medium flex-shrink-0 transition-colors"
+            >
+              {buttonLabel}
+            </button>
+            <style jsx>{`
+              .btn-fixed {
+                background-color: hsl(0, 0%, 21%);
+                color: hsl(0, 0%, 100%);
+              }
+              .btn-fixed:hover {
+                background-color: hsl(0, 0%, 28%);
+              }
+            `}</style>
+          </div>
+        ) : mode === 'disabled' ? (
+          // input_disabled (읽기 전용)
+          <div className="p-3 bg-grey-200 rounded-[5px]">
+            <span className="body-sm text-grey-500 font-medium">
+              {displayText || props.value || props.placeholder}
+            </span>
+          </div>
+        ) : (
+          // 일반 input
+          <div className="relative">
+            <input
+              ref={ref}
+              disabled={disabled}
+              className={`
+                w-full px-3 py-2
+                rounded-[5px] border
+                body-sm font-medium font-body
+                focus:outline-none
+                transition-colors
+                ${className}
+              `}
+              style={{
+                backgroundColor: disabled
+                  ? 'hsl(0, 0%, 92%)'
+                  : 'hsl(0, 0%, 100%)',
+                borderColor: error
+                  ? 'hsl(296, 94%, 77%)'
+                  : success
+                    ? 'hsl(212, 100%, 60%)'
+                    : 'hsl(0, 0%, 78%)',
+                color: disabled ? 'hsl(0, 0%, 48%)' : 'hsl(0, 0%, 21%)',
+              }}
+              {...props}
+            />
 
-          {/* Right Icon or Password Toggle */}
-          {(showPasswordToggle || rightIcon) && (
-            <div className="absolute right-3 top-1/2 -translate-y-1/2">
-              {showPasswordToggle ? (
-                <button
-                  type="button"
-                  onClick={onPasswordToggle}
-                  className="w-4 h-4 text-grey-500 hover:text-grey-700"
-                  tabIndex={-1}
-                >
-                  <Icon
-                    icon={
-                      showPassword
-                        ? 'material-symbols:lock-open-outline-rounded'
-                        : 'material-symbols:lock-outline'
-                    }
-                    className="w-5 h-5 text-grey-500"
-                  />
-                </button>
-              ) : (
-                rightIcon
-              )}
-            </div>
-          )}
-        </div>
+            {/* Placeholder & Focus 스타일 */}
+            <style jsx>{`
+              input::placeholder {
+                color: hsl(0, 0%, 78%);
+                font-size: 0.875rem;
+                font-weight: 400;
+              }
+              input:focus {
+                border-color: hsl(212, 100%, 60%);
+              }
+            `}</style>
+
+            {/* Password Toggle / Right Icon */}
+            {(showPasswordToggle || rightIcon) && (
+              <div className="absolute inset-y-0 right-3 flex items-center">
+                {showPasswordToggle ? (
+                  <button
+                    type="button"
+                    onClick={onPasswordToggle}
+                    className="transition-colors"
+                    tabIndex={-1}
+                  >
+                    <Icon
+                      icon={
+                        showPassword
+                          ? 'material-symbols:lock-open-outline-rounded'
+                          : 'material-symbols:lock-outline'
+                      }
+                      className="w-5 h-5"
+                      style={{ color: 'hsl(0, 0%, 48%)' }}
+                    />
+                  </button>
+                ) : (
+                  rightIcon
+                )}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Helper Text */}
         {(error || success) && (
           <p
-            className={`text-10 font-medium font-body ${getHelperTextColor()}`}
+            className="text-10 font-medium font-body"
+            style={{
+              color: error ? 'hsl(296, 94%, 77%)' : 'hsl(212, 100%, 60%)',
+            }}
           >
             {error || success}
           </p>
@@ -115,5 +173,4 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
 );
 
 Input.displayName = 'Input';
-
 export default Input;

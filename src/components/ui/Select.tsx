@@ -29,13 +29,11 @@ export default function Select({
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // 선택된 옵션 라벨 가져오기
   const getDisplayLabel = () => {
     if (!value) return placeholder;
     return options.find(opt => opt.value === value)?.label || placeholder;
   };
 
-  // 옵션 선택 핸들러
   const handleSelect = (optionValue: string) => {
     if (disabled) return;
     onChange?.(optionValue);
@@ -57,7 +55,6 @@ export default function Select({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // 키보드 이벤트
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (disabled) return;
 
@@ -80,11 +77,14 @@ export default function Select({
   return (
     <div
       ref={containerRef}
-      className={`w-full flex flex-col gap-2 ${className}`}
+      className={`ui-component w-full flex flex-col gap-2 ${className}`}
     >
       {/* Label */}
       {label && (
-        <label className="body-sm font-medium font-body text-grey-900">
+        <label
+          className="body-sm font-medium font-body"
+          style={{ color: 'var(--color-dark-text)' }}
+        >
           {label}
         </label>
       )}
@@ -99,23 +99,24 @@ export default function Select({
           disabled={disabled}
           aria-haspopup="listbox"
           aria-expanded={isOpen}
-          className={`
-            w-full px-3 py-2
-            bg-white rounded-[5px]
-            border border-grey-300
-            focus:border-primary-500 focus:outline-none
-            body-xs font-normal font-body
-            text-left
-            transition-colors
-            ${disabled ? 'bg-grey-200 text-grey-500 cursor-not-allowed' : 'cursor-pointer hover:border-grey-500'}
-            ${!value ? 'text-grey-300' : 'text-grey-900'}
-          `}
+          className="w-full px-3 py-2 rounded-[5px] border body-sm font-medium font-body text-left transition-colors focus:outline-none"
+          style={{
+            backgroundColor: disabled ? 'hsl(0, 0%, 92%)' : 'hsl(0, 0%, 100%)',
+            borderColor: isOpen ? 'hsl(212, 100%, 60%)' : 'hsl(0, 0%, 78%)',
+            color: !value
+              ? 'hsl(0, 0%, 78%)'
+              : disabled
+                ? 'hsl(0, 0%, 48%)'
+                : 'hsl(0, 0%, 21%)',
+            cursor: disabled ? 'not-allowed' : 'pointer',
+          }}
         >
           <div className="flex items-center justify-between">
-            <span>{getDisplayLabel()}</span>
+            <span className="truncate">{getDisplayLabel()}</span>
             <Icon
               icon="material-symbols:keyboard-arrow-down-rounded"
-              className={`w-5 h-5 text-grey-500 flex-shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+              className={`w-6 h-6 flex-shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+              style={{ color: 'hsl(0, 0%, 48%)' }}
             />
           </div>
         </button>
@@ -124,14 +125,11 @@ export default function Select({
         {isOpen && (
           <div
             role="listbox"
-            className="
-              absolute left-0 top-full mt-1 w-full
-              bg-white rounded-[5px]
-              border border-grey-300
-              shadow-[2px_3px_8px_0px_rgba(0,0,0,0.08)]
-              max-h-60 overflow-y-auto
-              z-50
-            "
+            className="absolute left-0 top-full mt-1 w-full rounded-[5px] border shadow-lg max-h-60 overflow-y-auto z-50"
+            style={{
+              backgroundColor: 'hsl(0, 0%, 100%)',
+              borderColor: 'hsl(0, 0%, 78%)',
+            }}
           >
             {options.map(option => {
               const isSelected = value === option.value;
@@ -142,12 +140,25 @@ export default function Select({
                   role="option"
                   aria-selected={isSelected}
                   onClick={() => handleSelect(option.value)}
-                  className={`
-                    w-full px-5 py-3 text-left
-                    body-sm font-normal font-body
-                    transition-colors
-                    ${isSelected ? 'bg-grey-100 text-grey-900 font-medium' : 'text-grey-900 hover:bg-grey-50'}
-                  `}
+                  className="w-full px-3 py-2 text-left body-sm font-body transition-colors"
+                  style={{
+                    backgroundColor: isSelected
+                      ? 'hsl(210, 18%, 96%)'
+                      : 'transparent',
+                    color: 'hsl(0, 0%, 21%)',
+                    fontWeight: isSelected ? 500 : 400,
+                  }}
+                  onMouseEnter={e => {
+                    if (!isSelected) {
+                      e.currentTarget.style.backgroundColor =
+                        'hsl(210, 18%, 96%)';
+                    }
+                  }}
+                  onMouseLeave={e => {
+                    if (!isSelected) {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                    }
+                  }}
                 >
                   {option.label}
                 </button>
