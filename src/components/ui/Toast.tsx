@@ -1,6 +1,7 @@
 // src/components/ui/Toast.tsx
 'use client';
 import { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Icon } from '@iconify/react';
 
@@ -52,7 +53,7 @@ export default function Toast({
 
   const displayIcon = icon || getDefaultIcon();
 
-  return (
+  const toastContent = (
     <AnimatePresence>
       {show && (
         <motion.div
@@ -61,7 +62,7 @@ export default function Toast({
           exit={{ opacity: 0, y: -20 }}
           transition={{ duration: 0.2 }}
           className="
-            fixed z-50
+            fixed z-[9999]
             top-4 left-4 right-4 mx-auto
             lg:left-auto lg:right-4 lg:mx-0
             max-w-sm
@@ -106,4 +107,11 @@ export default function Toast({
       )}
     </AnimatePresence>
   );
+
+  // Portal을 사용해서 body에 직접 렌더링
+  if (typeof window !== 'undefined') {
+    return createPortal(toastContent, document.body);
+  }
+
+  return null;
 }
