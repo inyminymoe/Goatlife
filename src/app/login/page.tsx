@@ -8,6 +8,7 @@ import { auth } from '@/lib/supabase';
 import Image from 'next/image';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
+import Toast from '@/components/ui/Toast';
 import { Icon } from '@iconify/react';
 
 const loginSchema = z.object({
@@ -28,6 +29,11 @@ export default function LoginPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [toast, setToast] = useState<{
+    show: boolean;
+    message: string;
+    type: 'success' | 'error';
+  }>({ show: false, message: '', type: 'error' });
 
   const {
     register,
@@ -37,14 +43,26 @@ export default function LoginPage() {
     resolver: zodResolver(loginSchema),
   });
 
-  // TODO: 아이디(username) → 이메일 매핑 로직이 필요할 수도 있음.
   const onSubmit = async (data: LoginForm) => {
     setIsLoading(true);
+    setToast({ show: false, message: '', type: 'error' });
+
     const { error } = await auth.signIn(data.email, data.password);
+
     if (error) {
+      setToast({
+        show: true,
+        type: 'error',
+        message: error.message,
+      });
       setIsLoading(false);
     } else {
-      router.push('/dashboard');
+      setToast({
+        show: true,
+        type: 'success',
+        message: '로그인 성공! 대시보드로 이동합니다.',
+      });
+      setTimeout(() => router.push('/dashboard'), 1500);
     }
   };
 
@@ -112,7 +130,6 @@ export default function LoginPage() {
                 type="text"
                 inputMode="text"
                 autoComplete="username"
-                pattern="[a-z0-9_-]*"
                 maxLength={20}
                 label="사원 아이디"
                 variant="dark"
@@ -186,6 +203,14 @@ export default function LoginPage() {
           </form>
         </div>
       </div>
+
+      {/* Toast 알림 */}
+      <Toast
+        show={toast.show}
+        message={toast.message}
+        type={toast.type}
+        onClose={() => setToast({ ...toast, show: false })}
+      />
     </div>
   );
 }
