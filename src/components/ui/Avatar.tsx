@@ -4,7 +4,7 @@ import { Icon } from '@iconify/react';
 
 interface AvatarProps {
   src?: string | null;
-  name?: string;
+  lastName?: string;
   rank?: string;
   size?: 'sm' | 'md' | 'lg';
   showName?: boolean;
@@ -13,7 +13,7 @@ interface AvatarProps {
 
 export default function Avatar({
   src,
-  name,
+  lastName,
   rank,
   size = 'sm',
   showName = true,
@@ -31,12 +31,12 @@ export default function Avatar({
     <div className={`ui-component flex items-center gap-2 ${className}`}>
       {/* 아바타 이미지 */}
       <div
-        className={`${sizeClass} rounded-full bg-grey-100 flex items-center justify-center overflow-hidden flex-shrink-0`}
+        className={`${sizeClass} rounded-full bg-primary-100 flex items-center justify-center overflow-hidden flex-shrink-0`}
       >
         {src ? (
           <Image
             src={src}
-            alt={name || '프로필'}
+            alt={lastName || '프로필'}
             width={size === 'lg' ? 96 : size === 'md' ? 48 : 32}
             height={size === 'lg' ? 96 : size === 'md' ? 48 : 32}
             className="w-full h-full object-cover"
@@ -52,9 +52,10 @@ export default function Avatar({
       </div>
 
       {/* 닉네임 (Desktop만) */}
-      {showName && (name || rank) && (
+      {showName && (lastName || rank) && (
         <span className="hidden lg:block body-sm font-medium text-grey-900">
-          {name} {rank}
+          {lastName}
+          {rank ? ` ${rank}` : ''}
         </span>
       )}
     </div>

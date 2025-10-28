@@ -49,8 +49,9 @@ export default function LayoutWrapper({
         userProfile={
           isLoggedIn && user
             ? {
-                name: user.name,
+                lastName: user.lastName ?? user.name,
                 avatar: user.avatar,
+                rank: user.rank,
               }
             : undefined
         }
