@@ -72,6 +72,23 @@ pnpm install
 # 개발 서버 실행
 pnpm run dev
 
+### Supabase Auth 설정 (개발 환경)
+- Supabase Dashboard → Authentication → Providers → Email에서 **Enable Email provider**를 ON으로 설정하세요.
+- 개발 환경에서는 **Confirm email**을 OFF로 두고, 필요 시 Supabase SQL Editor에서 아래 쿼리로 테스트 계정을 인증 처리할 수 있습니다.
+
+```sql
+UPDATE auth.users
+SET email_confirmed_at = NOW()
+WHERE email_confirmed_at IS NULL;
+```
+
+- `setup-auth-trigger.sql` 스크립트를 실행해 회원가입 시 `profiles` 레코드가 자동으로 생성되도록 설정하세요.
+- `profiles.user_id` 컬럼에 UNIQUE 제약을 추가해 동일 사원 아이디로 중복 가입되는 것을 방지하는 것을 권장합니다.
+- Kakao OAuth를 사용하려면 Kakao Developers의 Redirect URI 목록에 아래 주소를 등록하세요.
+  - 프로덕션: `https://vdiolcxwsdpsvxpwduos.supabase.co/auth/v1/callback`
+  - 개발(로컬): `http://localhost:3000/auth/callback` (또는 실제 사용 중인 로컬 도메인)
+  - `.env.local` 파일에 `NEXT_PUBLIC_SITE_URL=https://your-domain.com` 값을 설정하면 OAuth가 해당 도메인으로 리다이렉트됩니다.
+
 ## 📁 프로젝트 구조
 
 현재 **Component-by-Type** 구조를 사용하고 있습니다. Next.js의 표준 관례를 따르며, 작은-중간 규모 프로젝트에 적합합니다.

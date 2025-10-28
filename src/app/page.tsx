@@ -5,16 +5,18 @@
  */
 'use client';
 import { useState } from 'react';
+import { useAtomValue } from 'jotai';
 import Button from '@/components/ui/Button';
 import TodoItem from '@/components/ui/TodoItem';
 import Toast from '@/components/ui/Toast';
 import Image from 'next/image';
 import { Icon } from '@iconify/react';
 import TodoDrawer from '@/components/TodoDrawer';
+import { userAtom } from '@/store/atoms';
 
 export default function Home() {
-  // TODO: 실제 supabase/auth 상태와 연동
-  const [isMember] = useState(false);
+  const user = useAtomValue(userAtom);
+  const isMember = Boolean(user);
 
   // 테스트용 Toast 상태
   const [toast1, setToast1] = useState(false);
@@ -136,7 +138,7 @@ export default function Home() {
           <section className="bg-grey-100 rounded-[5px] p-6 md:min-h-[304px]">
             <div className="flex items-center gap-1 mb-4">
               <Icon
-                icon="icon-park:chart-line"
+                icon="icon-park:pie-seven"
                 className="w-6 h-6 text-primary-500"
               />
               <h2 className="brand-h3 text-grey-900">성과 현황</h2>

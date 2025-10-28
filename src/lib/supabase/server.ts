@@ -1,6 +1,18 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 
+const ensurePath = (options?: Record<string, unknown>) => {
+  if (!options) {
+    return { path: '/' };
+  }
+
+  if (!('path' in options)) {
+    return { ...options, path: '/' };
+  }
+
+  return options;
+};
+
 export async function createServerSupabase() {
   const cookieStore = await cookies();
 
@@ -14,16 +26,21 @@ export async function createServerSupabase() {
         },
         set(name: string, value: string, options: Record<string, unknown>) {
           try {
-            cookieStore.set({ name, value, ...options });
+            cookieStore.set({ name, value, ...ensurePath(options) });
           } catch {
-            // Server Component에서는 set 불가능할 수 있음
+            // Server Component에서는 set이 제한될 수 있음
           }
         },
         remove(name: string, options: Record<string, unknown>) {
           try {
-            cookieStore.set({ name, value: '', ...options });
+            cookieStore.set({
+              name,
+              value: '',
+              ...ensurePath(options),
+              expires: new Date(0),
+            });
           } catch {
-            // Server Component에서는 remove 불가능할 수 있음
+            // Server Component에서는 remove가 제한될 수 있음
           }
         },
       },

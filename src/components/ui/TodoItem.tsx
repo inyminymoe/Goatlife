@@ -60,7 +60,7 @@ export default function TodoItem({
       <p
         className={`
           flex-1 body-sm font-medium leading-normal
-          ${completed ? 'text-grey-500 line-through' : 'text-grey-900'}
+          text-fixed-grey-900 ${completed ? 'line-through' : ''}
         `}
       >
         {text}

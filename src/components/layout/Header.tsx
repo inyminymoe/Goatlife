@@ -1,15 +1,17 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Icon } from '@iconify/react';
 import IconLogo from '../ui/icons/IconLogo';
 import Avatar from '../ui/Avatar';
+import { createClient } from '@/lib/supabase/index';
 
 interface HeaderProps {
   isLoggedIn?: boolean;
   userProfile?: {
-    name: string;
+    lastName?: string;
     avatar?: string;
+    rank?: string;
   };
   locale?: 'ko' | 'en';
   onMenuToggle?: () => void;
@@ -22,12 +24,75 @@ export default function Header({
   onMenuToggle,
 }: HeaderProps) {
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
   const router = useRouter();
+  const supabase = useMemo(() => createClient(), []);
 
   const toggleTheme = () => {
     setIsDarkMode(!isDarkMode);
     document.documentElement.classList.toggle('dark');
     localStorage.setItem('theme', !isDarkMode ? 'dark' : 'light');
+  };
+
+  useEffect(() => {
+    if (!isMenuOpen) {
+      return;
+    }
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        menuRef.current &&
+        event.target instanceof Node &&
+        !menuRef.current.contains(event.target)
+      ) {
+        setIsMenuOpen(false);
+      }
+    };
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEscape);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [isMenuOpen]);
+
+  const handleLogout = async () => {
+    if (isSigningOut) return;
+
+    setIsSigningOut(true);
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('[Header] client signOut failed', error);
+      }
+
+      const response = await fetch('/api/auth/signout', {
+        method: 'POST',
+      });
+
+      if (!response.ok) {
+        const body = await response.json().catch(() => null);
+        console.error('[Header] server signOut failed', body);
+      }
+
+      setIsMenuOpen(false);
+      router.push('/login');
+      router.refresh();
+    } catch (error) {
+      console.error('[Header] unexpected signOut error', error);
+    } finally {
+      setIsSigningOut(false);
+    }
   };
 
   return (
@@ -69,12 +134,40 @@ export default function Header({
           </button>
 
           {isLoggedIn && userProfile ? (
-            <Avatar
-              src={userProfile.avatar}
-              name={userProfile.name}
-              size="sm"
-              showName={true}
-            />
+            <div className="relative" ref={menuRef}>
+              <button
+                type="button"
+                onClick={() => setIsMenuOpen(prev => !prev)}
+                className="flex items-center gap-2 focus-visible:outline focus-visible:outline-offset-2 focus-visible:outline-primary-500 rounded-full"
+                aria-haspopup="menu"
+                aria-expanded={isMenuOpen}
+              >
+                <Avatar
+                  src={userProfile.avatar}
+                  lastName={userProfile.lastName}
+                  rank={userProfile.rank}
+                  size="sm"
+                  showName={true}
+                />
+              </button>
+
+              {isMenuOpen && (
+                <div
+                  role="menu"
+                  className="absolute right-0 mt-3 w-48 rounded-lg bg-white shadow-[0_10px_30px_rgba(15,23,42,0.2)] overflow-hidden z-50"
+                >
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    disabled={isSigningOut}
+                    className="text-left px-4 py-2 body-sm text-fixed-grey-900 hover:bg-dark-subtle focus-visible:outline disabled:opacity-50 transition-colors"
+                    role="menuitem"
+                  >
+                    {isSigningOut ? '로그아웃 중...' : '로그아웃'}
+                  </button>
+                </div>
+              )}
+            </div>
           ) : (
             <button
               onClick={() => router.push('/login')}

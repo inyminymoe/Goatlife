@@ -1,14 +1,28 @@
 'use client';
 import { Provider as JotaiProvider } from 'jotai';
+import { useHydrateAtoms } from 'jotai/utils';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
-import { ReactNode, useState } from 'react';
+import { ReactNode, useMemo, useState } from 'react';
+import { userAtom } from '@/store/atoms';
+import type { User } from '@/types/user';
+import SupabaseAuthListener from '@/components/SupabaseAuthListener';
 
 interface ProvidersProps {
   children: ReactNode;
+  initialUser?: User | null;
 }
 
-export default function Providers({ children }: ProvidersProps) {
+function HydrateUser({ user }: { user: User | null }) {
+  const values = useMemo(() => [[userAtom, user]] as const, [user]);
+  useHydrateAtoms(values);
+  return null;
+}
+
+export default function Providers({
+  children,
+  initialUser = null,
+}: ProvidersProps) {
   const [queryClient] = useState(
     () =>
       new QueryClient({
@@ -21,9 +35,15 @@ export default function Providers({ children }: ProvidersProps) {
       })
   );
 
+  const hydratedUser = useMemo(() => initialUser ?? null, [initialUser]);
+
   return (
     <QueryClientProvider client={queryClient}>
-      <JotaiProvider>{children}</JotaiProvider>
+      <JotaiProvider>
+        <HydrateUser user={hydratedUser} />
+        <SupabaseAuthListener />
+        {children}
+      </JotaiProvider>
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
   );
