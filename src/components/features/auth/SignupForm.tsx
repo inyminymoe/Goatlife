@@ -10,7 +10,8 @@ import TextArea from '@/components/ui/TextArea';
 import Button from '@/components/ui/Button';
 import ImageUpload from '@/components/ui/ImageUpload';
 import Toast from '@/components/ui/Toast';
-import { signupSchema, type SignupFormData } from '@/app/signup/schema';
+import Checkbox from '@/components/ui/Checkbox';
+import { signupSchema, type SignupFormValues } from '@/app/signup/schema';
 import { createUser } from '@/app/signup/actions';
 
 export default function SignupForm() {
@@ -29,17 +30,32 @@ export default function SignupForm() {
     watch,
     setValue,
     formState: { errors },
-  } = useForm<SignupFormData>({
+  } = useForm<SignupFormValues>({
     resolver: zodResolver(signupSchema),
     defaultValues: {
       department: 'IT부',
       workHours: '주간(09:00-18:00)',
       workType: '풀타임',
+      consent: false,
     },
   });
   const workStyle = watch('workStyle') ?? '';
+  const consent = watch('consent');
+  const consentErrorRaw = errors.consent?.message;
+  const consentError = consentErrorRaw?.toLowerCase().includes('expected true')
+    ? '개인정보 수집·이용에 동의해야 가입이 가능합니다.'
+    : consentErrorRaw;
 
-  const onSubmit = async (data: SignupFormData) => {
+  const onSubmit = handleSubmit(async data => {
+    if (!data.consent) {
+      setToast({
+        show: true,
+        type: 'error',
+        message: '개인정보 수집·이용에 동의해야 가입할 수 있어요.',
+      });
+      return;
+    }
+
     setIsLoading(true);
     setToast({ show: false, message: '', type: 'success' });
 
@@ -79,7 +95,7 @@ export default function SignupForm() {
     } finally {
       setIsLoading(false);
     }
-  };
+  });
 
   return (
     <>
@@ -96,7 +112,7 @@ export default function SignupForm() {
           <h2 className="brand-h3 font-brand text-dark">입사 지원서</h2>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        <form onSubmit={onSubmit} className="space-y-6">
           {/* 프로필 사진 */}
           <ImageUpload
             value={watch('avatarUrl')}
@@ -243,13 +259,52 @@ export default function SignupForm() {
             />
           </div>
 
+          <div className="space-y-2">
+            <h4 className="brand-h4 font-brand text-dark">약관 동의</h4>
+            <div className="rounded-[5px] bg-grey-100 dark:bg-grey-900/40 border border-grey-200 dark:border-grey-700 p-3 space-y-3">
+              <div className="max-h-36 overflow-auto pr-1 body-sm text-grey-800 dark:text-grey-100/90">
+                <p className="mb-2">
+                  회원가입을 위해{' '}
+                  <a href="/privacy" className="underline">
+                    개인정보 처리방침
+                  </a>{' '}
+                  및{' '}
+                  <a href="/terms" className="underline">
+                    이용약관
+                  </a>
+                  에 동의해 주세요.
+                </p>
+              </div>
+              <div>
+                <Checkbox
+                  checked={!!consent}
+                  onChange={next =>
+                    setValue('consent', next, {
+                      shouldDirty: true,
+                      shouldValidate: true,
+                    })
+                  }
+                  label="개인정보 수집·이용에 동의합니다 (필수)"
+                />
+                {consentError && (
+                  <p
+                    className="mt-1 body-xs font-medium"
+                    style={{ color: 'hsl(296, 94%, 77%)' }}
+                  >
+                    {consentError}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+
           {/* 제출 버튼 */}
           <Button
             type="submit"
             variant="primary"
             size="lg"
             fullWidth
-            disabled={isLoading}
+            disabled={isLoading || !consent}
           >
             {isLoading ? '저장 중...' : '입사 지원하기'}
           </Button>

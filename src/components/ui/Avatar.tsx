@@ -4,7 +4,7 @@ import { Icon } from '@iconify/react';
 
 interface AvatarProps {
   src?: string | null;
-  lastName?: string;
+  name?: string;
   rank?: string;
   size?: 'sm' | 'md' | 'lg';
   showName?: boolean;
@@ -13,7 +13,7 @@ interface AvatarProps {
 
 export default function Avatar({
   src,
-  lastName,
+  name,
   rank,
   size = 'sm',
   showName = true,
@@ -26,17 +26,19 @@ export default function Avatar({
   };
 
   const sizeClass = SIZES[size];
+  const displayName = name?.trim() || '게스트';
+  const displayRank = rank?.trim() || '인턴';
+  const showLabel = showName && (displayName || displayRank);
 
   return (
     <div className={`ui-component flex items-center gap-2 ${className}`}>
-      {/* 아바타 이미지 */}
       <div
         className={`${sizeClass} rounded-full bg-primary-100 flex items-center justify-center overflow-hidden flex-shrink-0`}
       >
         {src ? (
           <Image
             src={src}
-            alt={lastName || '프로필'}
+            alt={displayName}
             width={size === 'lg' ? 96 : size === 'md' ? 48 : 32}
             height={size === 'lg' ? 96 : size === 'md' ? 48 : 32}
             className="w-full h-full object-cover"
@@ -51,11 +53,10 @@ export default function Avatar({
         )}
       </div>
 
-      {/* 닉네임 (Desktop만) */}
-      {showName && (lastName || rank) && (
+      {showLabel && (
         <span className="hidden lg:block body-sm font-medium text-grey-900">
-          {lastName}
-          {rank ? ` ${rank}` : ''}
+          {displayName}
+          {displayRank ? ` ${displayRank}` : ''}
         </span>
       )}
     </div>

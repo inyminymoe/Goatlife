@@ -37,6 +37,11 @@ export const signupSchema = z.object({
   workStyle: z.string().optional(),
   workEthic: z.string().max(100, '100자 이내로 입력하세요').optional(),
   avatarUrl: z.string().optional(),
+  consent: z.literal(true, {
+    errorMap: () => ({
+      message: '개인정보 수집·이용에 동의해야 가입이 가능합니다.',
+    }),
+  }),
 });
 
-export type SignupFormData = z.infer<typeof signupSchema>;
+export type SignupFormValues = z.infer<typeof signupSchema>;

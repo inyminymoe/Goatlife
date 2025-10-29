@@ -3,9 +3,11 @@ export interface User {
   email: string;
   name: string;
   avatar?: string;
+  nickname?: string;
   rank?: string;
   lastName?: string;
   firstName?: string;
   department?: string;
   userId?: string;
+  provider?: string;
 }
