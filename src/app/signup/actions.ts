@@ -6,8 +6,10 @@ import { createServerSupabase } from '@/lib/supabase/server';
 export async function createUser(form: SignupFormValues) {
   const parsed = signupSchema.safeParse(form);
   if (!parsed.success) {
-    const message =
-      parsed.error.errors[0]?.message ?? '폼 검증 실패: 입력값을 확인해주세요.';
+    const firstError =
+      parsed.error.issues?.[0]?.message ??
+      parsed.error.flatten().formErrors?.[0];
+    const message = firstError ?? '폼 검증 실패: 입력값을 확인해주세요.';
     return { success: false, error: message };
   }
 

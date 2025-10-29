@@ -37,10 +37,8 @@ export const signupSchema = z.object({
   workStyle: z.string().optional(),
   workEthic: z.string().max(100, '100자 이내로 입력하세요').optional(),
   avatarUrl: z.string().optional(),
-  consent: z.literal(true, {
-    errorMap: () => ({
-      message: '개인정보 수집·이용에 동의해야 가입이 가능합니다.',
-    }),
+  consent: z.boolean().refine(v => v === true, {
+    message: '개인정보 수집·이용에 동의해야 가입이 가능합니다.',
   }),
 });
 
