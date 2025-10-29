@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { useAtom } from 'jotai';
 import { userAtom } from '@/store/atoms';
+import type { User } from '@/types/user';
 import TopBanner from './layout/TopBanner';
 import Header from './layout/Header';
 import Footer from './layout/Footer';
@@ -49,9 +50,10 @@ export default function LayoutWrapper({
         userProfile={
           isLoggedIn && user
             ? {
-                lastName: user.lastName ?? user.name,
+                displayName: deriveDisplayName(user),
                 avatar: user.avatar,
-                rank: user.rank,
+                rank: deriveDisplayRank(user),
+                provider: user.provider,
               }
             : undefined
         }
@@ -87,4 +89,33 @@ export default function LayoutWrapper({
       <Footer />
     </div>
   );
+}
+
+function deriveDisplayName(user: User) {
+  const candidates = [
+    user.nickname,
+    user.lastName,
+    user.name,
+    user.email?.split('@')[0],
+    '게스트',
+  ];
+
+  let display =
+    candidates.find(value => value && value.trim().length > 0)?.trim() ??
+    '게스트';
+
+  if (user.provider === 'kakao' && display.includes('@')) {
+    display = user.nickname?.trim() ?? '게스트';
+  }
+
+  if (display.includes('@')) {
+    display = '게스트';
+  }
+
+  return display;
+}
+
+function deriveDisplayRank(user: User) {
+  const rank = user.rank?.trim();
+  return rank && rank.length > 0 ? rank : '인턴';
 }

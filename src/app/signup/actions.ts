@@ -1,12 +1,23 @@
 'use server';
 
-import { signupSchema, type SignupFormData } from '@/app/signup/schema';
+import { signupSchema, type SignupFormValues } from '@/app/signup/schema';
 import { createServerSupabase } from '@/lib/supabase/server';
 
-export async function createUser(form: SignupFormData) {
+export async function createUser(form: SignupFormValues) {
   const parsed = signupSchema.safeParse(form);
   if (!parsed.success) {
-    return { success: false, error: '폼 검증 실패' };
+    const firstError =
+      parsed.error.issues?.[0]?.message ??
+      parsed.error.flatten().formErrors?.[0];
+    const message = firstError ?? '폼 검증 실패: 입력값을 확인해주세요.';
+    return { success: false, error: message };
+  }
+
+  if (!form.consent) {
+    return {
+      success: false,
+      error: '개인정보 수집·이용에 동의해야 가입이 가능합니다.',
+    };
   }
 
   const supabase = await createServerSupabase();

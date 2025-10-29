@@ -25,6 +25,18 @@ async function getInitialUser(): Promise<User | null> {
       return null;
     }
 
+    const metadata = user.user_metadata ?? {};
+    const appMetadata = user.app_metadata ?? {};
+    const metaNickname =
+      (metadata['profile_nickname'] as string | undefined) ??
+      (metadata['nickname'] as string | undefined) ??
+      undefined;
+    const metaLastName =
+      (metadata['last_name'] as string | undefined) ??
+      (metadata['name'] as string | undefined) ??
+      (metadata['full_name'] as string | undefined) ??
+      undefined;
+
     const { data: profile, error } = await supabase
       .from('profiles')
       .select('last_name, first_name, avatar_url, department, rank, user_id')
@@ -39,11 +51,21 @@ async function getInitialUser(): Promise<User | null> {
       });
     }
 
-    const lastName = profile?.last_name ?? '';
+    const rawLastName = profile?.last_name ?? metaLastName ?? '';
+    let lastName = rawLastName?.trim?.() ?? '';
+    if (!lastName || lastName.includes('@')) {
+      lastName =
+        metaNickname?.trim() ??
+        metaLastName?.trim() ??
+        user.email?.split('@')[0] ??
+        '게스트';
+    }
     const firstName = profile?.first_name ?? '';
     const fallbackName =
       profile?.user_id ||
       user.user_metadata?.user_id ||
+      metaNickname ||
+      metaLastName ||
       user.email?.split('@')[0] ||
       '사원';
 
@@ -52,11 +74,13 @@ async function getInitialUser(): Promise<User | null> {
       email: user.email ?? '',
       name: `${lastName}${firstName}`.trim() || fallbackName,
       avatar: profile?.avatar_url ?? undefined,
+      nickname: metaNickname?.trim() || undefined,
       lastName: lastName || undefined,
       firstName: firstName || undefined,
       department: profile?.department ?? undefined,
       rank: profile?.rank ?? undefined,
       userId: profile?.user_id ?? undefined,
+      provider: (appMetadata?.provider as string | undefined) ?? undefined,
     };
   } catch (error) {
     console.error('[RootLayout] failed to resolve initial user', error);

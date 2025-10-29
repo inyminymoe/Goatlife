@@ -88,6 +88,8 @@ WHERE email_confirmed_at IS NULL;
   - 프로덕션: `https://vdiolcxwsdpsvxpwduos.supabase.co/auth/v1/callback`
   - 개발(로컬): `http://localhost:3000/auth/callback` (또는 실제 사용 중인 로컬 도메인)
   - `.env.local` 파일에 `NEXT_PUBLIC_SITE_URL=https://your-domain.com` 값을 설정하면 OAuth가 해당 도메인으로 리다이렉트됩니다.
+- Kakao Client Secret을 발급받은 경우 Supabase Dashboard → Authentication → Providers → Kakao에서 REST API 키와 함께 Client Secret을 입력하고 **사용함** 상태로 저장하세요. Secret을 재발급한 경우 즉시 해당 값을 갱신해야 합니다.
+- 기존 OAuth 사용자 프로필의 `last_name` 또는 `rank`가 비어 있다면 `supabase-backfill-oauth-profiles.sql` 스크립트를 SQL Editor에서 실행해 기본값을 채워주세요.
 
 ## 📁 프로젝트 구조
 

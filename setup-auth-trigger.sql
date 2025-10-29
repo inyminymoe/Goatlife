@@ -25,8 +25,21 @@ declare
   v_avatar     text;
 begin
   -- camel & snake 모두 수용
-  v_user_id    := coalesce(md->>'user_id',   md->>'userId');
-  v_last_name  := coalesce(md->>'last_name', md->>'lastName');
+  v_user_id := coalesce(
+    nullif(md->>'user_id', ''),
+    nullif(md->>'userId', ''),
+    nullif(split_part(new.email, '@', 1), ''),
+    concat('guest_', left(new.id::text, 8))
+  );
+
+  v_last_name := coalesce(
+    nullif(md->>'last_name', ''),
+    nullif(md->>'lastName', ''),
+    nullif(md->>'profile_nickname', ''),
+    nullif(md->>'nickname', ''),
+    v_user_id,
+    '게스트'
+  );
   v_first_name := nullif(coalesce(md->>'first_name', md->>'firstName'), '');
   v_department := coalesce(md->>'department', 'IT부');
 
@@ -64,7 +77,7 @@ begin
     new.email::citext,
     v_last_name,
     v_first_name,
-    v_rank,
+    coalesce(v_rank, '인턴'::rank_enum),
     v_department,
     v_wh,
     v_wt,

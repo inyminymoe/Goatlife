@@ -5,13 +5,16 @@ import { Icon } from '@iconify/react';
 import IconLogo from '../ui/icons/IconLogo';
 import Avatar from '../ui/Avatar';
 import { createClient } from '@/lib/supabase/index';
+import { useSetAtom } from 'jotai';
+import { userAtom } from '@/store/atoms';
 
 interface HeaderProps {
   isLoggedIn?: boolean;
   userProfile?: {
-    lastName?: string;
+    displayName: string;
     avatar?: string;
     rank?: string;
+    provider?: string;
   };
   locale?: 'ko' | 'en';
   onMenuToggle?: () => void;
@@ -29,6 +32,7 @@ export default function Header({
   const menuRef = useRef<HTMLDivElement | null>(null);
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
+  const setUser = useSetAtom(userAtom);
 
   const toggleTheme = () => {
     setIsDarkMode(!isDarkMode);
@@ -70,29 +74,35 @@ export default function Header({
     if (isSigningOut) return;
 
     setIsSigningOut(true);
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        console.error('[Header] client signOut failed', error);
-      }
 
+    try {
       const response = await fetch('/api/auth/signout', {
         method: 'POST',
+        credentials: 'include',
       });
 
       if (!response.ok) {
         const body = await response.json().catch(() => null);
         console.error('[Header] server signOut failed', body);
       }
-
-      setIsMenuOpen(false);
-      router.push('/login');
-      router.refresh();
     } catch (error) {
-      console.error('[Header] unexpected signOut error', error);
-    } finally {
-      setIsSigningOut(false);
+      console.error('[Header] server signOut request error', error);
     }
+
+    try {
+      const { error } = await supabase.auth.signOut({ scope: 'local' });
+      if (error) {
+        console.error('[Header] client signOut failed', error);
+      }
+    } catch (error) {
+      console.error('[Header] unexpected client signOut error', error);
+    }
+
+    setUser(null);
+    setIsMenuOpen(false);
+    router.push('/login');
+    router.refresh();
+    setIsSigningOut(false);
   };
 
   return (
@@ -144,7 +154,7 @@ export default function Header({
               >
                 <Avatar
                   src={userProfile.avatar}
-                  lastName={userProfile.lastName}
+                  name={userProfile.displayName}
                   rank={userProfile.rank}
                   size="sm"
                   showName={true}

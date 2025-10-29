@@ -8,7 +8,7 @@ import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import Toast from '@/components/ui/Toast';
 import { loginSchema, type LoginForm } from '@/app/login/schema';
-import { lookupEmailByUserId } from '@/app/login/actions';
+import { loginWithUserId } from '@/app/login/actions';
 import { createClient } from '@/lib/supabase/index';
 
 export default function LoginForm() {
@@ -78,26 +78,18 @@ export default function LoginForm() {
     setToast({ show: false, message: '', type: 'error' });
 
     try {
-      const lookup = await lookupEmailByUserId(userId.trim());
+      const result = await loginWithUserId(userId.trim(), password);
 
-      if (!lookup.success || !lookup.email) {
-        setToast(
-          lookup.toast ?? {
-            show: true,
-            type: 'error',
-            message: '아이디를 찾을 수 없습니다. 다시 확인해주세요.',
-          }
-        );
+      setToast(result.toast);
+
+      if (!result.success || !result.session) {
         return;
       }
 
-      const { error } = await supabase.auth.signInWithPassword({
-        email: lookup.email,
-        password,
-      });
+      const { error } = await supabase.auth.setSession(result.session);
 
       if (error) {
-        console.error('[LoginForm] signInWithPassword error', error);
+        console.error('[LoginForm] setSession error', error);
         setToast({
           show: true,
           type: 'error',
@@ -106,11 +98,6 @@ export default function LoginForm() {
         return;
       }
 
-      setToast({
-        show: true,
-        type: 'success',
-        message: '로그인 성공! 홈으로 이동합니다.',
-      });
       router.push('/');
       router.refresh();
     } catch (error) {
