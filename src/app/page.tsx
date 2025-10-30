@@ -13,14 +13,13 @@ import Image from 'next/image';
 import { Icon } from '@iconify/react';
 import TodoDrawer from '@/components/TodoDrawer';
 import { userAtom } from '@/store/atoms';
+import AttendanceCard from '@/components/home/AttendanceCard';
 
 export default function Home() {
   const user = useAtomValue(userAtom);
   const isMember = Boolean(user);
 
   // 테스트용 Toast 상태
-  const [toast1, setToast1] = useState(false);
-  const [toast2, setToast2] = useState(false);
   const [toast3, setToast3] = useState(false);
 
   // 테스트용 Todo 상태
@@ -59,18 +58,6 @@ export default function Home() {
     <>
       {/* Toasts */}
       <Toast
-        show={toast1}
-        message="출근 완료, 활기찬 갓생 보내세요!"
-        type="success"
-        onClose={() => setToast1(false)}
-      />
-      <Toast
-        show={toast2}
-        message="퇴근 완료! 수고하셨습니다 🎉"
-        type="success"
-        onClose={() => setToast2(false)}
-      />
-      <Toast
         show={toast3}
         message="내 글에 새 댓글이 달렸어요"
         type="info"
@@ -88,27 +75,7 @@ export default function Home() {
         /* ===================== 회원 레이아웃 ===================== */
         <>
           {/* 근태관리 */}
-          <section className="bg-grey-100 rounded-[5px] p-6 md:min-h-[207px]">
-            <div className="flex items-center gap-1 mb-4">
-              <Icon
-                icon="icon-park:briefcase"
-                className="w-6 h-6 text-primary-500"
-              />
-              <h2 className="brand-h3 text-grey-900">근태관리</h2>
-            </div>
-            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <Button
-                variant="primary"
-                fullWidth
-                onClick={() => setToast1(true)}
-              >
-                출근하기
-              </Button>
-              <Button variant="text" fullWidth onClick={() => setToast2(true)}>
-                퇴근하기
-              </Button>
-            </div>
-          </section>
+          <AttendanceCard />
 
           {/* 사원정보 */}
           <section className="bg-grey-100 rounded-[5px] p-6 md:min-h-[207px]">
