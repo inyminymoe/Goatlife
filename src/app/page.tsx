@@ -6,6 +6,7 @@
 'use client';
 import { useState } from 'react';
 import { useAtomValue } from 'jotai';
+import dynamic from 'next/dynamic';
 import Button from '@/components/ui/Button';
 import TodoItem from '@/components/ui/TodoItem';
 import Toast from '@/components/ui/Toast';
@@ -13,7 +14,30 @@ import Image from 'next/image';
 import { Icon } from '@iconify/react';
 import TodoDrawer from '@/components/TodoDrawer';
 import { userAtom } from '@/store/atoms';
-import AttendanceCard from '@/components/home/AttendanceCard';
+
+// AttendanceCard를 동적으로 로드 (성능 최적화)
+const AttendanceCard = dynamic(
+  () => import('@/components/home/AttendanceCard'),
+  {
+    loading: () => (
+      <section className="bg-grey-100 rounded-[5px] p-6 animate-pulse">
+        <div className="flex items-end gap-1 mb-4">
+          <div className="w-6 h-6 bg-grey-300 rounded"></div>
+          <div className="h-6 w-24 bg-grey-300 rounded"></div>
+        </div>
+        <div className="mt-4 grid grid-cols-2 gap-4">
+          <div className="h-20 bg-grey-200 rounded"></div>
+          <div className="h-20 bg-grey-200 rounded"></div>
+        </div>
+        <div className="mt-3 grid grid-cols-2 gap-3">
+          <div className="h-10 bg-grey-300 rounded"></div>
+          <div className="h-10 bg-grey-300 rounded"></div>
+        </div>
+      </section>
+    ),
+    ssr: false, // 서버 사이드 렌더링 비활성화 (클라이언트에서만 로드)
+  }
+);
 
 export default function Home() {
   const user = useAtomValue(userAtom);

@@ -63,13 +63,11 @@ function diffMinutes(from?: string | null, to?: string | null) {
   return Math.round((end - start) / MS_IN_MINUTE);
 }
 
-function formatMinutes(totalMinutes: number) {
-  if (totalMinutes <= 0) return '0분';
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
-  if (hours && minutes) return `${hours}시간 ${minutes}분`;
-  if (hours) return `${hours}시간`;
-  return `${minutes}분`;
+function formatHourClock(totalMinutes: number) {
+  const safeMinutes = Math.max(0, totalMinutes);
+  const hours = Math.floor(safeMinutes / 60);
+  const minutes = safeMinutes % 60;
+  return `${hours}:${String(minutes).padStart(2, '0')}`;
 }
 
 export default function AttendanceCard() {
@@ -104,22 +102,48 @@ export default function AttendanceCard() {
     async function bootstrap() {
       try {
         setIsLoading(true);
+
+        // 타임아웃 래퍼 함수 (3초 제한)
+        const withTimeout = <T,>(
+          promise: Promise<T>,
+          timeoutMs = 3000
+        ): Promise<T> => {
+          return Promise.race([
+            promise,
+            new Promise<T>((_, reject) =>
+              setTimeout(() => reject(new Error('Request timeout')), timeoutMs)
+            ),
+          ]);
+        };
+
         const [statusRes, rateRes] = await Promise.all([
-          getTodayStatus(),
-          getAttendanceRate(),
+          withTimeout(getTodayStatus()).catch(() => ({
+            ok: false as const,
+            error: 'TIMEOUT',
+          })),
+          withTimeout(getAttendanceRate()).catch(() => ({
+            ok: false as const,
+            error: 'TIMEOUT',
+          })),
         ]);
 
         if (!mounted) return;
 
         if (statusRes.ok) {
           setAttendance(deriveAttendanceState(statusRes.data ?? null));
-        } else if (statusRes.error !== 'UNAUTHENTICATED') {
+        } else if (
+          statusRes.error !== 'UNAUTHENTICATED' &&
+          statusRes.error !== 'TIMEOUT'
+        ) {
           showToast('근태 정보를 불러오지 못했어요.', 'error');
         }
 
         if (rateRes.ok) {
           setAttendanceRate(rateRes.rate);
-        } else if (rateRes.error !== 'UNAUTHENTICATED') {
+        } else if (
+          rateRes.error !== 'UNAUTHENTICATED' &&
+          rateRes.error !== 'TIMEOUT'
+        ) {
           showToast('출근율 정보를 불러오지 못했어요.', 'error');
         }
       } catch {
@@ -173,42 +197,24 @@ export default function AttendanceCard() {
     }
   }, [attendance, liveMinutes]);
 
-  const todayLabel = useMemo(() => {
-    switch (attendance.status) {
-      case 'in':
-        return `${formatMinutes(todayMinutes)}째 근무 중`;
-      case 'early':
-        return `조퇴 처리 완료 · ${formatMinutes(todayMinutes)} 근무`;
-      case 'out':
-        return `오늘 근무 완료 · ${formatMinutes(todayMinutes)} 근무`;
-      default:
-        return '시간 째 근무 중';
-    }
-  }, [attendance.status, todayMinutes]);
-
-  const todayPrimaryNumber = useMemo(() => {
-    if (isLoading) return 0;
-    if (attendance.status === 'in') {
-      return Math.floor(todayMinutes / 60);
-    }
-    if (attendance.status === 'early' || attendance.status === 'out') {
-      return Math.floor(todayMinutes / 60);
-    }
-    return 0;
-  }, [attendance.status, isLoading, todayMinutes]);
+  const todayPrimaryValue = useMemo(() => {
+    if (isLoading) return '0:00';
+    return formatHourClock(todayMinutes);
+  }, [isLoading, todayMinutes]);
 
   const todaySecondaryLabel = useMemo(() => {
-    if (isLoading) return '시간째 근무 중';
+    if (isLoading) return '만큼 근무 중';
     switch (attendance.status) {
       case 'in':
-        return '시간째 근무 중';
+        return '만큼 근무 중';
       case 'early':
+        return '만큼 근무';
       case 'out':
-        return `${formatMinutes(todayMinutes)} 근무`;
+        return '만큼 근무';
       default:
-        return '시간째 근무 중';
+        return '만큼 근무 중';
     }
-  }, [attendance.status, isLoading, todayMinutes]);
+  }, [attendance.status, isLoading]);
 
   const handleClockIn = useCallback(() => {
     if (isPending) return;
@@ -342,19 +348,6 @@ export default function AttendanceCard() {
     startTransition,
   ]);
 
-  const statusBadge = useMemo(() => {
-    switch (attendance.status) {
-      case 'in':
-        return { label: '근무 중', tone: 'text-primary-500' };
-      case 'early':
-        return { label: '조퇴 처리', tone: 'text-warning-500' };
-      case 'out':
-        return { label: '근무 완료', tone: 'text-success-500' };
-      default:
-        return { label: '대기 중', tone: 'text-grey-500' };
-    }
-  }, [attendance.status]);
-
   const primaryButton = useMemo(() => {
     switch (attendance.status) {
       case 'in':
@@ -426,7 +419,7 @@ export default function AttendanceCard() {
             </div>
             <div className="inline-flex items-end gap-1">
               <span className="brand-h1 text-primary-500 tabular-nums">
-                {todayPrimaryNumber}
+                {todayPrimaryValue}
               </span>
               <span className="body-xs text-grey-500">
                 {todaySecondaryLabel}
@@ -448,13 +441,23 @@ export default function AttendanceCard() {
           </div>
         </div>
 
-        {/* Buttons - simpler static layout */}
+        {/* Buttons - dynamic layout based on attendance status */}
         <div className="mt-3 grid grid-cols-2 gap-3">
-          <Button variant="primary" fullWidth onClick={handleClockIn}>
-            출근하기
+          <Button
+            variant={primaryButton.variant}
+            fullWidth
+            onClick={primaryButton.onClick}
+            disabled={primaryButton.disabled}
+          >
+            {primaryButton.label}
           </Button>
-          <Button variant="text" fullWidth onClick={handleClockOut}>
-            퇴근하기
+          <Button
+            variant={secondaryButton.variant}
+            fullWidth
+            onClick={secondaryButton.onClick}
+            disabled={secondaryButton.disabled}
+          >
+            {secondaryButton.label}
           </Button>
         </div>
       </section>
