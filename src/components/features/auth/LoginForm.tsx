@@ -1,5 +1,5 @@
 'use client';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -24,6 +24,27 @@ export default function LoginForm() {
 
   const supabase = useMemo(() => createClient(), []);
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const error = params.get('error');
+
+    if (error) {
+      const errorMessages: Record<string, string> = {
+        oauth_failed: '소셜 로그인에 실패했습니다. 다시 시도해주세요.',
+        missing_code: '인증 코드가 누락되었습니다.',
+        session_exchange_failed: '세션 생성에 실패했습니다. 다시 시도해주세요.',
+      };
+
+      setToast({
+        show: true,
+        type: 'error',
+        message: errorMessages[error] || '로그인에 실패했습니다.',
+      });
+
+      window.history.replaceState({}, '', '/login');
+    }
+  }, []);
+
   const {
     register,
     handleSubmit,
@@ -42,35 +63,7 @@ export default function LoginForm() {
       return `${siteUrl}/auth/callback`;
     }
 
-    const origin = window.location.origin;
-    const isLocalhost =
-      origin.includes('localhost') || origin.includes('127.0.0.1');
-
-    if (isLocalhost) {
-      return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/auth/v1/callback`;
-    }
-
-    return `${origin}/auth/callback`;
-  };
-
-  const mapAuthErrorToMessage = (code?: string, message?: string) => {
-    const normalizedMessage = message?.toLowerCase() ?? '';
-
-    if (
-      code === 'invalid_credentials' ||
-      normalizedMessage.includes('invalid')
-    ) {
-      return '아이디 또는 비밀번호가 일치하지 않습니다.';
-    }
-
-    if (
-      code === 'email_not_confirmed' ||
-      normalizedMessage.includes('email not confirmed')
-    ) {
-      return '이메일 인증이 필요합니다.';
-    }
-
-    return '로그인에 실패했습니다. 잠시 후 다시 시도해주세요.';
+    return `${window.location.origin}/auth/callback`;
   };
 
   const onSubmit = async ({ userId, password }: LoginForm) => {
@@ -80,26 +73,16 @@ export default function LoginForm() {
     try {
       const result = await loginWithUserId(userId.trim(), password);
 
+      if (!result.success) {
+        setToast(result.toast);
+        return;
+      }
+
       setToast(result.toast);
 
-      if (!result.success || !result.session) {
-        return;
-      }
-
-      const { error } = await supabase.auth.setSession(result.session);
-
-      if (error) {
-        console.error('[LoginForm] setSession error', error);
-        setToast({
-          show: true,
-          type: 'error',
-          message: mapAuthErrorToMessage(error.code, error.message),
-        });
-        return;
-      }
-
-      router.push('/');
-      router.refresh();
+      // 짧은 딜레이 후 전체 페이지 새로고침으로 홈 이동
+      await new Promise(resolve => setTimeout(resolve, 500));
+      window.location.href = '/';
     } catch (error) {
       console.error('[LoginForm] unexpected login error', error);
       setToast({

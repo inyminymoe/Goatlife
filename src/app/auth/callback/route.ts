@@ -40,7 +40,6 @@ export async function GET(request: Request) {
     console.error('[auth/callback] exchangeCodeForSession failed', {
       code: error.code,
       message: error.message,
-      status: error.status,
     });
     const loginUrl = new URL('/login', requestUrl.origin);
     loginUrl.searchParams.set('error', 'session_exchange_failed');
