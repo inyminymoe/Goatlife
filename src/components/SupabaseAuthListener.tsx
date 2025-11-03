@@ -1,6 +1,7 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
-import { createBrowserClient } from '@supabase/ssr';
+import { useEffect, useMemo, useRef } from 'react';
+import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/index';
 import { useSetAtom } from 'jotai';
 import { userAtom } from '@/store/atoms';
 import type { Session } from '@supabase/supabase-js';
@@ -15,8 +16,6 @@ type ProfileRow = {
   user_id?: string | null;
 };
 
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const DEFAULT_NAME = '게스트';
 const DEFAULT_RANK = '인턴';
 
@@ -74,16 +73,12 @@ const buildUser = (
 };
 
 export default function SupabaseAuthListener() {
+  const router = useRouter();
   const setUser = useSetAtom(userAtom);
   const hasSyncedRef = useRef(false);
-  const [supabase] = useState(() =>
-    createBrowserClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-      },
-    })
-  );
+  const lastUserIdRef = useRef<string | null>(null);
+  // 싱글턴 supabase 클라이언트 사용 (LoginForm과 동일한 인스턴스)
+  const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
     let isMounted = true;
@@ -156,12 +151,24 @@ export default function SupabaseAuthListener() {
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_OUT') {
         hasSyncedRef.current = false;
+        const hadUser = lastUserIdRef.current !== null;
+        lastUserIdRef.current = null;
         setUser(null);
+
+        if (hadUser) {
+          router.refresh();
+        }
         return;
       }
 
       if (!session) {
+        const hadUser = lastUserIdRef.current !== null;
+        lastUserIdRef.current = null;
         setUser(null);
+
+        if (hadUser) {
+          router.refresh();
+        }
         return;
       }
 
@@ -182,14 +189,25 @@ export default function SupabaseAuthListener() {
         );
       }
 
-      setUser(buildUser(session.user, profile));
+      const user = buildUser(session.user, profile);
+      const userChanged = lastUserIdRef.current !== user.id;
+      lastUserIdRef.current = user.id;
+
+      setUser(user);
+
+      if (
+        userChanged &&
+        (event === 'INITIAL_SESSION' || event === 'SIGNED_IN')
+      ) {
+        router.refresh();
+      }
     });
 
     return () => {
       isMounted = false;
       subscription.unsubscribe();
     };
-  }, [setUser, supabase]);
+  }, [setUser, supabase, router]);
 
   return null;
 }

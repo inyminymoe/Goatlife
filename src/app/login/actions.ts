@@ -97,6 +97,17 @@ export async function loginWithUserId(
   password: string
 ): Promise<LoginActionResult> {
   try {
+    if (
+      !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+      !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+    ) {
+      console.error('[loginWithUserId] Missing required environment variables');
+      return {
+        success: false,
+        toast: errorToast('서버 설정 오류입니다. 관리자에게 문의하세요.'),
+      };
+    }
+
     const emailLookup = await lookupEmailByUserId(userId);
 
     if (!emailLookup.success || !emailLookup.email) {
@@ -117,7 +128,6 @@ export async function loginWithUserId(
     if (error || !data.session) {
       console.error('[loginWithUserId] signInWithPassword failed', {
         code: error?.code,
-        status: error?.status,
         message: error?.message,
       });
       return {
