@@ -22,7 +22,7 @@ export default function Avatar({
   const SIZES = {
     sm: 'w-8 h-8',
     md: 'w-12 h-12',
-    lg: 'w-24 h-24',
+    lg: 'w-22 h-22',
   };
 
   const sizeClass = SIZES[size];
@@ -39,15 +39,15 @@ export default function Avatar({
           <Image
             src={src}
             alt={displayName}
-            width={size === 'lg' ? 96 : size === 'md' ? 48 : 32}
-            height={size === 'lg' ? 96 : size === 'md' ? 48 : 32}
+            width={size === 'lg' ? 88 : size === 'md' ? 48 : 32}
+            height={size === 'lg' ? 88 : size === 'md' ? 48 : 32}
             className="w-full h-full object-cover"
           />
         ) : (
           <Icon
             icon="icon-park:user-business"
-            width={size === 'lg' ? 80 : size === 'md' ? 40 : 24}
-            height={size === 'lg' ? 80 : size === 'md' ? 40 : 24}
+            width={size === 'lg' ? 60 : size === 'md' ? 40 : 24}
+            height={size === 'lg' ? 60 : size === 'md' ? 40 : 24}
             className="text-primary-500"
           />
         )}

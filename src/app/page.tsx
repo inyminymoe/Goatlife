@@ -14,6 +14,7 @@ import Image from 'next/image';
 import { Icon } from '@iconify/react';
 import TodoDrawer from '@/components/TodoDrawer';
 import { userAtom } from '@/store/atoms';
+import UserInfoCard from '@/components/home/UserInfoCard';
 
 // AttendanceCard를 동적으로 로드 (성능 최적화)
 const AttendanceCard = dynamic(
@@ -35,7 +36,6 @@ const AttendanceCard = dynamic(
         </div>
       </section>
     ),
-    ssr: false, // 서버 사이드 렌더링 비활성화 (클라이언트에서만 로드)
   }
 );
 
@@ -102,16 +102,7 @@ export default function Home() {
           <AttendanceCard />
 
           {/* 사원정보 */}
-          <section className="bg-grey-100 rounded-[5px] p-6 md:min-h-[207px]">
-            <div className="flex items-center gap-1 mb-4">
-              <Icon
-                icon="icon-park:necktie"
-                className="w-6 h-6 text-primary-500"
-              />
-              <h2 className="brand-h3 text-grey-900">사원정보</h2>
-            </div>
-            <p className="body-base text-grey-700">프로필 요약</p>
-          </section>
+          <UserInfoCard />
 
           {/* 게시판 */}
           <section className="bg-grey-100 rounded-[5px] p-6 md:min-h-[304px]">

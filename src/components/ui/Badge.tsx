@@ -23,7 +23,7 @@ const sizeStyles: Record<BadgeSize, string> = {
 const variantStyles: Record<BadgeVariant, string> = {
   white: 'bg-white text-grey-500 outline outline-1 outline-grey-500',
   blue: 'bg-primary-100 text-primary-500 rounded-sm',
-  blackRounded: 'bg-grey-900 text-white rounded-[10px]',
+  blackRounded: 'bg-fixed-grey-900 text-white rounded-[10px]',
   calendar:
     'bg-white text-grey-500 outline outline-1 outline-grey-300 rounded-2xl gap-2',
 };
