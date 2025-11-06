@@ -26,12 +26,12 @@ export default function Footer() {
 
       <div className="flex items-center gap-4 flex-shrink-0">
         <SocialIcon
-          href="https://instagram.com/goatlife"
+          href="https://www.instagram.com/goatlife.app/"
           icon="/images/icons/icon-instagram.svg"
           alt="Instagram"
         />
         <SocialIcon
-          href="https://x.com/goatlife"
+          href="https://x.com/GoatlifeApp"
           icon="/images/icons/icon-twitter.svg"
           alt="X (Twitter)"
         />

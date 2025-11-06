@@ -1,5 +1,4 @@
 -- Supabase RLS Policies for profiles table
--- Run this in Supabase Dashboard → SQL Editor
 
 -- 1. 회원가입 시 새 프로필 생성 허용
 CREATE POLICY "Enable insert for authenticated users"
