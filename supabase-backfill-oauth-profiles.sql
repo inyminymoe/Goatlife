@@ -1,5 +1,4 @@
 -- OAuth 사용자 기본값 보정 스크립트
--- Supabase SQL Editor에서 실행하세요.
 
 update public.profiles
 set

@@ -1,6 +1,5 @@
 -- ============================================================================
 -- 갓생상사 사원 정보 요약 뷰 및 정책
--- 실행 위치: Supabase SQL Editor
 -- 목적:
 --   - profiles 테이블 기반으로 홈 화면 사원 정보 요약 데이터를 제공
 --   - joined_days, performance_rate 등의 파생 컬럼 계산
@@ -41,14 +40,3 @@ alter view public.v_user_summary set (security_invoker = on);
 
 -- 선택: 인증 사용자에게 자신의 행만 조회 허용
 -- (RLS와 함께 사용 시 보조 정책으로 활용)
-/*
-create policy "view_user_summary_current"
-  on public.v_user_summary
-  for select
-  using (auth.uid() = user_id);
-*/
-
--- ============================================================================
--- 실행 후 확인
--- select * from public.v_user_summary where user_id = auth.uid();
--- ============================================================================

@@ -267,11 +267,3 @@ GRANT EXECUTE ON FUNCTION public.fn_clock_in TO authenticated;
 GRANT EXECUTE ON FUNCTION public.fn_early_leave TO authenticated;
 GRANT EXECUTE ON FUNCTION public.fn_clock_out TO authenticated;
 
--- ============================================================================
--- 완료!
--- ============================================================================
--- 이제 다음 단계를 진행하세요:
--- 1. Supabase SQL Editor에서 이 스크립트를 복사하여 실행
--- 2. 실행 후 에러가 없는지 확인
--- 3. 애플리케이션에서 출근/퇴근 기능 테스트
--- ============================================================================
