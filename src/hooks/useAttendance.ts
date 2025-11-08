@@ -193,6 +193,7 @@ export function useAttendance(
   const handleClockIn = useCallback(() => {
     if (isPending) return;
 
+    const previous = attendance;
     const nextState: AttendanceViewState = {
       status: 'in',
       clockInAt: new Date().toISOString(),
@@ -207,7 +208,7 @@ export function useAttendance(
       void (async () => {
         const result = await requestClockIn();
         if (!result.ok) {
-          setAttendance(initialAttendanceState);
+          setAttendance(previous);
           const message =
             result.error === 'UNAUTHENTICATED'
               ? '로그인이 필요해요.'
@@ -217,7 +218,7 @@ export function useAttendance(
         }
 
         if (!result.data) {
-          setAttendance(initialAttendanceState);
+          setAttendance(previous);
           showToast('출근 정보가 확인되지 않아요.', 'error');
           return;
         }
@@ -227,11 +228,12 @@ export function useAttendance(
         showToast('출근 완료! 활기찬 갓생 보내세요.', 'success');
       })();
     });
-  }, [isPending, refreshRate, showToast]);
+  }, [attendance, isPending, refreshRate, showToast]);
 
   const handleEarlyLeave = useCallback(() => {
     if (isPending || attendance.status !== 'in') return;
 
+    const previous = attendance;
     const nextState: AttendanceViewState = {
       ...attendance,
       status: 'early',
@@ -243,7 +245,7 @@ export function useAttendance(
       void (async () => {
         const result = await requestEarlyLeave();
         if (!result.ok) {
-          setAttendance(attendance);
+          setAttendance(previous);
           const errorMessage =
             result.error === 'UNAUTHENTICATED'
               ? '로그인이 필요해요.'
@@ -255,7 +257,7 @@ export function useAttendance(
         }
 
         if (!result.data) {
-          setAttendance(attendance);
+          setAttendance(previous);
           showToast('조퇴 정보가 확인되지 않아요.', 'error');
           return;
         }
@@ -270,6 +272,7 @@ export function useAttendance(
     if (isPending || attendance.status === 'none') return;
 
     const nowIso = new Date().toISOString();
+    const previous = attendance;
     const optimistic: AttendanceViewState = {
       ...attendance,
       status: 'out',
@@ -286,7 +289,7 @@ export function useAttendance(
       void (async () => {
         const result = await requestClockOut();
         if (!result.ok) {
-          setAttendance(attendance);
+          setAttendance(previous);
           const errorMessage =
             result.error === 'UNAUTHENTICATED'
               ? '로그인이 필요해요.'
@@ -298,7 +301,7 @@ export function useAttendance(
         }
 
         if (!result.data) {
-          setAttendance(attendance);
+          setAttendance(previous);
           showToast('퇴근 정보가 확인되지 않아요.', 'error');
           return;
         }
