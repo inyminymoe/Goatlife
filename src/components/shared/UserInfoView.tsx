@@ -6,6 +6,9 @@ import { Icon } from '@iconify/react';
 import type { UserSummary } from '@/app/_actions/userInfo';
 import type { UserInfoError, UserInfoStatus } from '@/hooks/useUserInfo';
 import { useMemo } from 'react';
+import { useAtomValue } from 'jotai';
+import { userAtom } from '@/store/atoms';
+import type { User } from '@/types/user';
 
 export type UserInfoViewMode = 'compact' | 'full';
 
@@ -39,6 +42,44 @@ function errorToPlaceholder(error: UserInfoError | null) {
       return placeholderSummary('정보를 불러오지 못했어요');
   }
 }
+
+const deriveUserIdFromUser = (user: User | null) => {
+  if (!user) return undefined;
+  const handle =
+    user.userId ??
+    user.email?.split('@')[0]?.replace(/[^a-z0-9_-]/gi, '') ??
+    undefined;
+  return handle;
+};
+
+const calculateJoinedDays = (joinedAt?: string) => {
+  if (!joinedAt) return 1;
+  const joinedDate = new Date(joinedAt);
+  if (Number.isNaN(joinedDate.getTime())) {
+    return 1;
+  }
+  const diff = Date.now() - joinedDate.getTime();
+  return Math.max(1, Math.floor(diff / (1000 * 60 * 60 * 24)) + 1);
+};
+
+const fallbackSummaryFromUser = (user: User | null): UserSummary | null => {
+  if (!user) return null;
+
+  const displayName = user.nickname ?? user.lastName ?? user.name ?? '게스트';
+  const handle = deriveUserIdFromUser(user);
+
+  return {
+    displayName,
+    userId: handle ?? '--',
+    rank: user.rank ?? '인턴',
+    department: user.department ?? null,
+    workHours: null,
+    workType: null,
+    avatarUrl: user.avatar ?? null,
+    joinedDays: calculateJoinedDays(user.joinedAt),
+    performanceRate: 0,
+  };
+};
 
 function Skeleton() {
   return (
@@ -78,10 +119,13 @@ export default function UserInfoView({
   error,
   mode = 'compact',
 }: UserInfoViewProps) {
+  const currentUser = useAtomValue(userAtom);
   const resolvedSummary = useMemo(() => {
     if (summary) return summary;
+    const userFallback = fallbackSummaryFromUser(currentUser);
+    if (userFallback) return userFallback;
     return errorToPlaceholder(error);
-  }, [summary, error]);
+  }, [summary, error, currentUser]);
 
   const userIdLabel = useMemo(() => {
     const userId = resolvedSummary.userId?.trim?.() ?? '';
@@ -89,7 +133,7 @@ export default function UserInfoView({
     return userId.startsWith('@') ? userId : `@${userId}`;
   }, [resolvedSummary.userId]);
 
-  const joinedDays = Math.max(0, resolvedSummary.joinedDays);
+  const joinedDays = Math.max(1, resolvedSummary.joinedDays || 1);
   const performanceRate = Math.round(
     Math.max(0, resolvedSummary.performanceRate)
   );

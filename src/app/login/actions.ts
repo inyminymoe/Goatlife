@@ -47,10 +47,6 @@ export type LoginLookupResult = {
 export type LoginActionResult = {
   success: boolean;
   toast: ToastPayload;
-  session?: {
-    access_token: string;
-    refresh_token: string;
-  };
 };
 
 export async function lookupEmailByUserId(
@@ -97,17 +93,6 @@ export async function loginWithUserId(
   password: string
 ): Promise<LoginActionResult> {
   try {
-    if (
-      !process.env.NEXT_PUBLIC_SUPABASE_URL ||
-      !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-    ) {
-      console.error('[loginWithUserId] Missing required environment variables');
-      return {
-        success: false,
-        toast: errorToast('서버 설정 오류입니다. 관리자에게 문의하세요.'),
-      };
-    }
-
     const emailLookup = await lookupEmailByUserId(userId);
 
     if (!emailLookup.success || !emailLookup.email) {
@@ -120,12 +105,12 @@ export async function loginWithUserId(
     }
 
     const supabase = await createServerSupabase();
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { error } = await supabase.auth.signInWithPassword({
       email: emailLookup.email,
       password,
     });
 
-    if (error || !data.session) {
+    if (error) {
       console.error('[loginWithUserId] signInWithPassword failed', {
         code: error?.code,
         message: error?.message,
@@ -139,10 +124,6 @@ export async function loginWithUserId(
     return {
       success: true,
       toast: successToast('로그인 성공! 홈으로 이동합니다.'),
-      session: {
-        access_token: data.session.access_token,
-        refresh_token: data.session.refresh_token,
-      },
     };
   } catch (error) {
     console.error('[loginWithUserId] unexpected error', error);
