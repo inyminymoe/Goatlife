@@ -72,7 +72,7 @@ pnpm install
 # 개발 서버 실행
 pnpm run dev
 
-### Supabase Auth 설정 (개발 환경)
+### Supabase Auth & OAuth 설정
 - Supabase Dashboard → Authentication → Providers → Email에서 **Enable Email provider**를 ON으로 설정하세요.
 - 개발 환경에서는 **Confirm email**을 OFF로 두고, 필요 시 Supabase SQL Editor에서 아래 쿼리로 테스트 계정을 인증 처리할 수 있습니다.
 
@@ -88,6 +88,24 @@ WHERE email_confirmed_at IS NULL;
   - 프로덕션: `https://vdiolcxwsdpsvxpwduos.supabase.co/auth/v1/callback`
   - 개발(로컬): `http://localhost:3000/auth/callback` (또는 실제 사용 중인 로컬 도메인)
   - `.env.local` 파일에 `NEXT_PUBLIC_SITE_URL=https://your-domain.com` 값을 설정하면 OAuth가 해당 도메인으로 리다이렉트됩니다.
+- Kakao Client Secret을 발급받은 경우 Supabase Dashboard → Authentication → Providers → Kakao에서 REST API 키와 함께 Client Secret을 입력하고 **사용함** 상태로 저장하세요. Secret을 재발급한 경우 즉시 해당 값을 갱신해야 합니다.
+- 기존 OAuth 사용자 프로필의 `last_name` 또는 `rank`가 비어 있다면 `supabase-backfill-oauth-profiles.sql` 스크립트를 SQL Editor에서 실행해 기본값을 채워주세요.
+- 로컬/배포 환경 변수 권장값
+  - `.env.local`
+    ```
+    NEXT_PUBLIC_SITE_URL=http://localhost:3000
+    NEXT_PUBLIC_SUPABASE_URL=...
+    NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+    SUPABASE_SERVICE_ROLE_KEY=...
+    ```
+  - Vercel(Production)
+    ```
+    NEXT_PUBLIC_SITE_URL=https://goatlife.app
+    NEXT_PUBLIC_SUPABASE_URL=...
+    NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+    SUPABASE_SERVICE_ROLE_KEY=...
+    ```
+  - Supabase Auth → Site URL에는 프로덕션 도메인을, Kakao Developers에서는 Local/Prod 두 도메인을 모두 등록하세요.
 - Kakao Client Secret을 발급받은 경우 Supabase Dashboard → Authentication → Providers → Kakao에서 REST API 키와 함께 Client Secret을 입력하고 **사용함** 상태로 저장하세요. Secret을 재발급한 경우 즉시 해당 값을 갱신해야 합니다.
 - 기존 OAuth 사용자 프로필의 `last_name` 또는 `rank`가 비어 있다면 `supabase-backfill-oauth-profiles.sql` 스크립트를 SQL Editor에서 실행해 기본값을 채워주세요.
 
@@ -189,4 +207,4 @@ pnpm install
 
 # Run development server
 pnpm run dev
-🎉Deployed to https://goatlife.app 🍀
+```

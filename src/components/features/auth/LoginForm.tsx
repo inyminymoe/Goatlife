@@ -54,16 +54,19 @@ export default function LoginForm() {
   });
 
   const getOAuthRedirectTo = () => {
-    if (typeof window === 'undefined') {
-      return undefined;
+    if (typeof window !== 'undefined') {
+      const origin = window.location.origin.replace(/\/$/, '');
+
+      if (/localhost(:\d+)?$/.test(window.location.host)) {
+        return `${origin}/auth/callback`;
+      }
+
+      const site = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '');
+      return `${site || origin}/auth/callback`;
     }
 
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '');
-    if (siteUrl) {
-      return `${siteUrl}/auth/callback`;
-    }
-
-    return `${window.location.origin}/auth/callback`;
+    const site = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '');
+    return site ? `${site}/auth/callback` : undefined;
   };
 
   const onSubmit = async ({ userId, password }: LoginForm) => {
@@ -79,10 +82,8 @@ export default function LoginForm() {
       }
 
       setToast(result.toast);
-
-      // 짧은 딜레이 후 전체 페이지 새로고침으로 홈 이동
-      await new Promise(resolve => setTimeout(resolve, 500));
-      window.location.href = '/';
+      router.replace('/');
+      router.refresh();
     } catch (error) {
       console.error('[LoginForm] unexpected login error', error);
       setToast({
@@ -190,6 +191,7 @@ export default function LoginForm() {
           className="mb-6 bg-yellow-300 text-fixed-grey-900 hover:bg-yellow-400 disabled:opacity-50"
           disabled={isKakaoLoading || isPasswordLoginLoading}
           onClick={handleKakaoLogin}
+          data-testid="kakao-login-button"
         >
           {isKakaoLoading ? '카카오 로그인 중...' : '카카오톡으로 로그인'}
         </Button>

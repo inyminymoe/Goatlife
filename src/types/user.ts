@@ -10,4 +10,5 @@ export interface User {
   department?: string;
   userId?: string;
   provider?: string;
+  joinedAt?: string;
 }

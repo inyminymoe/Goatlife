@@ -8,7 +8,7 @@ import {
   type AttendanceStatus,
 } from '@/app/_actions/attendance';
 
-const DEFAULT_TIMEOUT = 3000;
+const DEFAULT_TIMEOUT = 6000;
 
 function withTimeout<T>(promise: Promise<T>, timeoutMs = DEFAULT_TIMEOUT) {
   return Promise.race<T>([

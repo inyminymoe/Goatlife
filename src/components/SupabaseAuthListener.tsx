@@ -19,12 +19,27 @@ type ProfileRow = {
 const DEFAULT_NAME = '게스트';
 const DEFAULT_RANK = '인턴';
 
+const sanitizeHandle = (value?: string | null) => {
+  if (!value) return null;
+  const trimmed = value.trim().toLowerCase();
+  if (!trimmed) return null;
+  const sanitized = trimmed.replace(/[^a-z0-9_-]/g, '');
+  return sanitized || null;
+};
+
+const emailLocalPart = (email?: string | null) => {
+  if (!email) return null;
+  const [local] = email.split('@');
+  return sanitizeHandle(local);
+};
+
 const buildUser = (
   sessionUser: {
     id: string;
     email?: string;
     user_metadata?: Record<string, unknown>;
     app_metadata?: Record<string, unknown>;
+    created_at?: string;
   },
   profile?: ProfileRow | null
 ): User => {
@@ -48,9 +63,15 @@ const buildUser = (
   const firstName = (profile?.first_name ?? '').trim();
   const rank = (profile?.rank ?? DEFAULT_RANK).trim() || DEFAULT_RANK;
 
+  const derivedUserId =
+    profile?.user_id ??
+    sanitizeHandle(metadata['user_id'] as string | undefined) ??
+    emailLocalPart(sessionUser.email) ??
+    undefined;
+
   const fullName =
     `${lastName}${firstName}`.trim() ||
-    profile?.user_id ||
+    derivedUserId ||
     metaNickname ||
     metaName ||
     sessionUser.email?.split('@')[0]?.replace(/@.*/, '') ||
@@ -66,9 +87,13 @@ const buildUser = (
     firstName: firstName || undefined,
     department: profile?.department ?? undefined,
     rank,
-    userId: profile?.user_id ?? undefined,
+    userId: derivedUserId,
     provider:
       (sessionUser.app_metadata?.provider as string | undefined) ?? undefined,
+    joinedAt:
+      (metadata['joined_at'] as string | undefined) ??
+      sessionUser.created_at ??
+      undefined,
   };
 };
 
