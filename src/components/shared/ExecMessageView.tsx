@@ -35,8 +35,6 @@ export default function ExecMessageView({
   error,
   mode = 'compact',
 }: ExecMessageViewProps) {
-  const badgeText = data ? (data.isExplicit ? '공지' : '명언') : null;
-
   return (
     <section
       className="bg-grey-100 rounded-[5px] p-6"
