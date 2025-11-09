@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { Icon } from '@iconify/react';
 import { userAtom } from '@/store/atoms';
 import UserInfoCard from '@/components/home/UserInfoCard';
+import ExecMessageCard from '@/components/home/ExecMessageCard';
 import PerformanceWidget from '@/components/home/PerformanceWidget';
 
 const AttendanceCard = dynamic(
@@ -111,18 +112,7 @@ export default function Home() {
         </>
       )}
 
-      <section className="bg-grey-100 rounded-[5px] p-6 md:min-h-[210px]">
-        <div className="flex items-center gap-1 mb-4">
-          <Icon
-            icon="icon-park:relieved-face"
-            className="w-6 h-6 text-primary-500"
-          />
-          <h2 className="brand-h3 text-grey-900">임원진 한마디</h2>
-        </div>
-        <p className="body-base text-grey-700">
-          &quot;일찍 일어나는 벌레는 오운완해서 잽싸게 도망간다.&quot;
-        </p>
-      </section>
+      <ExecMessageCard />
 
       <section className="bg-grey-100 rounded-[5px] p-6 md:min-h-[210px]">
         <div className="flex items-center gap-1 mb-4">
