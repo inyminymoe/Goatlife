@@ -50,7 +50,7 @@ export default function Button({
       case 'filter':
         return active
           ? 'bg-fixed-grey-900 text-fixed-white border border-fixed-grey-900 hover:bg-fixed-grey-800 disabled:opacity-50 px-4 py-2 body-xs font-medium'
-          : 'bg-fixed-white text-fixed-grey-900 border border-fixed-grey-300 hover:bg-fixed-grey-100 disabled:opacity-50 px-4 py-2 body-xs font-medium';
+          : 'bg-fixed-white text-fixed-grey-900 border border-fixed-grey-200 hover:bg-fixed-grey-100 disabled:opacity-50 px-4 py-2 body-xs font-medium';
       default:
         return '';
     }

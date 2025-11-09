@@ -21,7 +21,7 @@ export default function SearchBar({
   };
 
   return (
-    <div className="mx-auto flex justify-center items-center border border-grey-300 bg-white rounded-[5px] pl-[15px] pr-[5px] md:w-[642px]">
+    <div className="mx-auto flex justify-center items-center bg-white rounded-[5px] pl-[15px] pr-[5px] md:w-[642px]">
       <div className="text-sm text-grey-500 border-r pr-[30px] border-r-grey-300">
         {label}
       </div>
