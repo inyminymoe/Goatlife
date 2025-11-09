@@ -3,15 +3,44 @@
 import { useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
+/**
+ * NOTE: API 연동 가이드
+ * - 전사/부서에 따라 서로 다른 API를 호출해야 한다면
+ *   1) 서버 컴포넌트(page.tsx)에서 scope/dept를 읽고 서버 액션으로 데이터를 가져와 props로 넘기거나,
+ *   2) 여기 클라이언트에서 scope/dept를 읽어 useEffect로 호출
+ * - 예시:
+ *   if (scope === 'company') fetchCompanyPosts({ tags, keyword, page })
+ *   else fetchDepartmentPosts({ dept, tags, keyword, page })
+ */
+
 import Pagination from '@/components/ui/Pagination';
 import SearchBar from '@/components/ui/SearchBar';
 import BoardFilterTags from './BoardFilterTags';
 import BoardHeader from './BoardHeader';
 import BoardItem from './BoardItem';
 
+type BoardListItem = {
+  id: number;
+  label: string;
+  title: string;
+  commentCount: number;
+  userName: string;
+  viewCount: number;
+  dateCreated: string;
+  dept?: string;
+};
+
 const ITEMS_PER_PAGE = 15;
 
-const allList = [
+/**
+ * 확장 포인트 ①: scope별 태그 집합
+ *  - 전사/부서 스코프에 따라 노출되는 태그 버튼을 다르게 구성할 수 있음
+ *  - 필요시 값만 바꿔도 UI에 바로 반영
+ */
+const COMPANY_TAGS = ['공지', '정보', '질문', '잡담', '팀원모집'] as const;
+const DEPARTMENT_TAGS = ['공지', '정보', 'Q&A', '모집', '잡담'] as const;
+
+const allList: BoardListItem[] = [
   {
     id: 1,
     label: '공지',
@@ -239,17 +268,22 @@ const allList = [
   },
 ];
 
-const TAGS = ['팀원모집', '공지', '정보', '잡담', '질문'];
-
 export default function BoardListView() {
   const [toggleView, setToggleView] = useState<'list' | 'grid'>('list');
 
   const searchParams = useSearchParams();
   const router = useRouter();
+  const scope = searchParams.get('scope') ?? 'company'; // 'company' | 'department'
+  const dept = searchParams.get('dept') ?? ''; // 부서명 (scope=department일 때)
 
   const selectedTags = searchParams.getAll('tag');
   const currentPage = Number(searchParams.get('page')) || 1;
   const keyword = searchParams.get('keyword') || '';
+
+  // scope에 따라 노출할 태그 집합을 분기
+  const availableTags = useMemo(() => {
+    return scope === 'company' ? [...COMPANY_TAGS] : [...DEPARTMENT_TAGS];
+  }, [scope]);
 
   const handleTagClick = (tag: string) => {
     const params = new URLSearchParams(searchParams);
@@ -289,20 +323,33 @@ export default function BoardListView() {
   };
 
   const filteredList = useMemo(() => {
+    // 확장 포인트 ②: scope/dept 기준으로 리스트 분기
+    // - API 연동 시 여기에서 scope/dep 기준으로 데이터 소스 자체를 바꾸거나,
+    //   이미 받아온 데이터에서 필터링
+    // - 현재 mock(allList)에는 dept 필드가 없으므로, dept 필터는 'dept' 필드가 존재할 때만 적용
     let result = allList;
 
+    // (옵션) 부서 스코프일 때, 아이템에 dept 필드가 있으면 해당 부서만 남기기
+    if (scope === 'department' && dept) {
+      result = result.filter((item: BoardListItem) => {
+        // item.dept가 없으면 그대로 통과시켜 현재 목 데이터도 보이도록 함
+        return !('dept' in item) || item.dept === dept;
+      });
+    }
+
+    // 태그 필터
     if (selectedTags.length > 0) {
       result = result.filter(item => selectedTags.includes(item.label));
     }
 
+    // 검색어 필터 (제목 기준)
     if (keyword.trim()) {
-      result = result.filter(item =>
-        item.title.toLowerCase().includes(keyword.toLowerCase())
-      );
+      const q = keyword.toLowerCase();
+      result = result.filter(item => item.title.toLowerCase().includes(q));
     }
 
     return result;
-  }, [selectedTags, keyword]);
+  }, [scope, dept, selectedTags, keyword]);
 
   // 페이지네이션 계산
   const totalPages = Math.ceil(filteredList.length / ITEMS_PER_PAGE);
@@ -310,14 +357,19 @@ export default function BoardListView() {
   const endIndex = startIndex + ITEMS_PER_PAGE;
   const currentList = filteredList.slice(startIndex, endIndex);
 
+  const heading = useMemo(
+    () => (scope === 'company' ? '전사게시판' : dept || '부서게시판'),
+    [scope, dept]
+  );
+
   return (
     <>
-      <h2 className="brand-h3 text-grey-900 mb-4">IT부</h2>
+      <h2 className="brand-h3 text-grey-900 mb-4">{heading}</h2>
 
       <div className="flex flex-col">
         <div className="mb-[25px] flex items-center justify-between flex-wrap gap-2">
           <BoardFilterTags
-            tags={TAGS}
+            tags={availableTags}
             selectedTags={selectedTags}
             onTagClick={handleTagClick}
           />

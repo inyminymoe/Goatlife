@@ -149,9 +149,34 @@ function MenuSection({
       return;
     }
 
-    // TODO: 실제 라우팅 로직 추가
-    console.log(`Navigate to: ${title} - ${item}`);
-    onClose?.();
+    // 라우팅 규칙
+    let href: string | null = null;
+
+    // 전사게시판: scope=company + tag(카테고리)로 이동
+    if (title === '전사게시판') {
+      const q = new URLSearchParams({
+        scope: 'company',
+        tag: item,
+      }).toString();
+      href = `/board?${q}`;
+    }
+    // 부서게시판: scope=department + dept(부서명)로 이동
+    else if (title === '부서게시판') {
+      const q = new URLSearchParams({
+        scope: 'department',
+        dept: item,
+      }).toString();
+      href = `/board?${q}`;
+    }
+    // 다른 섹션(사원정보 등)은 이후 실제 경로가 준비되면 여기에 매핑
+    // if (title === '사원정보') { ... }
+
+    if (href) {
+      onClose?.();
+      router.push(href);
+    } else {
+      onClose?.();
+    }
   };
 
   return (
