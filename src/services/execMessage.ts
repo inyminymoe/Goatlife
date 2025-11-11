@@ -13,7 +13,16 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs = DEFAULT_TIMEOUT) {
 
 export async function fetchExecMessage() {
   try {
-    return await withTimeout(getCurrentExecMessage());
+    console.log('[fetchExecMessage] Calling getCurrentExecMessage...');
+    const result = await withTimeout(getCurrentExecMessage());
+    console.log('[fetchExecMessage] Result:', result);
+
+    if (!result) {
+      console.error('[fetchExecMessage] Result is undefined or null');
+      return { ok: false as const, error: 'UNKNOWN' };
+    }
+
+    return result;
   } catch (error) {
     console.error('[services/execMessage] fetchExecMessage failed', error);
     return { ok: false as const, error: 'UNKNOWN' };

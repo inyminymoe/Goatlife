@@ -22,7 +22,7 @@ export default function Avatar({
   const SIZES = {
     sm: 'w-8 h-8',
     md: 'w-12 h-12',
-    lg: 'w-22 h-22',
+    lg: 'w-[88px] h-[88px]',
   };
 
   const sizeClass = SIZES[size];
@@ -30,19 +30,32 @@ export default function Avatar({
   const displayRank = rank?.trim() || '인턴';
   const showLabel = showName && (displayName || displayRank);
 
+  const isExternal = src?.startsWith('http');
+
   return (
     <div className={`ui-component flex items-center gap-2 ${className}`}>
       <div
         className={`${sizeClass} rounded-full bg-primary-100 flex items-center justify-center overflow-hidden flex-shrink-0`}
       >
         {src ? (
-          <Image
-            src={src}
-            alt={displayName}
-            width={size === 'lg' ? 88 : size === 'md' ? 48 : 32}
-            height={size === 'lg' ? 88 : size === 'md' ? 48 : 32}
-            className="w-full h-full object-cover"
-          />
+          isExternal ? (
+            /* eslint-disable @next/next/no-img-element */
+            <img
+              src={src}
+              alt={displayName}
+              width={size === 'lg' ? 88 : size === 'md' ? 48 : 32}
+              height={size === 'lg' ? 88 : size === 'md' ? 48 : 32}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <Image
+              src={src}
+              alt={displayName}
+              width={size === 'lg' ? 88 : size === 'md' ? 48 : 32}
+              height={size === 'lg' ? 88 : size === 'md' ? 48 : 32}
+              className="w-full h-full object-cover"
+            />
+          )
         ) : (
           <Icon
             icon="icon-park:user-business"
