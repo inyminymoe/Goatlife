@@ -14,6 +14,7 @@ type ProfileRow = {
   department?: string | null;
   rank?: string | null;
   user_id?: string | null;
+  joined_at?: string | null;
 };
 
 const DEFAULT_NAME = '게스트';
@@ -91,6 +92,7 @@ const buildUser = (
     provider:
       (sessionUser.app_metadata?.provider as string | undefined) ?? undefined,
     joinedAt:
+      profile?.joined_at ??
       (metadata['joined_at'] as string | undefined) ??
       sessionUser.created_at ??
       undefined,
@@ -153,7 +155,9 @@ export default function SupabaseAuthListener() {
 
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('last_name, first_name, avatar_url, department, rank, user_id')
+        .select(
+          'last_name, first_name, avatar_url, department, rank, user_id, joined_at'
+        )
         .eq('id', session.user.id)
         .maybeSingle();
 
@@ -203,7 +207,9 @@ export default function SupabaseAuthListener() {
 
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('last_name, first_name, avatar_url, department, rank, user_id')
+        .select(
+          'last_name, first_name, avatar_url, department, rank, user_id, joined_at'
+        )
         .eq('id', session.user.id)
         .maybeSingle();
 

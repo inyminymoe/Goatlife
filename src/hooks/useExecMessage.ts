@@ -29,13 +29,30 @@ export function useExecMessage(
     setLifecycle('loading');
     setError(null);
 
-    const result = await fetchExecMessage();
-    if (result.ok) {
-      setData(result.data);
-      setLifecycle('success');
-    } else {
+    try {
+      const result = await fetchExecMessage();
+
+      // 안전장치: result가 undefined인 경우 처리
+      if (!result) {
+        console.error('[useExecMessage] fetchExecMessage returned undefined');
+        setData(null);
+        setError('UNKNOWN');
+        setLifecycle('error');
+        return;
+      }
+
+      if (result.ok) {
+        setData(result.data);
+        setLifecycle('success');
+      } else {
+        setData(null);
+        setError(result.error);
+        setLifecycle('error');
+      }
+    } catch (err) {
+      console.error('[useExecMessage] load failed:', err);
       setData(null);
-      setError(result.error);
+      setError('UNKNOWN');
       setLifecycle('error');
     }
   }, []);
