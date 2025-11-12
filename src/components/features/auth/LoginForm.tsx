@@ -1,19 +1,18 @@
 'use client';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useActionState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
+import { useFormStatus } from 'react-dom';
 import Image from 'next/image';
 import Input from '@/components/ui/Input';
 import Button from '@/components/ui/Button';
 import Toast from '@/components/ui/Toast';
-import { loginSchema, type LoginForm } from '@/app/login/schema';
-import { loginWithUserId } from '@/app/login/actions';
+import { loginAction, type LoginActionState } from '@/app/login/actions';
 import { createClient } from '@/lib/supabase/index';
+
+const initialState: LoginActionState = { ok: true };
 
 export default function LoginForm() {
   const router = useRouter();
-  const [isPasswordLoginLoading, setIsPasswordLoginLoading] = useState(false);
   const [isKakaoLoading, setIsKakaoLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [toast, setToast] = useState<{
@@ -23,6 +22,7 @@ export default function LoginForm() {
   }>({ show: false, message: '', type: 'error' });
 
   const supabase = useMemo(() => createClient(), []);
+  const [actionState, formAction] = useActionState(loginAction, initialState);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -45,13 +45,15 @@ export default function LoginForm() {
     }
   }, []);
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<LoginForm>({
-    resolver: zodResolver(loginSchema),
-  });
+  useEffect(() => {
+    if (!actionState.ok && actionState.message) {
+      setToast({
+        show: true,
+        type: 'error',
+        message: actionState.message,
+      });
+    }
+  }, [actionState]);
 
   const getOAuthRedirectTo = () => {
     if (typeof window !== 'undefined') {
@@ -67,33 +69,6 @@ export default function LoginForm() {
 
     const site = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '');
     return site ? `${site}/auth/callback` : undefined;
-  };
-
-  const onSubmit = async ({ userId, password }: LoginForm) => {
-    setIsPasswordLoginLoading(true);
-    setToast({ show: false, message: '', type: 'error' });
-
-    try {
-      const result = await loginWithUserId(userId.trim(), password);
-
-      if (!result.success) {
-        setToast(result.toast);
-        return;
-      }
-
-      setToast(result.toast);
-      router.replace('/');
-      router.refresh();
-    } catch (error) {
-      console.error('[LoginForm] unexpected login error', error);
-      setToast({
-        show: true,
-        type: 'error',
-        message: '로그인에 실패했습니다. 잠시 후 다시 시도해주세요.',
-      });
-    } finally {
-      setIsPasswordLoginLoading(false);
-    }
   };
 
   const handleKakaoLogin = async () => {
@@ -132,15 +107,10 @@ export default function LoginForm() {
 
   return (
     <>
-      <form
-        onSubmit={handleSubmit(onSubmit)}
-        className="flex flex-col relative z-10"
-      >
+      <form action={formAction} className="flex flex-col relative z-10">
         <div className="mb-6">
           <Input
-            {...register('userId', {
-              setValueAs: v => (v ? String(v).toLowerCase() : ''),
-            })}
+            name="userId"
             type="text"
             inputMode="text"
             autoComplete="username"
@@ -148,34 +118,27 @@ export default function LoginForm() {
             label="사원 아이디"
             variant="dark"
             placeholder="아이디를 입력하세요"
-            error={errors.userId?.message}
+            required
           />
         </div>
 
         <div className="mb-6">
           <Input
-            {...register('password')}
+            name="password"
             type={showPassword ? 'text' : 'password'}
             label="비밀번호"
             variant="dark"
             placeholder="*********"
-            error={errors.password?.message}
             showPasswordToggle
             showPassword={showPassword}
-            onPasswordToggle={() => setShowPassword(!showPassword)}
+            onPasswordToggle={() => setShowPassword(prev => !prev)}
             autoComplete="current-password"
+            required
+            minLength={8}
           />
         </div>
 
-        <Button
-          type="submit"
-          variant="primary"
-          fullWidth
-          disabled={isPasswordLoginLoading || isKakaoLoading}
-          className="mb-3"
-        >
-          {isPasswordLoginLoading ? '로그인 중...' : '로그인'}
-        </Button>
+        <SubmitButton isKakaoLoading={isKakaoLoading} />
 
         <button
           type="button"
@@ -184,17 +147,10 @@ export default function LoginForm() {
           아이디/비밀번호 찾기
         </button>
 
-        <Button
-          type="button"
-          variant="plain"
-          fullWidth
-          className="mb-6 bg-yellow-300 text-fixed-grey-900 hover:bg-yellow-400 disabled:opacity-50"
-          disabled={isKakaoLoading || isPasswordLoginLoading}
+        <KakaoButton
           onClick={handleKakaoLogin}
-          data-testid="kakao-login-button"
-        >
-          {isKakaoLoading ? '카카오 로그인 중...' : '카카오톡으로 로그인'}
-        </Button>
+          isKakaoLoading={isKakaoLoading}
+        />
 
         <div className="flex mb-3 gap-1">
           <Image
@@ -226,5 +182,43 @@ export default function LoginForm() {
         onClose={() => setToast({ ...toast, show: false })}
       />
     </>
+  );
+}
+
+function SubmitButton({ isKakaoLoading }: { isKakaoLoading: boolean }) {
+  const { pending } = useFormStatus();
+  return (
+    <Button
+      type="submit"
+      variant="primary"
+      fullWidth
+      disabled={pending || isKakaoLoading}
+      className="mb-3"
+    >
+      {pending ? '로그인 중...' : '로그인'}
+    </Button>
+  );
+}
+
+function KakaoButton({
+  onClick,
+  isKakaoLoading,
+}: {
+  onClick: () => void;
+  isKakaoLoading: boolean;
+}) {
+  const { pending } = useFormStatus();
+  return (
+    <Button
+      type="button"
+      variant="plain"
+      fullWidth
+      className="mb-6 bg-yellow-300 text-fixed-grey-900 hover:bg-yellow-400 disabled:opacity-50"
+      disabled={pending || isKakaoLoading}
+      onClick={onClick}
+      data-testid="kakao-login-button"
+    >
+      {isKakaoLoading ? '카카오 로그인 중...' : '카카오톡으로 로그인'}
+    </Button>
   );
 }

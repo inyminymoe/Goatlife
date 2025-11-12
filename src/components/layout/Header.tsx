@@ -76,33 +76,31 @@ export default function Header({
     setIsSigningOut(true);
 
     try {
-      const response = await fetch('/api/auth/signout', {
-        method: 'POST',
-        credentials: 'include',
-      });
+      const [serverResponse, clientResponse] = await Promise.all([
+        fetch('/api/auth/signout', {
+          method: 'POST',
+          credentials: 'include',
+        }),
+        supabase.auth.signOut({ scope: 'local' }),
+      ]);
 
-      if (!response.ok) {
-        const body = await response.json().catch(() => null);
+      if (!serverResponse.ok) {
+        const body = await serverResponse.json().catch(() => null);
         console.error('[Header] server signOut failed', body);
       }
-    } catch (error) {
-      console.error('[Header] server signOut request error', error);
-    }
 
-    try {
-      const { error } = await supabase.auth.signOut({ scope: 'local' });
-      if (error) {
-        console.error('[Header] client signOut failed', error);
+      if (clientResponse.error) {
+        console.error('[Header] client signOut failed', clientResponse.error);
       }
     } catch (error) {
-      console.error('[Header] unexpected client signOut error', error);
+      console.error('[Header] unexpected signOut error', error);
     }
 
     setUser(null);
     setIsMenuOpen(false);
-    router.push('/login');
-    router.refresh();
     setIsSigningOut(false);
+    router.replace('/login');
+    router.refresh();
   };
 
   return (
