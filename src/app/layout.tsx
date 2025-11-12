@@ -6,6 +6,9 @@ import './globals.css';
 import { createServerSupabase } from '@/lib/supabase/server';
 import type { User } from '@/types/user';
 
+export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
+
 export const metadata: Metadata = {
   title: '갓생상사 - Goatlife Inc.',
   description: '24시간 OPEN! 갓생이들의 온라인 회사',

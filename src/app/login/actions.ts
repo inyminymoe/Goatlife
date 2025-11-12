@@ -2,6 +2,7 @@
 
 import { admin } from '@/lib/supabase/admin';
 import { createServerSupabase } from '@/lib/supabase/server';
+import { redirect } from 'next/navigation';
 
 type ToastPayload = {
   show: boolean;
@@ -9,15 +10,15 @@ type ToastPayload = {
   message: string;
 };
 
+// Next.js redirect sentinel guard (version-safe)
+function isNextRedirect(err: unknown): boolean {
+  const digest = (err as { digest?: unknown })?.digest;
+  return typeof digest === 'string' && digest.startsWith('NEXT_REDIRECT');
+}
+
 const errorToast = (message: string): ToastPayload => ({
   show: true,
   type: 'error',
-  message,
-});
-
-const successToast = (message: string): ToastPayload => ({
-  show: true,
-  type: 'success',
   message,
 });
 
@@ -26,13 +27,6 @@ const mapAuthErrorToMessage = (code?: string, message?: string) => {
 
   if (code === 'invalid_credentials' || normalizedMessage.includes('invalid')) {
     return '아이디 또는 비밀번호가 일치하지 않습니다.';
-  }
-
-  if (
-    code === 'email_not_confirmed' ||
-    normalizedMessage.includes('email not confirmed')
-  ) {
-    return '이메일 인증이 필요합니다.';
   }
 
   return '로그인에 실패했습니다. 잠시 후 다시 시도해주세요.';
@@ -44,9 +38,9 @@ export type LoginLookupResult = {
   toast?: ToastPayload;
 };
 
-export type LoginActionResult = {
-  success: boolean;
-  toast: ToastPayload;
+export type LoginActionState = {
+  ok: boolean;
+  message?: string;
 };
 
 export async function lookupEmailByUserId(
@@ -83,53 +77,57 @@ export async function lookupEmailByUserId(
     console.error('[lookupEmailByUserId] unexpected error', error);
     return {
       success: false,
-      toast: errorToast('로그인에 실패했습니다. 잠시 후 다시 시도해주세요.'),
+      toast: errorToast(mapAuthErrorToMessage(undefined, undefined)),
     };
   }
 }
 
-export async function loginWithUserId(
-  userId: string,
-  password: string
-): Promise<LoginActionResult> {
+export async function loginAction(
+  _prevState: LoginActionState,
+  formData: FormData
+): Promise<LoginActionState> {
   try {
-    const emailLookup = await lookupEmailByUserId(userId);
+    const userId = String(formData.get('userId') ?? '')
+      .trim()
+      .toLowerCase();
+    const password = String(formData.get('password') ?? '');
 
-    if (!emailLookup.success || !emailLookup.email) {
+    if (!userId || !password) {
+      return { ok: false, message: '아이디와 비밀번호를 모두 입력해주세요.' };
+    }
+
+    const lookup = await lookupEmailByUserId(userId);
+    if (!lookup.success || !lookup.email) {
       return {
-        success: false,
-        toast:
-          emailLookup.toast ??
-          errorToast('아이디를 찾을 수 없습니다. 다시 확인해주세요.'),
+        ok: false,
+        message:
+          lookup.toast?.message ??
+          '아이디를 찾을 수 없습니다. 다시 확인해주세요.',
       };
     }
 
     const supabase = await createServerSupabase();
     const { error } = await supabase.auth.signInWithPassword({
-      email: emailLookup.email,
+      email: lookup.email,
       password,
     });
 
     if (error) {
-      console.error('[loginWithUserId] signInWithPassword failed', {
-        code: error?.code,
-        message: error?.message,
-      });
       return {
-        success: false,
-        toast: errorToast(mapAuthErrorToMessage(error?.code, error?.message)),
+        ok: false,
+        message: mapAuthErrorToMessage(error.code, error.message),
       };
     }
 
-    return {
-      success: true,
-      toast: successToast('로그인 성공! 홈으로 이동합니다.'),
-    };
+    redirect('/');
   } catch (error) {
-    console.error('[loginWithUserId] unexpected error', error);
+    if (isNextRedirect(error)) {
+      throw error;
+    }
+    console.error('[loginAction] unexpected error', error);
     return {
-      success: false,
-      toast: errorToast('로그인에 실패했습니다. 잠시 후 다시 시도해주세요.'),
+      ok: false,
+      message: '로그인에 실패했습니다. 잠시 후 다시 시도해주세요.',
     };
   }
 }

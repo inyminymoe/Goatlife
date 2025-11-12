@@ -1,6 +1,6 @@
 'use client';
-import { useEffect, useMemo, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useCallback, useEffect, useMemo } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/index';
 import { useSetAtom } from 'jotai';
 import { userAtom } from '@/store/atoms';
@@ -101,38 +101,39 @@ const buildUser = (
 
 export default function SupabaseAuthListener() {
   const router = useRouter();
+  const pathname = usePathname();
   const setUser = useSetAtom(userAtom);
-  const hasSyncedRef = useRef(false);
-  const lastUserIdRef = useRef<string | null>(null);
-  // 싱글턴 supabase 클라이언트 사용 (LoginForm과 동일한 인스턴스)
   const supabase = useMemo(() => createClient(), []);
+
+  const refreshProfile = useCallback(
+    async (session: Session | null) => {
+      if (!session) {
+        setUser(null);
+        return;
+      }
+
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select(
+          'last_name, first_name, avatar_url, department, rank, user_id, joined_at'
+        )
+        .eq('id', session.user.id)
+        .maybeSingle();
+
+      if (profileError) {
+        console.error(
+          '[SupabaseAuthListener] profile fetch failed',
+          profileError
+        );
+      }
+
+      setUser(buildUser(session.user, profile));
+    },
+    [setUser, supabase]
+  );
 
   useEffect(() => {
     let isMounted = true;
-
-    const persistSession = async (session: Session | null) => {
-      if (!session) {
-        return;
-      }
-
-      if (hasSyncedRef.current) {
-        return;
-      }
-
-      if (!session.access_token || !session.refresh_token) {
-        return;
-      }
-
-      try {
-        await supabase.auth.setSession({
-          access_token: session.access_token,
-          refresh_token: session.refresh_token,
-        });
-        hasSyncedRef.current = true;
-      } catch (error) {
-        console.error('[SupabaseAuthListener] setSession failed', error);
-      }
-    };
 
     const syncSession = async () => {
       const {
@@ -144,33 +145,8 @@ export default function SupabaseAuthListener() {
         console.error('[SupabaseAuthListener] getSession failed', error);
       }
 
-      if (!session) {
-        if (isMounted) {
-          setUser(null);
-        }
-        return;
-      }
-
-      await persistSession(session);
-
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select(
-          'last_name, first_name, avatar_url, department, rank, user_id, joined_at'
-        )
-        .eq('id', session.user.id)
-        .maybeSingle();
-
-      if (profileError) {
-        console.error(
-          '[SupabaseAuthListener] profile fetch failed',
-          profileError
-        );
-      }
-
-      if (isMounted) {
-        setUser(buildUser(session.user, profile));
-      }
+      if (!isMounted) return;
+      await refreshProfile(session);
     };
 
     void syncSession();
@@ -178,57 +154,22 @@ export default function SupabaseAuthListener() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_OUT') {
-        hasSyncedRef.current = false;
-        const hadUser = lastUserIdRef.current !== null;
-        lastUserIdRef.current = null;
-        setUser(null);
-
-        if (hadUser) {
-          router.refresh();
-        }
-        return;
-      }
+      if (!isMounted) return;
 
       if (!session) {
-        const hadUser = lastUserIdRef.current !== null;
-        lastUserIdRef.current = null;
         setUser(null);
-
-        if (hadUser) {
+        if (event === 'SIGNED_OUT') {
           router.refresh();
         }
         return;
       }
 
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-        await persistSession(session);
-      }
-
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select(
-          'last_name, first_name, avatar_url, department, rank, user_id, joined_at'
-        )
-        .eq('id', session.user.id)
-        .maybeSingle();
-
-      if (profileError) {
-        console.error(
-          '[SupabaseAuthListener] profile fetch failed',
-          profileError
-        );
-      }
-
-      const user = buildUser(session.user, profile);
-      const userChanged = lastUserIdRef.current !== user.id;
-      lastUserIdRef.current = user.id;
-
-      setUser(user);
+      await refreshProfile(session);
 
       if (
-        userChanged &&
-        (event === 'INITIAL_SESSION' || event === 'SIGNED_IN')
+        event === 'SIGNED_IN' ||
+        event === 'SIGNED_OUT' ||
+        event === 'TOKEN_REFRESHED'
       ) {
         router.refresh();
       }
@@ -238,7 +179,31 @@ export default function SupabaseAuthListener() {
       isMounted = false;
       subscription.unsubscribe();
     };
-  }, [setUser, supabase, router]);
+  }, [refreshProfile, router, supabase, setUser]);
+
+  useEffect(() => {
+    let aborted = false;
+
+    const syncOnNavigation = async () => {
+      const {
+        data: { session },
+        error,
+      } = await supabase.auth.getSession();
+
+      if (error) {
+        console.error('[SupabaseAuthListener] navigation sync failed', error);
+      }
+
+      if (aborted) return;
+      await refreshProfile(session);
+    };
+
+    void syncOnNavigation();
+
+    return () => {
+      aborted = true;
+    };
+  }, [pathname, refreshProfile, supabase]);
 
   return null;
 }
