@@ -28,34 +28,43 @@ type BoardListItem = {
   viewCount: number;
   dateCreated: string;
   dept?: string;
+  board?: string;
 };
 
 const ITEMS_PER_PAGE = 15;
+
+const COMPANY_BOARDS = [
+  '공지사항',
+  '성과보고',
+  '체력단련실',
+  '브레인연료',
+  '사내신문고',
+] as const;
 
 /**
  * 확장 포인트 ①: scope별 태그 집합
  *  - 전사/부서 스코프에 따라 노출되는 태그 버튼을 다르게 구성할 수 있음
  *  - 필요시 값만 바꿔도 UI에 바로 반영
  */
-const COMPANY_TAGS = ['공지', '정보', '질문', '잡담', '팀원모집'] as const;
-const DEPARTMENT_TAGS = ['공지', '정보', 'Q&A', '모집', '잡담'] as const;
+const COMPANY_TAGS = ['공지', '정보', '질문', '잡담', '모집'] as const;
+const DEPARTMENT_TAGS = ['공지', '정보', '질문', '모집', '잡담'] as const;
 
-const allList: BoardListItem[] = [
+const mockList: Omit<BoardListItem, 'board'>[] = [
   {
     id: 1,
     label: '공지',
     title: '03/31 공지사항입니다.',
     commentCount: 3,
-    userName: 'COO 갓햄',
+    userName: 'CTO 갓햄',
     viewCount: 10000,
     dateCreated: '2025.03.31',
   },
   {
     id: 2,
-    label: '팀원모집',
+    label: '모집',
     title: '프론트엔드팀 팀원 모집',
     commentCount: 2,
-    userName: 'COO 갓햄',
+    userName: 'COO 갓냥',
     viewCount: 15,
     dateCreated: '2025.03.31',
   },
@@ -64,7 +73,7 @@ const allList: BoardListItem[] = [
     label: '정보',
     title: '8월 오프라인 세미나 일정',
     commentCount: 12,
-    userName: 'COO 갓햄',
+    userName: 'COO 갓냥',
     viewCount: 22,
     dateCreated: '2025.03.31',
   },
@@ -73,7 +82,7 @@ const allList: BoardListItem[] = [
     label: '잡담',
     title: '이건 무슨 벌레인가요?',
     commentCount: 5,
-    userName: 'COO 갓햄',
+    userName: 'COO 갓냥',
     viewCount: 0,
     dateCreated: '2025.03.31',
   },
@@ -82,7 +91,7 @@ const allList: BoardListItem[] = [
     label: '질문',
     title: 'React 18 마이그레이션 질문',
     commentCount: 8,
-    userName: 'COO 갓햄',
+    userName: 'CTO 갓햄',
     viewCount: 45,
     dateCreated: '2025.03.30',
   },
@@ -91,16 +100,16 @@ const allList: BoardListItem[] = [
     label: '정보',
     title: '신규 프로젝트 킥오프 미팅',
     commentCount: 15,
-    userName: 'COO 갓햄',
+    userName: 'CEO 갓끼',
     viewCount: 89,
     dateCreated: '2025.03.30',
   },
   {
     id: 7,
-    label: '팀원모집',
+    label: '모집',
     title: '백엔드 개발자 모집합니다',
     commentCount: 7,
-    userName: 'COO 갓햄',
+    userName: 'CTO 갓햄',
     viewCount: 123,
     dateCreated: '2025.03.29',
   },
@@ -109,7 +118,7 @@ const allList: BoardListItem[] = [
     label: '잡담',
     title: '점심 메뉴 추천해주세요',
     commentCount: 20,
-    userName: 'COO 갓햄',
+    userName: '백 팀장',
     viewCount: 156,
     dateCreated: '2025.03.29',
   },
@@ -118,7 +127,7 @@ const allList: BoardListItem[] = [
     label: '공지',
     title: '4월 정기 회식 공지',
     commentCount: 5,
-    userName: 'COO 갓햄',
+    userName: 'CEO 갓끼',
     viewCount: 234,
     dateCreated: '2025.03.28',
   },
@@ -127,7 +136,7 @@ const allList: BoardListItem[] = [
     label: '질문',
     title: 'TypeScript 타입 에러 해결 방법',
     commentCount: 11,
-    userName: 'COO 갓햄',
+    userName: 'CTO 갓햄',
     viewCount: 78,
     dateCreated: '2025.03.28',
   },
@@ -136,16 +145,16 @@ const allList: BoardListItem[] = [
     label: '정보',
     title: '새로운 디자인 시스템 도입',
     commentCount: 9,
-    userName: 'COO 갓햄',
+    userName: 'CTO 갓햄',
     viewCount: 98,
     dateCreated: '2025.03.27',
   },
   {
     id: 12,
-    label: '팀원모집',
+    label: '모집',
     title: 'UI/UX 디자이너 구합니다',
     commentCount: 4,
-    userName: 'COO 갓햄',
+    userName: 'COO 갓냥',
     viewCount: 67,
     dateCreated: '2025.03.27',
   },
@@ -154,7 +163,7 @@ const allList: BoardListItem[] = [
     label: '잡담',
     title: '주말에 뭐하셨나요?',
     commentCount: 18,
-    userName: 'COO 갓햄',
+    userName: '남궁 사원',
     viewCount: 145,
     dateCreated: '2025.03.26',
   },
@@ -163,7 +172,7 @@ const allList: BoardListItem[] = [
     label: '질문',
     title: 'Next.js 14 App Router 관련 질문',
     commentCount: 6,
-    userName: 'COO 갓햄',
+    userName: '김 인턴',
     viewCount: 92,
     dateCreated: '2025.03.26',
   },
@@ -172,7 +181,7 @@ const allList: BoardListItem[] = [
     label: '공지',
     title: '보안 정책 업데이트 안내',
     commentCount: 2,
-    userName: 'COO 갓햄',
+    userName: 'CTO 갓햄',
     viewCount: 189,
     dateCreated: '2025.03.25',
   },
@@ -181,16 +190,16 @@ const allList: BoardListItem[] = [
     label: '정보',
     title: '코드 리뷰 가이드라인',
     commentCount: 13,
-    userName: 'COO 갓햄',
+    userName: 'CTO 갓햄',
     viewCount: 167,
     dateCreated: '2025.03.25',
   },
   {
     id: 17,
-    label: '팀원모집',
+    label: '모집',
     title: 'DevOps 엔지니어 채용',
     commentCount: 3,
-    userName: 'COO 갓햄',
+    userName: 'COO 갓냥',
     viewCount: 54,
     dateCreated: '2025.03.24',
   },
@@ -199,7 +208,7 @@ const allList: BoardListItem[] = [
     label: '잡담',
     title: '추천하는 개발 도서 있나요?',
     commentCount: 22,
-    userName: 'COO 갓햄',
+    userName: '강 인턴',
     viewCount: 198,
     dateCreated: '2025.03.24',
   },
@@ -208,7 +217,7 @@ const allList: BoardListItem[] = [
     label: '질문',
     title: 'Git 브랜치 전략 문의',
     commentCount: 8,
-    userName: 'COO 갓햄',
+    userName: '이 주임',
     viewCount: 76,
     dateCreated: '2025.03.23',
   },
@@ -217,7 +226,7 @@ const allList: BoardListItem[] = [
     label: '정보',
     title: '5월 컨퍼런스 참가 안내',
     commentCount: 7,
-    userName: 'COO 갓햄',
+    userName: 'COO 갓냥',
     viewCount: 134,
     dateCreated: '2025.03.23',
   },
@@ -226,16 +235,16 @@ const allList: BoardListItem[] = [
     label: '공지',
     title: '재택근무 정책 변경',
     commentCount: 16,
-    userName: 'COO 갓햄',
+    userName: 'COO 갓냥',
     viewCount: 456,
     dateCreated: '2025.03.22',
   },
   {
     id: 22,
-    label: '팀원모집',
+    label: '모집',
     title: 'QA 엔지니어 모집',
     commentCount: 5,
-    userName: 'COO 갓햄',
+    userName: 'CTO 갓햄',
     viewCount: 88,
     dateCreated: '2025.03.22',
   },
@@ -244,7 +253,7 @@ const allList: BoardListItem[] = [
     label: '잡담',
     title: '요즘 핫한 기술 스택',
     commentCount: 25,
-    userName: 'COO 갓햄',
+    userName: 'CTO 갓햄',
     viewCount: 267,
     dateCreated: '2025.03.21',
   },
@@ -253,7 +262,7 @@ const allList: BoardListItem[] = [
     label: '질문',
     title: 'Docker 컨테이너 최적화 방법',
     commentCount: 10,
-    userName: 'COO 갓햄',
+    userName: '이 주임',
     viewCount: 112,
     dateCreated: '2025.03.21',
   },
@@ -262,11 +271,16 @@ const allList: BoardListItem[] = [
     label: '정보',
     title: 'API 문서 작성 가이드',
     commentCount: 4,
-    userName: 'COO 갓햄',
+    userName: 'CTO 갓햄',
     viewCount: 95,
     dateCreated: '2025.03.20',
   },
 ];
+
+const allList: BoardListItem[] = mockList.map((item, index) => ({
+  ...item,
+  board: COMPANY_BOARDS[index % COMPANY_BOARDS.length],
+}));
 
 export default function BoardListView() {
   const [toggleView, setToggleView] = useState<'list' | 'grid'>('list');
@@ -274,7 +288,8 @@ export default function BoardListView() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const scope = searchParams.get('scope') ?? 'company'; // 'company' | 'department'
-  const dept = searchParams.get('dept') ?? ''; // 부서명 (scope=department일 때)
+  const board = searchParams.get('board') ?? searchParams.get('tboard') ?? '';
+  const dept = searchParams.get('dept') ?? '';
 
   const selectedTags = searchParams.getAll('tag');
   const currentPage = Number(searchParams.get('page')) || 1;
@@ -323,13 +338,18 @@ export default function BoardListView() {
   };
 
   const filteredList = useMemo(() => {
-    // 확장 포인트 ②: scope/dept 기준으로 리스트 분기
-    // - API 연동 시 여기에서 scope/dep 기준으로 데이터 소스 자체를 바꾸거나,
-    //   이미 받아온 데이터에서 필터링
-    // - 현재 mock(allList)에는 dept 필드가 없으므로, dept 필터는 'dept' 필드가 존재할 때만 적용
+    // 확장 포인트 ②: scope/board/dept 기준으로 리스트 분기
+    // - API 연동 시 여기에서 scope/board/dept를 서버 액션 인자로 전달하거나,
+    //   이미 받아온 데이터에서 필터링하는 자리로 활용
     let result = allList;
 
-    // (옵션) 부서 스코프일 때, 아이템에 dept 필드가 있으면 해당 부서만 남기기
+    if (scope === 'company' && board) {
+      result = result.filter((item: BoardListItem) => {
+        // item.board가 없으면 그대로 통과시켜 mock 데이터도 쉽게 재사용 가능
+        return !('board' in item) || item.board === board;
+      });
+    }
+
     if (scope === 'department' && dept) {
       result = result.filter((item: BoardListItem) => {
         // item.dept가 없으면 그대로 통과시켜 현재 목 데이터도 보이도록 함
@@ -349,7 +369,7 @@ export default function BoardListView() {
     }
 
     return result;
-  }, [scope, dept, selectedTags, keyword]);
+  }, [scope, board, dept, selectedTags, keyword]);
 
   // 페이지네이션 계산
   const totalPages = Math.ceil(filteredList.length / ITEMS_PER_PAGE);
@@ -357,26 +377,31 @@ export default function BoardListView() {
   const endIndex = startIndex + ITEMS_PER_PAGE;
   const currentList = filteredList.slice(startIndex, endIndex);
 
-  const heading = useMemo(
-    () => (scope === 'company' ? '전사게시판' : dept || '부서게시판'),
-    [scope, dept]
-  );
+  const heading = useMemo(() => {
+    if (scope === 'company') {
+      return board || '전사게시판';
+    }
+
+    return dept || '부서게시판';
+  }, [scope, board, dept]);
 
   return (
     <>
       <h2 className="brand-h3 text-grey-900 mb-4">{heading}</h2>
 
       <div className="flex flex-col">
-        <div className="mb-[25px] flex items-center justify-between flex-wrap gap-2">
+        <div className="mb-4 flex items-center flex-wrap gap-3">
           <BoardFilterTags
             tags={availableTags}
             selectedTags={selectedTags}
             onTagClick={handleTagClick}
           />
-          <BoardHeader
-            toggleView={toggleView}
-            onViewChange={handleViewChange}
-          />
+          <div className="ml-auto">
+            <BoardHeader
+              toggleView={toggleView}
+              onViewChange={handleViewChange}
+            />
+          </div>
         </div>
 
         <div className="mb-10 grow-1">

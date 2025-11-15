@@ -13,8 +13,8 @@ export default function BoardHeader({
   onViewChange,
 }: BoardHeaderProps) {
   return (
-    <div className="grid grid-cols-2 gap-4">
-      <Button variant="primary" className="py-2" onClick={() => {}}>
+    <div className="flex justify-end gap-3">
+      <Button variant="primary" className="py-2 px-6" onClick={() => {}}>
         글쓰기
       </Button>
       <ViewToggle view={toggleView} onViewChange={onViewChange} />

@@ -14,7 +14,7 @@ export default function BoardFilterTags({
   onTagClick,
 }: BoardFilterTagsProps) {
   return (
-    <div className="flex gap-2">
+    <div className="flex flex-wrap gap-2 items-center">
       {tags.map(tag => (
         <Button
           key={tag}

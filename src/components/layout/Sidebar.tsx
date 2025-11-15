@@ -152,11 +152,11 @@ function MenuSection({
     // 라우팅 규칙
     let href: string | null = null;
 
-    // 전사게시판: scope=company + tag(카테고리)로 이동
+    // 전사게시판: scope=company + board(카테고리)로 이동
     if (title === '전사게시판') {
       const q = new URLSearchParams({
         scope: 'company',
-        tag: item,
+        board: item,
       }).toString();
       href = `/board?${q}`;
     }
