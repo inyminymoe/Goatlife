@@ -21,21 +21,21 @@ export default function SearchBar({
   };
 
   return (
-    <div className="mx-auto flex justify-center items-center bg-white rounded-[5px] pl-[15px] pr-[5px] md:w-[642px]">
-      <div className="text-sm text-grey-500 border-r pr-[30px] border-r-grey-300">
+    <div className="mx-auto flex justify-center items-center bg-white rounded-[5px] pl-4 pr-2 md:w-[642px]">
+      <div className="hidden md:block text-sm text-grey-500 border-r pr-4 border-r-grey-300">
         {label}
       </div>
       <input
         type="text"
         value={searchInput}
         placeholder={placeholder}
-        className="flex-1 text-sm outline-none ml-[15px] truncate"
+        className="flex-1 text-sm text-fixed-grey-500 outline-none truncate px-2 py-2"
         onChange={e => setSearchInput(e.target.value)}
       />
       <Button
         variant="primary"
         size="sm"
-        className="my-[5px] h-8"
+        className="my-[5px] h-8 flex items-center justify-center"
         disabled={!searchInput.trim()}
         onClick={handleSearch}
       >

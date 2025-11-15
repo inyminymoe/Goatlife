@@ -404,7 +404,7 @@ export default function BoardListView() {
           </div>
         </div>
 
-        <div className="mb-10 grow-1">
+        <div className="mb-8 grow-1">
           {currentList.length === 0 ? (
             <p>등록된 게시글이 없습니다.</p>
           ) : (
@@ -416,7 +416,7 @@ export default function BoardListView() {
           )}
         </div>
 
-        <div className="mb-10">
+        <div className="mb-8">
           <Pagination
             currentPage={currentPage}
             totalPages={totalPages}
