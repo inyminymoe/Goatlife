@@ -8,6 +8,8 @@ import { userAtom } from '@/store/atoms';
 import UserInfoCard from '@/components/home/UserInfoCard';
 import ExecMessageCard from '@/components/home/ExecMessageCard';
 import PerformanceWidget from '@/components/home/PerformanceWidget';
+import { TodayRankWidget } from '@/components/home/TodayRankWidget';
+import { useTodayRanks } from '@/hooks/useTodayRanks';
 
 const AttendanceCard = dynamic(
   () => import('@/components/home/AttendanceCard'),
@@ -34,6 +36,11 @@ const AttendanceCard = dynamic(
 export default function Home() {
   const user = useAtomValue(userAtom);
   const isMember = Boolean(user);
+  const {
+    ranks: todayRanks,
+    isLoading: isTodayRanksLoading,
+    isError: isTodayRanksError,
+  } = useTodayRanks();
 
   return (
     <>
@@ -114,13 +121,11 @@ export default function Home() {
 
       <ExecMessageCard />
 
-      <section className="bg-grey-100 rounded-[5px] p-6 md:min-h-[210px]">
-        <div className="flex items-center gap-1 mb-4">
-          <Icon icon="icon-park:trophy" className="w-6 h-6 text-primary-500" />
-          <h2 className="brand-h3 text-grey-900">Today 갓생이</h2>
-        </div>
-        <p className="body-base text-grey-700">1호 갓생이가 되어주세요🐹</p>
-      </section>
+      <TodayRankWidget
+        ranks={todayRanks}
+        isLoading={isTodayRanksLoading}
+        isError={isTodayRanksError}
+      />
     </>
   );
 }
