@@ -337,6 +337,18 @@ export default function BoardListView() {
     setToggleView(prev => (prev === 'list' ? 'grid' : 'list'));
   };
 
+  const handleCreate = () => {
+    const params = new URLSearchParams();
+    params.set('scope', scope);
+    if (scope === 'company' && board) {
+      params.set('board', board);
+    }
+    if (scope === 'department' && dept) {
+      params.set('dept', dept);
+    }
+    router.push(`/board/new?${params.toString()}`);
+  };
+
   const filteredList = useMemo(() => {
     // 확장 포인트 ②: scope/board/dept 기준으로 리스트 분기
     // - API 연동 시 여기에서 scope/board/dept를 서버 액션 인자로 전달하거나,
@@ -400,6 +412,7 @@ export default function BoardListView() {
             <BoardHeader
               toggleView={toggleView}
               onViewChange={handleViewChange}
+              onCreate={handleCreate}
             />
           </div>
         </div>
