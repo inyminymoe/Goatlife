@@ -5,7 +5,7 @@ import { Icon } from '@iconify/react';
 interface IconButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   icon: string;
   activeIcon?: string;
-  label: string;
+  label?: string;
   variant?: 'outline' | 'ghost';
   active?: boolean;
   onActiveChange?: (active: boolean) => void;
@@ -47,7 +47,9 @@ export default function IconButton({
       {...props}
     >
       <Icon icon={displayIcon} className={`w-5 h-5 ${iconColor}`} />
-      <span className="body-xs font-medium text-grey-900">{label}</span>
+      {label ? (
+        <span className="body-xs font-medium text-grey-900">{label}</span>
+      ) : null}
     </button>
   );
 }
