@@ -15,13 +15,13 @@ import { useRouter, useSearchParams } from 'next/navigation';
 
 import Pagination from '@/components/ui/Pagination';
 import SearchBar from '@/components/ui/SearchBar';
-import BoardFilterTags from './BoardFilterTags';
+import BoardFilterTopics from './BoardFilterTopics';
 import BoardHeader from './BoardHeader';
 import BoardItem from './BoardItem';
 
 type BoardListItem = {
   id: number;
-  label: string;
+  topic: string;
   title: string;
   commentCount: number;
   userName: string;
@@ -42,17 +42,17 @@ const COMPANY_BOARDS = [
 ] as const;
 
 /**
- * 확장 포인트 ①: scope별 태그 집합
- *  - 전사/부서 스코프에 따라 노출되는 태그 버튼을 다르게 구성할 수 있음
+ * 확장 포인트 ①: scope별 토픽 집합
+ *  - 전사/부서 스코프에 따라 노출되는 토픽 버튼을 다르게 구성할 수 있음
  *  - 필요시 값만 바꿔도 UI에 바로 반영
  */
-const COMPANY_TAGS = ['공지', '정보', '질문', '잡담', '모집'] as const;
-const DEPARTMENT_TAGS = ['공지', '정보', '질문', '모집', '잡담'] as const;
+const COMPANY_TOPICS = ['공지', '정보', '질문', '잡담', '모집'] as const;
+const DEPARTMENT_TOPICS = ['공지', '정보', '질문', '모집', '잡담'] as const;
 
 const mockList: Omit<BoardListItem, 'board'>[] = [
   {
     id: 1,
-    label: '공지',
+    topic: '공지',
     title: '03/31 공지사항입니다.',
     commentCount: 3,
     userName: 'CTO 갓햄',
@@ -61,7 +61,7 @@ const mockList: Omit<BoardListItem, 'board'>[] = [
   },
   {
     id: 2,
-    label: '모집',
+    topic: '모집',
     title: '프론트엔드팀 팀원 모집',
     commentCount: 2,
     userName: 'COO 갓냥',
@@ -70,7 +70,7 @@ const mockList: Omit<BoardListItem, 'board'>[] = [
   },
   {
     id: 3,
-    label: '정보',
+    topic: '정보',
     title: '8월 오프라인 세미나 일정',
     commentCount: 12,
     userName: 'COO 갓냥',
@@ -79,7 +79,7 @@ const mockList: Omit<BoardListItem, 'board'>[] = [
   },
   {
     id: 4,
-    label: '잡담',
+    topic: '잡담',
     title: '이건 무슨 벌레인가요?',
     commentCount: 5,
     userName: 'COO 갓냥',
@@ -88,7 +88,7 @@ const mockList: Omit<BoardListItem, 'board'>[] = [
   },
   {
     id: 5,
-    label: '질문',
+    topic: '질문',
     title: 'React 18 마이그레이션 질문',
     commentCount: 8,
     userName: 'CTO 갓햄',
@@ -97,7 +97,7 @@ const mockList: Omit<BoardListItem, 'board'>[] = [
   },
   {
     id: 6,
-    label: '정보',
+    topic: '정보',
     title: '신규 프로젝트 킥오프 미팅',
     commentCount: 15,
     userName: 'CEO 갓끼',
@@ -106,7 +106,7 @@ const mockList: Omit<BoardListItem, 'board'>[] = [
   },
   {
     id: 7,
-    label: '모집',
+    topic: '모집',
     title: '백엔드 개발자 모집합니다',
     commentCount: 7,
     userName: 'CTO 갓햄',
@@ -115,7 +115,7 @@ const mockList: Omit<BoardListItem, 'board'>[] = [
   },
   {
     id: 8,
-    label: '잡담',
+    topic: '잡담',
     title: '점심 메뉴 추천해주세요',
     commentCount: 20,
     userName: '백 팀장',
@@ -124,7 +124,7 @@ const mockList: Omit<BoardListItem, 'board'>[] = [
   },
   {
     id: 9,
-    label: '공지',
+    topic: '공지',
     title: '4월 정기 회식 공지',
     commentCount: 5,
     userName: 'CEO 갓끼',
@@ -133,7 +133,7 @@ const mockList: Omit<BoardListItem, 'board'>[] = [
   },
   {
     id: 10,
-    label: '질문',
+    topic: '질문',
     title: 'TypeScript 타입 에러 해결 방법',
     commentCount: 11,
     userName: 'CTO 갓햄',
@@ -142,7 +142,7 @@ const mockList: Omit<BoardListItem, 'board'>[] = [
   },
   {
     id: 11,
-    label: '정보',
+    topic: '정보',
     title: '새로운 디자인 시스템 도입',
     commentCount: 9,
     userName: 'CTO 갓햄',
@@ -151,7 +151,7 @@ const mockList: Omit<BoardListItem, 'board'>[] = [
   },
   {
     id: 12,
-    label: '모집',
+    topic: '모집',
     title: 'UI/UX 디자이너 구합니다',
     commentCount: 4,
     userName: 'COO 갓냥',
@@ -160,7 +160,7 @@ const mockList: Omit<BoardListItem, 'board'>[] = [
   },
   {
     id: 13,
-    label: '잡담',
+    topic: '잡담',
     title: '주말에 뭐하셨나요?',
     commentCount: 18,
     userName: '남궁 사원',
@@ -169,7 +169,7 @@ const mockList: Omit<BoardListItem, 'board'>[] = [
   },
   {
     id: 14,
-    label: '질문',
+    topic: '질문',
     title: 'Next.js 14 App Router 관련 질문',
     commentCount: 6,
     userName: '김 인턴',
@@ -178,7 +178,7 @@ const mockList: Omit<BoardListItem, 'board'>[] = [
   },
   {
     id: 15,
-    label: '공지',
+    topic: '공지',
     title: '보안 정책 업데이트 안내',
     commentCount: 2,
     userName: 'CTO 갓햄',
@@ -187,7 +187,7 @@ const mockList: Omit<BoardListItem, 'board'>[] = [
   },
   {
     id: 16,
-    label: '정보',
+    topic: '정보',
     title: '코드 리뷰 가이드라인',
     commentCount: 13,
     userName: 'CTO 갓햄',
@@ -196,7 +196,7 @@ const mockList: Omit<BoardListItem, 'board'>[] = [
   },
   {
     id: 17,
-    label: '모집',
+    topic: '모집',
     title: 'DevOps 엔지니어 채용',
     commentCount: 3,
     userName: 'COO 갓냥',
@@ -205,7 +205,7 @@ const mockList: Omit<BoardListItem, 'board'>[] = [
   },
   {
     id: 18,
-    label: '잡담',
+    topic: '잡담',
     title: '추천하는 개발 도서 있나요?',
     commentCount: 22,
     userName: '강 인턴',
@@ -214,7 +214,7 @@ const mockList: Omit<BoardListItem, 'board'>[] = [
   },
   {
     id: 19,
-    label: '질문',
+    topic: '질문',
     title: 'Git 브랜치 전략 문의',
     commentCount: 8,
     userName: '이 주임',
@@ -223,7 +223,7 @@ const mockList: Omit<BoardListItem, 'board'>[] = [
   },
   {
     id: 20,
-    label: '정보',
+    topic: '정보',
     title: '5월 컨퍼런스 참가 안내',
     commentCount: 7,
     userName: 'COO 갓냥',
@@ -232,7 +232,7 @@ const mockList: Omit<BoardListItem, 'board'>[] = [
   },
   {
     id: 21,
-    label: '공지',
+    topic: '공지',
     title: '재택근무 정책 변경',
     commentCount: 16,
     userName: 'COO 갓냥',
@@ -241,7 +241,7 @@ const mockList: Omit<BoardListItem, 'board'>[] = [
   },
   {
     id: 22,
-    label: '모집',
+    topic: '모집',
     title: 'QA 엔지니어 모집',
     commentCount: 5,
     userName: 'CTO 갓햄',
@@ -250,7 +250,7 @@ const mockList: Omit<BoardListItem, 'board'>[] = [
   },
   {
     id: 23,
-    label: '잡담',
+    topic: '잡담',
     title: '요즘 핫한 기술 스택',
     commentCount: 25,
     userName: 'CTO 갓햄',
@@ -259,7 +259,7 @@ const mockList: Omit<BoardListItem, 'board'>[] = [
   },
   {
     id: 24,
-    label: '질문',
+    topic: '질문',
     title: 'Docker 컨테이너 최적화 방법',
     commentCount: 10,
     userName: '이 주임',
@@ -268,7 +268,7 @@ const mockList: Omit<BoardListItem, 'board'>[] = [
   },
   {
     id: 25,
-    label: '정보',
+    topic: '정보',
     title: 'API 문서 작성 가이드',
     commentCount: 4,
     userName: 'CTO 갓햄',
@@ -291,23 +291,25 @@ export default function BoardListView() {
   const board = searchParams.get('board') ?? searchParams.get('tboard') ?? '';
   const dept = searchParams.get('dept') ?? '';
 
-  const selectedTags = searchParams.getAll('tag');
+  const selectedTopics = searchParams.getAll('topic');
   const currentPage = Number(searchParams.get('page')) || 1;
   const keyword = searchParams.get('keyword') || '';
 
-  // scope에 따라 노출할 태그 집합을 분기
-  const availableTags = useMemo(() => {
-    return scope === 'company' ? [...COMPANY_TAGS] : [...DEPARTMENT_TAGS];
+  // scope에 따라 노출할 토픽 집합을 분기
+  const availableTopics = useMemo(() => {
+    return scope === 'company' ? [...COMPANY_TOPICS] : [...DEPARTMENT_TOPICS];
   }, [scope]);
 
-  const handleTagClick = (tag: string) => {
+  const handleTopicClick = (topic: string) => {
     const params = new URLSearchParams(searchParams);
 
-    if (selectedTags.includes(tag)) {
-      params.delete('tag');
-      selectedTags.filter(t => t !== tag).forEach(t => params.append('tag', t));
+    if (selectedTopics.includes(topic)) {
+      params.delete('topic');
+      selectedTopics
+        .filter(t => t !== topic)
+        .forEach(t => params.append('topic', t));
     } else {
-      params.append('tag', tag);
+      params.append('topic', topic);
     }
 
     params.set('page', '1');
@@ -369,9 +371,9 @@ export default function BoardListView() {
       });
     }
 
-    // 태그 필터
-    if (selectedTags.length > 0) {
-      result = result.filter(item => selectedTags.includes(item.label));
+    // 토픽 필터
+    if (selectedTopics.length > 0) {
+      result = result.filter(item => selectedTopics.includes(item.topic));
     }
 
     // 검색어 필터 (제목 기준)
@@ -381,7 +383,7 @@ export default function BoardListView() {
     }
 
     return result;
-  }, [scope, board, dept, selectedTags, keyword]);
+  }, [scope, board, dept, selectedTopics, keyword]);
 
   // 페이지네이션 계산
   const totalPages = Math.ceil(filteredList.length / ITEMS_PER_PAGE);
@@ -403,10 +405,10 @@ export default function BoardListView() {
 
       <div className="flex flex-col">
         <div className="mb-4 flex items-center flex-wrap gap-3">
-          <BoardFilterTags
-            tags={availableTags}
-            selectedTags={selectedTags}
-            onTagClick={handleTagClick}
+          <BoardFilterTopics
+            topics={availableTopics}
+            selectedTopics={selectedTopics}
+            onTopicClick={handleTopicClick}
           />
           <div className="ml-auto">
             <BoardHeader

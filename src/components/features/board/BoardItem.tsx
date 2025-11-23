@@ -4,7 +4,7 @@ import Badge from '@/components/ui/Badge';
 
 interface BoardItemProps {
   id: number;
-  label: string;
+  topic: string;
   title: string;
   commentCount: number;
   userName: string;
@@ -13,7 +13,7 @@ interface BoardItemProps {
 }
 
 export default function BoardItem({
-  label,
+  topic,
   title,
   commentCount,
   userName,
@@ -26,7 +26,7 @@ export default function BoardItem({
     <div className="py-3 border-t border-t-grey-200 last:border-b last:border-b-grey-200">
       <div className="flex gap-2 mb-[10px] items-center">
         <Badge variant="blue" size="xs" className="text-[12px]">
-          {label}
+          {topic}
         </Badge>
 
         <strong className="font-medium">{title}</strong>
