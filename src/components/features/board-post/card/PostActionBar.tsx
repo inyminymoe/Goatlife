@@ -21,19 +21,19 @@ export function PostActionBar({ likes }: PostActionBarProps) {
           setIsToastOpen(false);
         }}
       />
-      <div className="flex gap-2">
+      <div className="flex gap-2 px-6">
         <Button
           variant="outline"
           size="sm"
           icon={
             <Icon
               icon="material-symbols:heart-smile-outline-rounded"
-              className="size-5 text-priamry-500"
+              className="size-5 text-primary-500"
             />
           }
         >
           <span>좋아요</span>
-          <span className="text-priamry-500">{likes}</span>
+          <span className="text-primary-500">{likes}</span>
         </Button>
         <Button
           variant="outline"
@@ -41,7 +41,7 @@ export function PostActionBar({ likes }: PostActionBarProps) {
           icon={
             <Icon
               icon="material-symbols:bookmark-outline-rounded"
-              className="size-5 text-priamry-500"
+              className="size-5 text-primary-500"
             />
           }
         >
@@ -53,7 +53,7 @@ export function PostActionBar({ likes }: PostActionBarProps) {
           icon={
             <Icon
               icon="material-symbols:share"
-              className="size-5 text-priamry-500"
+              className="size-5 text-primary-500"
             />
           }
           onClick={() => {

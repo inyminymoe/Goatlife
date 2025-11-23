@@ -4,10 +4,6 @@ import { PostActionBar } from './PostActionBar';
 import PostCardHeader from './PostCardHeader';
 import { PostContent } from './PostContent';
 
-interface PostCardProps {
-  postId: string;
-}
-
 const item = {
   id: 25,
   label: '정보',
@@ -23,7 +19,7 @@ const item = {
   likes: 13,
 };
 
-export function PostCard({ postId }: PostCardProps) {
+export function PostCard() {
   return (
     <>
       <PostCardHeader {...item} />
