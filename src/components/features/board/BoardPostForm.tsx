@@ -17,7 +17,10 @@ type BoardPostFormProps = {
 };
 
 type FieldErrors = Partial<
-  Record<'title' | 'content' | 'hashtags' | 'category' | 'topic' | 'form', string>
+  Record<
+    'title' | 'content' | 'hashtags' | 'category' | 'topic' | 'form',
+    string
+  >
 >;
 
 const TOOLBAR_ACTIONS = [
@@ -44,7 +47,9 @@ export default function BoardPostForm({
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
   const [selectedHashtags, setSelectedHashtags] = useState<string[]>([]);
-  const [topicSelectValue, setTopicSelectValue] = useState<string | undefined>();
+  const [topicSelectValue, setTopicSelectValue] = useState<
+    string | undefined
+  >();
   const [hashtagInput, setHashtagInput] = useState('');
   const [errors, setErrors] = useState<FieldErrors>({});
   const [isPending, startTransition] = useTransition();
