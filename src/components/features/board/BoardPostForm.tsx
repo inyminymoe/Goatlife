@@ -12,12 +12,15 @@ type BoardPostFormProps = {
   scope: BoardScope;
   board?: string;
   dept?: string;
-  availableTags: string[];
+  availableTopics: string[];
   categoryOptions: string[];
 };
 
 type FieldErrors = Partial<
-  Record<'title' | 'content' | 'tags' | 'form', string>
+  Record<
+    'title' | 'content' | 'hashtags' | 'category' | 'topic' | 'form',
+    string
+  >
 >;
 
 const TOOLBAR_ACTIONS = [
@@ -37,15 +40,17 @@ export default function BoardPostForm({
   scope,
   board,
   dept,
-  availableTags,
+  availableTopics,
   categoryOptions,
 }: BoardPostFormProps) {
   const router = useRouter();
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [tagSelectValue, setTagSelectValue] = useState<string | undefined>();
-  const [tagInput, setTagInput] = useState('');
+  const [selectedHashtags, setSelectedHashtags] = useState<string[]>([]);
+  const [topicSelectValue, setTopicSelectValue] = useState<
+    string | undefined
+  >();
+  const [hashtagInput, setHashtagInput] = useState('');
   const [errors, setErrors] = useState<FieldErrors>({});
   const [isPending, startTransition] = useTransition();
   const formRef = useRef<HTMLFormElement>(null);
@@ -55,43 +60,43 @@ export default function BoardPostForm({
       ? `/board?scope=company&board=${encodeURIComponent(board ?? categoryOptions[0] ?? '')}`
       : `/board?scope=department&dept=${encodeURIComponent(dept ?? '')}`;
 
-  const addTagFromInput = () => {
-    const raw = tagInput.trim();
+  const addHashtagFromInput = () => {
+    const raw = hashtagInput.trim();
     if (!raw) return;
 
     const cleaned = raw.replace(/^#+/, '').replace(/,+$/, '').trim();
 
     if (!cleaned) {
-      setTagInput('');
+      setHashtagInput('');
       return;
     }
 
-    setSelectedTags(prev => {
+    setSelectedHashtags(prev => {
       if (prev.includes(cleaned)) return prev;
       return [...prev, cleaned].slice(0, 5);
     });
 
-    setTagInput('');
+    setHashtagInput('');
   };
 
-  const handleTagKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+  const handleHashtagKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     // IME(한글 등) 조합 중일 때는 태그 변환을 막기
     const nativeEvent = e.nativeEvent as unknown as { isComposing?: boolean };
     if (nativeEvent.isComposing) return;
 
     if (e.key === 'Enter' || e.key === ' ' || e.key === ',') {
       e.preventDefault();
-      addTagFromInput();
+      addHashtagFromInput();
     }
   };
 
-  const handleTagBlur = () => {
+  const handleHashtagBlur = () => {
     // 인풋에서 포커스가 빠질 때 남은 텍스트를 태그로 변환
-    addTagFromInput();
+    addHashtagFromInput();
   };
 
-  const handleRemoveTag = (tag: string) => {
-    setSelectedTags(prev => prev.filter(t => t !== tag));
+  const handleRemoveHashtag = (hashtag: string) => {
+    setSelectedHashtags(prev => prev.filter(t => t !== hashtag));
   };
 
   const handleCancel = () => {
@@ -100,8 +105,9 @@ export default function BoardPostForm({
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    addTagFromInput();
+    addHashtagFromInput();
     const newErrors: FieldErrors = {};
+    const topic = topicSelectValue ?? availableTopics[0] ?? '';
 
     if (!title.trim()) {
       newErrors.title = '제목을 입력해주세요.';
@@ -109,6 +115,10 @@ export default function BoardPostForm({
 
     if (content.trim().length < 5) {
       newErrors.content = '본문은 5자 이상 입력해주세요.';
+    }
+
+    if (!topic) {
+      newErrors.topic = '말머리를 선택해주세요.';
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -124,9 +134,10 @@ export default function BoardPostForm({
         if (dept) fd.set('dept', dept);
         fd.set('title', title.trim());
         fd.set('content', content.trim());
-        fd.delete('tags');
-        Array.from(new Set(selectedTags)).forEach(tag =>
-          fd.append('tags', tag)
+        fd.set('topic', topic);
+        fd.delete('hashtags');
+        Array.from(new Set(selectedHashtags)).forEach(hashtag =>
+          fd.append('hashtags', hashtag)
         );
 
         const result = await createBoardPost(fd);
@@ -135,10 +146,16 @@ export default function BoardPostForm({
           setErrors({
             title: result.fieldErrors?.title,
             content: result.fieldErrors?.content,
-            tags: result.fieldErrors?.tags,
+            hashtags: result.fieldErrors?.hashtags,
+            topic: result.fieldErrors?.topic,
+            category: result.fieldErrors?.category,
             form: result.error,
           });
+          return;
         }
+
+        // 임시: 상세 페이지 작업 중이므로 목록으로 이동
+        router.push(listHref);
       } catch (error) {
         console.error('[BoardPostForm] submit failed', error);
         setErrors({
@@ -169,18 +186,34 @@ export default function BoardPostForm({
       <div className="space-y-2">
         <Select
           placeholder="분류 선택"
-          value={tagSelectValue}
+          value={topicSelectValue}
           onChange={value => {
-            // 분류 선택은 해시태그와 별도로 동작 (태그 리스트에는 추가하지 않음)
-            setTagSelectValue(value);
+            // 분류 선택은 해시태그와 별도로 동작 (해시태그 리스트에는 추가하지 않음)
+            setTopicSelectValue(value);
           }}
-          options={availableTags.map(tag => ({
-            value: tag,
-            label: tag,
+          options={availableTopics.map(topic => ({
+            value: topic,
+            label: topic,
           }))}
         />
-        {errors.tags && (
-          <p className="body-xs text-[#e26aff] font-medium">{errors.tags}</p>
+        {(errors.category || errors.hashtags || errors.topic) && (
+          <>
+            {errors.category && (
+              <p className="body-xs text-[#e26aff] font-medium">
+                {errors.category}
+              </p>
+            )}
+            {errors.topic && (
+              <p className="body-xs text-[#e26aff] font-medium">
+                {errors.topic}
+              </p>
+            )}
+            {errors.hashtags && (
+              <p className="body-xs text-[#e26aff] font-medium">
+                {errors.hashtags}
+              </p>
+            )}
+          </>
         )}
       </div>
 
@@ -195,11 +228,14 @@ export default function BoardPostForm({
                   onClick={() => alert('준비 중')}
                   className="flex items-center gap-1 px-2 py-1 rounded-[4px] hover:bg-grey-100 transition-colors"
                 >
-                  <Icon icon={action.icon} className="w-5 h-5 text-grey-800" />
+                  <Icon
+                    icon={action.icon}
+                    className="w-5 h-5 text-fixed-grey-900"
+                  />
                 </button>
               ))}
             </div>
-            <div className="border-t border-grey-200" />
+            <div className="border-t border-fixed-grey-200" />
 
             <div className="px-6 py-5 space-y-3">
               <div>
@@ -209,7 +245,7 @@ export default function BoardPostForm({
                   onChange={e => setTitle(e.target.value)}
                   placeholder="제목을 입력해 주세요"
                   maxLength={100}
-                  className="w-full bg-transparent border-none outline-none text-xl font-medium text-grey-900 placeholder:text-grey-300"
+                  className="w-full bg-transparent border-none outline-none text-xl font-medium text-fixed-grey-900 placeholder:text-fixedgrey-300"
                 />
                 {errors.title && (
                   <p className="mt-1 text-xs text-[#e26aff]">{errors.title}</p>
@@ -222,7 +258,7 @@ export default function BoardPostForm({
                   placeholder="갓생이들에게 전할 말 🐴"
                   maxLength={3000}
                   rows={10}
-                  className="w-full bg-transparent border-none outline-none resize-none text-base text-grey-900 placeholder:text-grey-300 min-h-[260px]"
+                  className="w-full bg-transparent border-none outline-none resize-none text-base text-fixed-grey-900 placeholder:text-fixed-grey-300 min-h-[260px]"
                 />
                 {errors.content && (
                   <p className="mt-1 text-xs text-[#e26aff]">
@@ -234,15 +270,15 @@ export default function BoardPostForm({
 
             <div className="px-6 pb-4">
               <div className="flex flex-wrap gap-2">
-                {selectedTags.map(tag => (
+                {selectedHashtags.map(hashtag => (
                   <div
-                    key={tag}
+                    key={hashtag}
                     className="inline-flex items-center gap-2 rounded-[999px] bg-primary-100 px-3 py-1 text-primary-500 text-sm"
                   >
-                    <span>#{tag}</span>
+                    <span>#{hashtag}</span>
                     <button
                       type="button"
-                      onClick={() => handleRemoveTag(tag)}
+                      onClick={() => handleRemoveHashtag(hashtag)}
                       className="text-xs text-primary-400 hover:text-primary-600"
                     >
                       ×
@@ -253,11 +289,13 @@ export default function BoardPostForm({
                 <div className="w-26 h-8 px-4 py-2 bg-primary-100 rounded-[5px] inline-flex justify-center items-center gap-2.5">
                   <input
                     type="text"
-                    value={tagInput}
-                    onChange={e => setTagInput(e.target.value)}
-                    onKeyDown={handleTagKeyDown}
-                    onBlur={handleTagBlur}
-                    placeholder={selectedTags.length === 0 ? '#태그 입력' : ''}
+                    value={hashtagInput}
+                    onChange={e => setHashtagInput(e.target.value)}
+                    onKeyDown={handleHashtagKeyDown}
+                    onBlur={handleHashtagBlur}
+                    placeholder={
+                      selectedHashtags.length === 0 ? '#태그 입력' : ''
+                    }
                     className="w-full bg-transparent border-none outline-none text-primary-500 text-sm font-medium leading-6 placeholder:text-primary-500"
                   />
                 </div>

@@ -57,14 +57,14 @@ export default async function BoardNewPage({
   const categoryOptions =
     scope === 'company' ? [...COMPANY_BOARDS] : dept ? [dept] : [];
 
-  const availableTags = getTagsByScope(scope);
+  const availableTopics = getTagsByScope(scope);
 
   return (
     <BoardPostForm
       scope={scope}
       board={scope === 'company' ? board : undefined}
       dept={scope === 'department' ? dept : undefined}
-      availableTags={availableTags}
+      availableTopics={availableTopics}
       categoryOptions={categoryOptions}
     />
   );
