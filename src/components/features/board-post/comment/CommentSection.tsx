@@ -141,11 +141,7 @@ export function CommentSection({ postId, commentCount }: CommentSectionProps) {
       </div>
 
       <div className="mb-8 grow-1">
-        {currentList.length === 0 ? (
-          <p className="px-6">등록된 댓글이 없습니다.</p>
-        ) : (
-          <CommentList comments={currentList} />
-        )}
+        <CommentList comments={currentList} />
       </div>
 
       {totalPages > 1 && (
