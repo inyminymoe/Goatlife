@@ -4,28 +4,27 @@ import { PostActionBar } from './PostActionBar';
 import PostCardHeader from './PostCardHeader';
 import { PostContent } from './PostContent';
 
-const item = {
-  id: 25,
-  label: '정보',
-  title: 'API 문서 작성 가이드',
-  commentCount: 4,
-  userName: 'CTO 갓햄',
-  viewCount: 95,
-  dateCreated: '2025.03.20',
-  content: `
-    <p>안녕하세요</p>
-    <p>프론트엔드 팀원 모집합니다.</p>`,
-  tags: ['모각코', '리액트', '프로젝트'],
-  likes: 13,
+type PostCardProps = {
+  post: {
+    id: string;
+    topic: string;
+    title: string;
+    commentCount: number;
+    userName: string;
+    viewCount: number;
+    dateCreated: string;
+    content: string;
+    hashtags: string[];
+  };
 };
 
-export function PostCard() {
+export function PostCard({ post }: PostCardProps) {
   return (
     <>
-      <PostCardHeader {...item} />
-      <PostContent content={item.content} />
-      <Hashtags tags={item.tags} />
-      <PostActionBar likes={item.likes} />
+      <PostCardHeader {...post} />
+      <PostContent content={post.content} />
+      <Hashtags hashtags={post.hashtags} />
+      <PostActionBar likes={0} />
     </>
   );
 }

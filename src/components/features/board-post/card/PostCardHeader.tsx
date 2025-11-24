@@ -3,8 +3,8 @@ import Badge from '@/components/ui/Badge';
 import IconButton from '@/components/ui/IconButton';
 
 interface BoardPostHeaderProps {
-  id: number;
-  label: string;
+  id: string;
+  topic: string;
   title: string;
   commentCount: number;
   userName: string;
@@ -13,7 +13,7 @@ interface BoardPostHeaderProps {
 }
 
 export default function PostCardHeader({
-  label,
+  topic,
   title,
   commentCount,
   userName,
@@ -26,7 +26,7 @@ export default function PostCardHeader({
     <div className="space-y-3 mb-9 pl-6">
       <div className="flex justify-between items-center">
         <Badge variant="blue" size="xs" className="text-[12px]">
-          {label}
+          {topic}
         </Badge>
         {/* TODO: 버튼 클릭시 드롭다운 */}
         <IconButton icon="icon-park:more-one" variant="ghost" />

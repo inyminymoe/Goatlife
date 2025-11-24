@@ -19,8 +19,22 @@ import BoardFilterTopics from './BoardFilterTopics';
 import BoardHeader from './BoardHeader';
 import BoardItem from './BoardItem';
 
+type BoardListViewProps = {
+  livePosts?: {
+    id: string;
+    topic: string | null;
+    title: string;
+    comment_count?: number | null;
+    author_name: string | null;
+    view_count?: number | null;
+    created_at: string;
+    board?: string | null;
+    dept?: string | null;
+  }[];
+};
+
 type BoardListItem = {
-  id: number;
+  id: string;
   topic: string;
   title: string;
   commentCount: number;
@@ -49,9 +63,13 @@ const COMPANY_BOARDS = [
 const COMPANY_TOPICS = ['공지', '정보', '질문', '잡담', '모집'] as const;
 const DEPARTMENT_TOPICS = ['공지', '정보', '질문', '모집', '잡담'] as const;
 
+const DEMO_POST_ID = '24c0a64c-70bd-4d97-8996-e9d836a0466c';
+const isUuid = (id: string) =>
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
 const mockList: Omit<BoardListItem, 'board'>[] = [
   {
-    id: 1,
+    id: '1',
     topic: '공지',
     title: '03/31 공지사항입니다.',
     commentCount: 3,
@@ -60,7 +78,7 @@ const mockList: Omit<BoardListItem, 'board'>[] = [
     dateCreated: '2025.03.31',
   },
   {
-    id: 2,
+    id: '2',
     topic: '모집',
     title: '프론트엔드팀 팀원 모집',
     commentCount: 2,
@@ -69,7 +87,7 @@ const mockList: Omit<BoardListItem, 'board'>[] = [
     dateCreated: '2025.03.31',
   },
   {
-    id: 3,
+    id: '3',
     topic: '정보',
     title: '8월 오프라인 세미나 일정',
     commentCount: 12,
@@ -78,7 +96,7 @@ const mockList: Omit<BoardListItem, 'board'>[] = [
     dateCreated: '2025.03.31',
   },
   {
-    id: 4,
+    id: '4',
     topic: '잡담',
     title: '이건 무슨 벌레인가요?',
     commentCount: 5,
@@ -87,7 +105,7 @@ const mockList: Omit<BoardListItem, 'board'>[] = [
     dateCreated: '2025.03.31',
   },
   {
-    id: 5,
+    id: '5',
     topic: '질문',
     title: 'React 18 마이그레이션 질문',
     commentCount: 8,
@@ -96,7 +114,7 @@ const mockList: Omit<BoardListItem, 'board'>[] = [
     dateCreated: '2025.03.30',
   },
   {
-    id: 6,
+    id: '6',
     topic: '정보',
     title: '신규 프로젝트 킥오프 미팅',
     commentCount: 15,
@@ -105,7 +123,7 @@ const mockList: Omit<BoardListItem, 'board'>[] = [
     dateCreated: '2025.03.30',
   },
   {
-    id: 7,
+    id: '7',
     topic: '모집',
     title: '백엔드 개발자 모집합니다',
     commentCount: 7,
@@ -114,7 +132,7 @@ const mockList: Omit<BoardListItem, 'board'>[] = [
     dateCreated: '2025.03.29',
   },
   {
-    id: 8,
+    id: '8',
     topic: '잡담',
     title: '점심 메뉴 추천해주세요',
     commentCount: 20,
@@ -123,7 +141,7 @@ const mockList: Omit<BoardListItem, 'board'>[] = [
     dateCreated: '2025.03.29',
   },
   {
-    id: 9,
+    id: '9',
     topic: '공지',
     title: '4월 정기 회식 공지',
     commentCount: 5,
@@ -132,7 +150,7 @@ const mockList: Omit<BoardListItem, 'board'>[] = [
     dateCreated: '2025.03.28',
   },
   {
-    id: 10,
+    id: '10',
     topic: '질문',
     title: 'TypeScript 타입 에러 해결 방법',
     commentCount: 11,
@@ -141,7 +159,7 @@ const mockList: Omit<BoardListItem, 'board'>[] = [
     dateCreated: '2025.03.28',
   },
   {
-    id: 11,
+    id: '11',
     topic: '정보',
     title: '새로운 디자인 시스템 도입',
     commentCount: 9,
@@ -150,7 +168,7 @@ const mockList: Omit<BoardListItem, 'board'>[] = [
     dateCreated: '2025.03.27',
   },
   {
-    id: 12,
+    id: '12',
     topic: '모집',
     title: 'UI/UX 디자이너 구합니다',
     commentCount: 4,
@@ -159,7 +177,7 @@ const mockList: Omit<BoardListItem, 'board'>[] = [
     dateCreated: '2025.03.27',
   },
   {
-    id: 13,
+    id: '13',
     topic: '잡담',
     title: '주말에 뭐하셨나요?',
     commentCount: 18,
@@ -168,7 +186,7 @@ const mockList: Omit<BoardListItem, 'board'>[] = [
     dateCreated: '2025.03.26',
   },
   {
-    id: 14,
+    id: '14',
     topic: '질문',
     title: 'Next.js 14 App Router 관련 질문',
     commentCount: 6,
@@ -177,7 +195,7 @@ const mockList: Omit<BoardListItem, 'board'>[] = [
     dateCreated: '2025.03.26',
   },
   {
-    id: 15,
+    id: '15',
     topic: '공지',
     title: '보안 정책 업데이트 안내',
     commentCount: 2,
@@ -186,7 +204,7 @@ const mockList: Omit<BoardListItem, 'board'>[] = [
     dateCreated: '2025.03.25',
   },
   {
-    id: 16,
+    id: '16',
     topic: '정보',
     title: '코드 리뷰 가이드라인',
     commentCount: 13,
@@ -195,7 +213,7 @@ const mockList: Omit<BoardListItem, 'board'>[] = [
     dateCreated: '2025.03.25',
   },
   {
-    id: 17,
+    id: '17',
     topic: '모집',
     title: 'DevOps 엔지니어 채용',
     commentCount: 3,
@@ -204,7 +222,7 @@ const mockList: Omit<BoardListItem, 'board'>[] = [
     dateCreated: '2025.03.24',
   },
   {
-    id: 18,
+    id: '18',
     topic: '잡담',
     title: '추천하는 개발 도서 있나요?',
     commentCount: 22,
@@ -213,7 +231,7 @@ const mockList: Omit<BoardListItem, 'board'>[] = [
     dateCreated: '2025.03.24',
   },
   {
-    id: 19,
+    id: '19',
     topic: '질문',
     title: 'Git 브랜치 전략 문의',
     commentCount: 8,
@@ -222,7 +240,7 @@ const mockList: Omit<BoardListItem, 'board'>[] = [
     dateCreated: '2025.03.23',
   },
   {
-    id: 20,
+    id: '20',
     topic: '정보',
     title: '5월 컨퍼런스 참가 안내',
     commentCount: 7,
@@ -231,7 +249,7 @@ const mockList: Omit<BoardListItem, 'board'>[] = [
     dateCreated: '2025.03.23',
   },
   {
-    id: 21,
+    id: '21',
     topic: '공지',
     title: '재택근무 정책 변경',
     commentCount: 16,
@@ -240,7 +258,7 @@ const mockList: Omit<BoardListItem, 'board'>[] = [
     dateCreated: '2025.03.22',
   },
   {
-    id: 22,
+    id: '22',
     topic: '모집',
     title: 'QA 엔지니어 모집',
     commentCount: 5,
@@ -249,7 +267,7 @@ const mockList: Omit<BoardListItem, 'board'>[] = [
     dateCreated: '2025.03.22',
   },
   {
-    id: 23,
+    id: '23',
     topic: '잡담',
     title: '요즘 핫한 기술 스택',
     commentCount: 25,
@@ -258,7 +276,7 @@ const mockList: Omit<BoardListItem, 'board'>[] = [
     dateCreated: '2025.03.21',
   },
   {
-    id: 24,
+    id: '24',
     topic: '질문',
     title: 'Docker 컨테이너 최적화 방법',
     commentCount: 10,
@@ -267,7 +285,7 @@ const mockList: Omit<BoardListItem, 'board'>[] = [
     dateCreated: '2025.03.21',
   },
   {
-    id: 25,
+    id: '25',
     topic: '정보',
     title: 'API 문서 작성 가이드',
     commentCount: 4,
@@ -277,12 +295,21 @@ const mockList: Omit<BoardListItem, 'board'>[] = [
   },
 ];
 
-const allList: BoardListItem[] = mockList.map((item, index) => ({
+const mockListWithBoard: BoardListItem[] = mockList.map((item, index) => ({
   ...item,
   board: COMPANY_BOARDS[index % COMPANY_BOARDS.length],
 }));
 
-export default function BoardListView() {
+function formatDate(dateIso: string) {
+  const d = new Date(dateIso);
+  if (Number.isNaN(d.getTime())) return dateIso;
+  const yyyy = d.getFullYear();
+  const mm = `${d.getMonth() + 1}`.padStart(2, '0');
+  const dd = `${d.getDate()}`.padStart(2, '0');
+  return `${yyyy}.${mm}.${dd}`;
+}
+
+export default function BoardListView({ livePosts = [] }: BoardListViewProps) {
   const [toggleView, setToggleView] = useState<'list' | 'grid'>('list');
 
   const searchParams = useSearchParams();
@@ -294,6 +321,27 @@ export default function BoardListView() {
   const selectedTopics = searchParams.getAll('topic');
   const currentPage = Number(searchParams.get('page')) || 1;
   const keyword = searchParams.get('keyword') || '';
+
+  const supabaseList: BoardListItem[] = useMemo(
+    () =>
+      livePosts.map(post => ({
+        id: post.id,
+        topic: post.topic ?? '공지',
+        title: post.title,
+        commentCount: post.comment_count ?? 0,
+        userName: post.author_name ?? '익명 갓생',
+        viewCount: post.view_count ?? 0,
+        dateCreated: formatDate(post.created_at),
+        board: post.board ?? undefined,
+        dept: post.dept ?? undefined,
+      })),
+    [livePosts]
+  );
+
+  const allList: BoardListItem[] = useMemo(
+    () => [...supabaseList, ...mockListWithBoard],
+    [supabaseList]
+  );
 
   // scope에 따라 노출할 토픽 집합을 분기
   const availableTopics = useMemo(() => {
@@ -383,7 +431,7 @@ export default function BoardListView() {
     }
 
     return result;
-  }, [scope, board, dept, selectedTopics, keyword]);
+  }, [scope, board, dept, selectedTopics, keyword, allList]);
 
   // 페이지네이션 계산
   const totalPages = Math.ceil(filteredList.length / ITEMS_PER_PAGE);
@@ -424,9 +472,24 @@ export default function BoardListView() {
             <p>등록된 게시글이 없습니다.</p>
           ) : (
             <>
-              {currentList.map(item => (
-                <BoardItem key={item.id} {...item} />
-              ))}
+              {currentList.map(item => {
+                const params = new URLSearchParams();
+                params.set('scope', scope);
+                if (scope === 'company' && board) {
+                  params.set('board', board);
+                }
+                if (scope === 'department' && dept) {
+                  params.set('dept', dept);
+                }
+
+                const query = params.toString();
+                const postIdForHref = isUuid(item.id) ? item.id : DEMO_POST_ID;
+                const detailHref = query
+                  ? `/board/${postIdForHref}?${query}`
+                  : `/board/${postIdForHref}`;
+
+                return <BoardItem key={item.id} {...item} href={detailHref} />;
+              })}
             </>
           )}
         </div>
