@@ -154,8 +154,20 @@ export default function BoardPostForm({
           return;
         }
 
-        // 임시: 상세 페이지 작업 중이므로 목록으로 이동
-        router.push(listHref);
+        const searchParams = new URLSearchParams();
+        searchParams.set('scope', scope);
+        if (scope === 'company' && board) {
+          searchParams.set('board', board);
+        }
+        if (scope === 'department' && dept) {
+          searchParams.set('dept', dept);
+        }
+
+        if (result.postId) {
+          router.push(`/board/${result.postId}?${searchParams.toString()}`);
+        } else {
+          router.push(listHref);
+        }
       } catch (error) {
         console.error('[BoardPostForm] submit failed', error);
         setErrors({

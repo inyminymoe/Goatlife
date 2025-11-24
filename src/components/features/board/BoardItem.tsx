@@ -1,15 +1,17 @@
 'use client';
 
+import Link from 'next/link';
 import Badge from '@/components/ui/Badge';
 
 interface BoardItemProps {
-  id: number;
+  id: string;
   topic: string;
   title: string;
   commentCount: number;
   userName: string;
   viewCount: number;
   dateCreated: string;
+  href?: string;
 }
 
 export default function BoardItem({
@@ -19,10 +21,11 @@ export default function BoardItem({
   userName,
   viewCount,
   dateCreated,
+  href,
 }: BoardItemProps) {
   const formatViewCount = viewCount >= 9999 ? '9999+' : viewCount;
 
-  return (
+  const content = (
     <div className="py-3 border-t border-t-grey-200 last:border-b last:border-b-grey-200">
       <div className="flex gap-2 mb-[10px] items-center">
         <Badge variant="blue" size="xs" className="text-[12px]">
@@ -39,5 +42,16 @@ export default function BoardItem({
         <span>{dateCreated}</span>
       </div>
     </div>
+  );
+
+  if (!href) return content;
+
+  return (
+    <Link
+      href={href}
+      className="block hover:bg-grey-50 transition-colors rounded-[4px]"
+    >
+      {content}
+    </Link>
   );
 }

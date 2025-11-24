@@ -10,7 +10,10 @@ interface CommentInputProps {
   onCommentAdded?: () => void;
 }
 
-export function CommentInput({ postId, onCommentAdded }: CommentInputProps) {
+export function CommentInput({
+  postId: _postId,
+  onCommentAdded,
+}: CommentInputProps) {
   const [content, setContent] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 

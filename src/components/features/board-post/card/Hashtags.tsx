@@ -1,11 +1,13 @@
 interface HashtagsProps {
-  tags: string[];
+  hashtags: string[];
 }
 
-export function Hashtags({ tags }: HashtagsProps) {
+export function Hashtags({ hashtags }: HashtagsProps) {
+  if (!hashtags?.length) return null;
+
   return (
     <div className="mb-10 flex gap-6 px-6">
-      {tags.map(tag => (
+      {hashtags.map(tag => (
         <div className=" text-sm text-grey-500" key={tag}>
           #{tag}
         </div>
