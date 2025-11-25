@@ -56,34 +56,34 @@ export function TodayRankWidget({
       {topRanks.map((user, index) => {
         const safePerf = clampPercentage(user.performanceRate);
         const safeAttend = clampPercentage(user.attendanceRate);
+        // 성만 추출 (공백 기준 첫 단어, 1-2글자 성씨 지원)
+        const lastName =
+          user.displayName.split(' ')[0] || user.displayName.charAt(0);
 
         return (
-          <li
-            key={user.userId}
-            className="grid grid-cols-[minmax(84px,1fr)_83px_83px] items-center gap-2 sm:grid-cols-[122px_83px_83px] sm:gap-4 md:gap-6"
-          >
-            <div className="flex items-center gap-2 min-w-0 w-full overflow-hidden sm:w-[122px]">
+          <li key={user.userId} className="grid grid-cols-3 items-center gap-6">
+            <div className="flex items-center gap-2 min-w-0 justify-self-start">
               <span className="brand-h4 text-primary-500 flex-shrink-0">
                 {String(index + 1).padStart(2, '0')}
               </span>
-              <span className="body-sm text-grey-900 font-semibold truncate whitespace-nowrap">
-                {user.displayName}
+              <span className="body-sm text-grey-900 font-semibold whitespace-nowrap">
+                {lastName} {user.rank}
               </span>
               <span className="body-xs text-grey-500 flex-shrink-0 whitespace-nowrap">
                 {user.departmentName}
               </span>
             </div>
-            <div className="flex items-center gap-1.5 body-sm w-[83px]">
+            <div className="flex items-center gap-2 body-sm whitespace-nowrap justify-self-start">
               <Icon
                 icon="icon-park-solid:up-two"
-                className="w-4 h-4 text-primary-500"
+                className="w-4 h-4 text-primary-500 flex-shrink-0"
               />
               <span className="body-sm text-grey-500">성과 {safePerf}%</span>
             </div>
-            <div className="flex items-center gap-1.5 body-sm w-[83px]">
+            <div className="flex items-center gap-2 body-sm whitespace-nowrap justify-self-start">
               <Icon
                 icon="fluent:flash-on-24-filled"
-                className="w-4 h-4 text-primary-500"
+                className="w-4 h-4 text-primary-500 flex-shrink-0"
               />
               <span className="body-sm text-grey-500">근태 {safeAttend}%</span>
             </div>

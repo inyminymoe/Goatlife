@@ -23,6 +23,7 @@ create or replace function public.get_today_ranks(
 returns table (
   user_id uuid,
   display_name text,
+  rank text,
   department_name text,
   performance_rate numeric,
   attendance_rate numeric
@@ -65,7 +66,9 @@ profile_base as (
   select
     p.id,
     trim(concat_ws(' ', nullif(p.last_name, ''), nullif(p.first_name, ''))) as raw_name,
+    coalesce(p.rank::text, '사원') as rank,
     p.department,
+    p.executive_title,
     0::numeric as fallback_performance
   from public.profiles p
 ) ,
@@ -73,6 +76,7 @@ rank_base as (
   select
   pb.id as user_id,
   coalesce(nullif(pb.raw_name, ''), '익명 사원') as display_name,
+  pb.rank,
   coalesce(nullif(pb.department, ''), '부서 미정') as department_name,
   case
     when perf.total_tasks > 0
@@ -82,14 +86,22 @@ rank_base as (
   round(
     (coalesce(att.attended_days, 0) / (select period_days from range)) * 100,
     2
-  ) as attendance_rate
+  ) as attendance_rate,
+  pb.executive_title
 from profile_base pb
 cross join range r
 left join performance perf on perf.user_id = pb.id
 left join attendance att on att.user_id = pb.id
 )
-select *
+select
+  user_id,
+  display_name,
+  rank,
+  department_name,
+  performance_rate,
+  attendance_rate
 from rank_base
+where executive_title IS NULL  -- 임원진 제외 (일반 회원만 선정)
 order by
   (performance_rate + attendance_rate) desc,
   attendance_rate desc,
