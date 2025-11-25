@@ -1,17 +1,23 @@
-'use client';
-import { useAtomValue } from 'jotai';
-import dynamic from 'next/dynamic';
-import Button from '@/components/ui/Button';
+export const dynamic = 'force-dynamic';
+
+import dynamicImport from 'next/dynamic';
 import Image from 'next/image';
-import { Icon } from '@iconify/react';
-import { userAtom } from '@/store/atoms';
+import Button from '@/components/ui/Button';
 import UserInfoCard from '@/components/home/UserInfoCard';
 import ExecMessageCard from '@/components/home/ExecMessageCard';
 import PerformanceWidget from '@/components/home/PerformanceWidget';
-import { TodayRankWidget } from '@/components/home/TodayRankWidget';
-import { useTodayRanks } from '@/hooks/useTodayRanks';
+import { BoardWidget } from '@/components/features/home/BoardWidget';
+import { AnnouncementsWidget } from '@/components/features/home/AnnouncementsWidget';
+import { CommunityWidget } from '@/components/features/home/CommunityWidget';
+import { TodayRankSection } from '@/components/features/home/TodayRankSection';
+import {
+  getMemberAllBoards,
+  getGuestAnnouncements,
+  getGuestCommunity,
+} from './_actions/homeBoard';
+import { createServerSupabase } from '@/lib/supabase/server';
 
-const AttendanceCard = dynamic(
+const AttendanceCard = dynamicImport(
   () => import('@/components/home/AttendanceCard'),
   {
     loading: () => (
@@ -33,51 +39,53 @@ const AttendanceCard = dynamic(
   }
 );
 
-export default function Home() {
-  const user = useAtomValue(userAtom);
-  const isMember = Boolean(user);
+export default async function Home() {
+  const supabase = await createServerSupabase();
   const {
-    ranks: todayRanks,
-    isLoading: isTodayRanksLoading,
-    isError: isTodayRanksError,
-  } = useTodayRanks();
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const isMember = Boolean(user);
+
+  const [memberPosts, guestAnnouncements, guestCommunity] = await Promise.all([
+    isMember ? getMemberAllBoards(6) : Promise.resolve([]),
+    !isMember ? getGuestAnnouncements(6) : Promise.resolve([]),
+    !isMember ? getGuestCommunity(6) : Promise.resolve([]),
+  ]);
 
   return (
     <>
       {isMember ? (
         <>
-          <AttendanceCard />
-          <UserInfoCard />
+          {/* 1row: 근태관리 + 사원정보 */}
+          <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <AttendanceCard />
+            <UserInfoCard />
+          </div>
 
-          <section className="bg-grey-100 rounded-[5px] p-6 md:min-h-[304px]">
-            <div className="flex items-center gap-1 mb-4">
-              <Icon
-                icon="icon-park:message-emoji"
-                className="w-6 h-6 text-primary-500"
-              />
-              <h2 className="brand-h3 text-grey-900">게시판</h2>
-            </div>
-            <p className="body-base text-grey-700">최신 글</p>
-          </section>
+          {/* 2row: 게시판 + 성과현황 */}
+          <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <BoardWidget posts={memberPosts} />
+            <PerformanceWidget mode="card" />
+          </div>
 
-          <PerformanceWidget mode="card" />
+          {/* 3row: 임원진 한마디 + Today 갓생이 */}
+          <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <ExecMessageCard />
+            <TodayRankSection />
+          </div>
         </>
       ) : (
         <>
-          <section className="md:col-span-2 gl-bg-banner rounded-[5px] p-8 md:p-12 md:min-h-[176px] relative overflow-hidden">
+          {/* 1. 배너: 전체 폭 */}
+          <section className="md:col-span-3 gl-bg-banner rounded-[5px] p-8 md:p-12 md:min-h-[176px] relative overflow-hidden">
             <div className="relative z-10 max-w-xl">
               <h2 className="brand-h2 text-grey-900 mb-4 leading-loose">
                 나의 업무 유형 테스트하고
                 <br />
                 갓생상사 입사지원 하러가기
               </h2>
-              <Button
-                variant="primary"
-                onClick={() =>
-                  alert('심리테스트 페이지 준비 중! 아이 이거 언제하냐..')
-                }
-                size="md"
-              >
+              <Button variant="primary" size="md">
                 지금.당장.롸잇나우.검사GO🍀
               </Button>
             </div>
@@ -93,39 +101,19 @@ export default function Home() {
             </div>
           </section>
 
-          <section className="bg-grey-100 rounded-[5px] p-6 md:min-h-[304px]">
-            <div className="flex items-center gap-1 mb-4">
-              <Icon
-                icon="icon-park:message-emoji"
-                className="w-6 h-6 text-primary-500"
-              />
-              <h2 className="brand-h3 text-grey-900">공지사항</h2>
-            </div>
-            <p className="body-base text-grey-700">최신 공지사항 불러오기...</p>
-          </section>
+          {/* 2. 공지사항 + 커뮤니티: 2열 */}
+          <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <AnnouncementsWidget posts={guestAnnouncements} />
+            <CommunityWidget posts={guestCommunity} />
+          </div>
 
-          <section className="bg-grey-100 rounded-[5px] p-6 md:min-h-[304px]">
-            <div className="flex items-center gap-1 mb-4">
-              <Icon
-                icon="icon-park:message-emoji"
-                className="w-6 h-6 text-primary-500"
-              />
-              <h2 className="brand-h3 text-grey-900">커뮤니티</h2>
-            </div>
-            <p className="body-base text-grey-700">
-              전사게시판 최신글 불러오기...
-            </p>
-          </section>
+          {/* 3. 임원진 한마디 + Today 갓생이: 2열 */}
+          <div className="md:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <ExecMessageCard />
+            <TodayRankSection />
+          </div>
         </>
       )}
-
-      <ExecMessageCard />
-
-      <TodayRankWidget
-        ranks={todayRanks}
-        isLoading={isTodayRanksLoading}
-        isError={isTodayRanksError}
-      />
     </>
   );
 }

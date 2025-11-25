@@ -1,3 +1,4 @@
+'use client';
 import { ButtonHTMLAttributes, ReactNode, MouseEvent } from 'react';
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {

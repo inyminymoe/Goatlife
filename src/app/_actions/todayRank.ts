@@ -11,6 +11,7 @@ export type TodayRankOptions = {
 type TodayRankRow = {
   user_id: string;
   display_name: string | null;
+  rank: string | null;
   department_name: string | null;
   performance_rate: number | null;
   attendance_rate: number | null;
@@ -46,6 +47,7 @@ export async function getTodayRanks(
         (row: TodayRankRow): TodayRankUser => ({
           userId: row.user_id,
           displayName: (row.display_name ?? '익명 사원').trim() || '익명 사원',
+          rank: (row.rank ?? '사원').trim() || '사원',
           departmentName:
             (row.department_name ?? '부서 미정').trim() || '부서 미정',
           performanceRate: clampPercentage(row.performance_rate),
