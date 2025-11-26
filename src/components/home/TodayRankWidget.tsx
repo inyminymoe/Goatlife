@@ -54,14 +54,14 @@ export function TodayRankWidget({
   const renderRanks = () => (
     <ul className="mt-4 flex flex-col gap-4">
       {topRanks.map((user, index) => {
-        const safePerf = clampPercentage(user.performanceRate);
-        const safeAttend = clampPercentage(user.attendanceRate);
+        const safePerf = Math.ceil(clampPercentage(user.performanceRate));
+        const safeAttend = Math.ceil(clampPercentage(user.attendanceRate));
         // 성만 추출 (공백 기준 첫 단어, 1-2글자 성씨 지원)
         const lastName =
           user.displayName.split(' ')[0] || user.displayName.charAt(0);
 
         return (
-          <li key={user.userId} className="grid grid-cols-3 items-center gap-6">
+          <li key={user.userId} className="grid grid-cols-3 items-center gap-4">
             <div className="flex items-center gap-2 min-w-0 justify-self-start">
               <span className="brand-h4 text-primary-500 flex-shrink-0">
                 {String(index + 1).padStart(2, '0')}
