@@ -160,7 +160,7 @@ export default function AttendanceView({
   return (
     <>
       <section
-        className="bg-grey-100 rounded-[5px] p-6"
+        className="bg-grey-100 rounded-[5px] p-6 flex flex-col gap-5"
         aria-labelledby="attendance-title"
         data-mode={mode}
       >
@@ -175,7 +175,7 @@ export default function AttendanceView({
           </h2>
         </div>
 
-        <div className="mt-4 grid grid-cols-2 gap-x-0 gap-y-4 items-start">
+        <div className="grid grid-cols-2 gap-x-0 gap-y-4 items-start">
           <div className="flex flex-col gap-1 items-start text-left min-w-0">
             <div className="inline-flex items-center gap-2.5">
               <span className="text-grey-300 body-sm font-semibold">Today</span>
@@ -203,7 +203,7 @@ export default function AttendanceView({
           </div>
         </div>
 
-        <div className="mt-3 grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3">
           <Button
             variant={primaryButton.variant}
             fullWidth
