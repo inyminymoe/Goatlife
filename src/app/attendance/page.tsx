@@ -2,6 +2,7 @@
 
 import AttendanceDashboardCard from '@/components/features/attendance/AttendanceDashboardCard';
 import AttendanceCard from '@/components/home/AttendanceCard';
+import { Calendar } from '@/components/ui/Calendar';
 
 export default function AttendancePage() {
   return (
@@ -14,7 +15,7 @@ export default function AttendancePage() {
         </div>
 
         {/* B. 캘린더 영역 placeholder — TODO: 캘린더 컴포넌트 삽입 */}
-        <section className="bg-grey-100 rounded-[5px] h-[420px] w-full" />
+        <Calendar year={2025} month={10} />
 
         {/* C. 올해 근태 히트맵/업무기록 placeholder — TODO: 히트맵 + Drawer 영역 */}
         <section className="bg-grey-100 rounded-[5px] h-[260px] w-full" />
