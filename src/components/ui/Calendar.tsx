@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Icon } from '@iconify/react';
 
 export type CalendarStatus =
@@ -25,6 +26,9 @@ export type CalendarProps = {
   statusMap?: StatusMap;
   onPrev?: () => void;
   onNext?: () => void;
+  hideHeader?: boolean;
+  compact?: boolean;
+  className?: string;
 };
 
 const WEEK_LABELS = ['월', '화', '수', '목', '금', '토', '일'];
@@ -94,33 +98,92 @@ export function Calendar({
   statusMap = {},
   onPrev,
   onNext,
+  hideHeader = false,
+  compact = false,
+  className = '',
 }: CalendarProps) {
+  const [view, setView] = useState({ year, month });
+
+  const isControlled = Boolean(onPrev || onNext);
+
+  useEffect(() => {
+    if (isControlled) {
+      setView({ year, month });
+    }
+  }, [isControlled, year, month]);
+
+  const handlePrev = () => {
+    if (onPrev) {
+      onPrev();
+      return;
+    }
+    setView(prev => {
+      const isJanuary = prev.month === 0;
+      const nextMonth = isJanuary ? 11 : prev.month - 1;
+      const nextYear = isJanuary ? prev.year - 1 : prev.year;
+      return { year: nextYear, month: nextMonth };
+    });
+  };
+
+  const handleNext = () => {
+    if (onNext) {
+      onNext();
+      return;
+    }
+    setView(prev => {
+      const isDecember = prev.month === 11;
+      const nextMonth = isDecember ? 0 : prev.month + 1;
+      const nextYear = isDecember ? prev.year + 1 : prev.year;
+      return { year: nextYear, month: nextMonth };
+    });
+  };
+
   const selectedSet = new Set(selectedDays);
-  const days = buildMonthDays(year, month, today, statusMap, selectedSet);
+  const days = buildMonthDays(
+    view.year,
+    view.month,
+    today,
+    statusMap,
+    selectedSet
+  );
+  const paddingClass = compact ? 'p-3' : 'p-6';
+  const dotClass = compact ? 'w-[6px] h-[6px]' : 'w-2 h-2';
+  const gapClass = compact ? 'gap-4' : 'gap-6';
+  const dayGapClass = compact ? 'gap-y-3' : 'gap-y-4';
 
   return (
-    <section className="bg-grey-100 rounded-[5px] p-6 flex flex-col gap-6 w-full">
-      <div className="flex items-center justify-between">
-        <button
-          type="button"
-          className="w-8 h-8 inline-flex items-center justify-center rounded-full hover:bg-grey-200 transition-colors"
-          aria-label="previous month"
-          onClick={onPrev}
-        >
-          <Icon icon="lucide:chevron-left" className="w-5 h-5 text-grey-500" />
-        </button>
-        <h3 className="text-base text-grey-900 font-normal font-['DNF_Bit_Bit_v2']">
-          {formatYYYYMM(year, month)}
-        </h3>
-        <button
-          type="button"
-          className="w-8 h-8 inline-flex items-center justify-center rounded-full hover:bg-grey-200 transition-colors"
-          aria-label="next month"
-          onClick={onNext}
-        >
-          <Icon icon="lucide:chevron-right" className="w-5 h-5 text-grey-500" />
-        </button>
-      </div>
+    <section
+      className={`bg-grey-100 rounded-[5px] flex flex-col w-full ${paddingClass} ${gapClass} ${className}`}
+    >
+      {!hideHeader && (
+        <div className="flex items-center justify-between">
+          <button
+            type="button"
+            className="w-8 h-8 inline-flex items-center justify-center rounded-full hover:bg-grey-200 transition-colors"
+            aria-label="previous month"
+            onClick={handlePrev}
+          >
+            <Icon
+              icon="lucide:chevron-left"
+              className="w-5 h-5 text-grey-500"
+            />
+          </button>
+          <h3 className="text-base text-grey-900 font-normal font-['DNF_Bit_Bit_v2']">
+            {formatYYYYMM(view.year, view.month)}
+          </h3>
+          <button
+            type="button"
+            className="w-8 h-8 inline-flex items-center justify-center rounded-full hover:bg-grey-200 transition-colors"
+            aria-label="next month"
+            onClick={handleNext}
+          >
+            <Icon
+              icon="lucide:chevron-right"
+              className="w-5 h-5 text-grey-500"
+            />
+          </button>
+        </div>
+      )}
 
       <div className="grid grid-cols-7 text-center text-xs font-semibold text-grey-500">
         {WEEK_LABELS.map(label => (
@@ -130,7 +193,7 @@ export function Calendar({
         ))}
       </div>
 
-      <div className="grid grid-cols-7 gap-y-4 text-center">
+      <div className={`grid grid-cols-7 ${dayGapClass} text-center`}>
         {days.map(day => {
           const dayNum = day.date.getDate();
           const isInactive = !day.inCurrentMonth;
@@ -153,7 +216,7 @@ export function Calendar({
                 {dayNum}
               </span>
               <span
-                className="w-2 h-2 rounded-full"
+                className={`${dotClass} rounded-full`}
                 style={{ backgroundColor: statusColor }}
                 aria-hidden="true"
               />
