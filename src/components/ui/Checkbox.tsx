@@ -52,9 +52,9 @@ export default function Checkbox({
           <Image
             src="/images/icons/icon_unchecked.svg"
             alt=""
-            width={24}
-            height={24}
-            className="w-6 h-6"
+            width={22}
+            height={22}
+            className="w-[22px] h-[22px]"
           />
         )}
       </span>
