@@ -3,6 +3,7 @@ import { brandFont, bodyFont } from '../lib/fonts';
 import Providers from '../components/Providers';
 import LayoutWrapper from '../components/LayoutWrapper';
 import './globals.css';
+import { Analytics } from '@vercel/analytics/next';
 import { createServerSupabase } from '@/lib/supabase/server';
 import type { User } from '@/types/user';
 
@@ -103,6 +104,7 @@ export default async function RootLayout({
       <body>
         <Providers initialUser={initialUser}>
           <LayoutWrapper>{children}</LayoutWrapper>
+          <Analytics />
         </Providers>
       </body>
     </html>
