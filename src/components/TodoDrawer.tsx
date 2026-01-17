@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Icon } from '@iconify/react';
 import Button from '@/components/ui/Button';
@@ -31,9 +31,21 @@ export default function TodoDrawer({
   onSave,
   onDelete,
 }: TodoDrawerProps) {
-  const [title, setTitle] = useState(todo?.text || '');
-  const [description, setDescription] = useState(todo?.description || '');
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
   const [estimatedTime, setEstimatedTime] = useState('2');
+
+  // todo prop이 변경될 때마다 state 업데이트
+  useEffect(() => {
+    if (todo) {
+      setTitle(todo.text || '');
+      setDescription(todo.description || '');
+    } else {
+      setTitle('');
+      setDescription('');
+      setEstimatedTime('2');
+    }
+  }, [todo]);
 
   const handleSave = () => {
     onSave?.({ id: todo?.id, title, description, estimatedTime });
