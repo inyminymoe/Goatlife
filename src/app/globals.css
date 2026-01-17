@@ -54,7 +54,7 @@ body {
   --color-black: hsl(0 0% 0%);
 
   /* Status colors */
-  --color-status-holiday: var(--color-accent-green-600);
+  --color-status-holiday: var(--color-accent-green-500);
   --color-status-working: var(--color-primary-500);
   --color-status-break: var(--color-accent-orange-400);
   --color-status-absence: var(--color-accent-magenta-300);

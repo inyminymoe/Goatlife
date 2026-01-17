@@ -1,33 +1,22 @@
 'use client';
 
-import AttendanceView from '@/components/shared/AttendanceView';
-import { useAttendance } from '@/hooks/useAttendance';
+import AttendanceDashboardCard from '@/components/features/attendance/AttendanceDashboardCard';
+import AttendanceCard from '@/components/home/AttendanceCard';
+import { Calendar } from '@/components/ui/Calendar';
+import { AttendanceHeatmap } from '@/components/features/attendance/AttendanceHeatmap';
 
 export default function AttendancePage() {
-  const {
-    lifecycle,
-    attendance,
-    attendanceRate,
-    todayMinutes,
-    isMutating,
-    toast,
-    dismissToast,
-    actions,
-  } = useAttendance({ mode: 'full' });
-
   return (
-    <main className="app-container py-8">
-      <AttendanceView
-        attendance={attendance}
-        attendanceRate={attendanceRate}
-        todayMinutes={todayMinutes}
-        lifecycle={lifecycle}
-        isMutating={isMutating}
-        toast={toast}
-        onDismissToast={dismissToast}
-        actions={actions}
-        mode="full"
-      />
-    </main>
+    <div className="col-span-2">
+      <div className="mx-auto max-w-[1440px] space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
+          <AttendanceCard />
+          <AttendanceDashboardCard />
+        </div>
+
+        <Calendar year={2025} month={10} />
+        <AttendanceHeatmap />
+      </div>
+    </div>
   );
 }
