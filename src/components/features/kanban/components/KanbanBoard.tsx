@@ -13,11 +13,7 @@ import TaskInput from './TaskInput';
 import { KanbanColumn } from './KanbanColumn';
 import { useTaskDrawer } from '../hooks/useTaskDrawer';
 import { BOARDS } from '../lib/types';
-import {
-  calculateProgressFromState,
-  organizeTasksByStatus,
-  applyLocalChanges,
-} from '../lib/utils';
+import { organizeTasksByStatus, applyLocalChanges } from '../lib/utils';
 import { useKanbanMutations } from '../hooks/useKanbanMutations';
 import { useKanbanData } from '../hooks/useKanbanData';
 import { useToast } from '@/providers/ToastProvider';
@@ -37,7 +33,7 @@ export function KanbanBoard() {
   const [localChanges, setLocalChanges] = useState<LocalChange[]>([]);
 
   const { isOpen, selectedTask, open, close } = useTaskDrawer();
-  const mutations = useKanbanMutations(toast);
+  const mutations = useKanbanMutations(toast, () => setLocalChanges([]));
 
   // 서버 데이터 + 로컬 변경사항을 합쳐서 최종 상태 계산
   const tasks = useMemo(() => {
@@ -45,19 +41,27 @@ export function KanbanBoard() {
     return applyLocalChanges(organized, localChanges);
   }, [serverTasks, localChanges]);
 
-  // 변경사항 유무 체크
   const hasChanges = localChanges.length > 0;
 
-  const progress = useMemo(() => calculateProgressFromState(tasks), [tasks]);
+  const progress = useMemo(() => {
+    const doneCount = serverTasks.filter(t => {
+      const change = localChanges.find(c => c.taskId === t.id);
+      const status = change ? change.newStatus : t.status;
+      return status === 'done';
+    }).length;
+
+    return {
+      doneCount,
+      totalCount: serverTasks.length,
+    };
+  }, [serverTasks, localChanges]);
 
   const handleOpenSettings = useCallback(
     (taskId: string) => {
-      const task = Object.values(tasks)
-        .flat()
-        .find(t => t.id === taskId);
+      const task = serverTasks.find(t => t.id === taskId);
       if (task) open(task);
     },
-    [tasks, open]
+    [serverTasks, open]
   );
 
   const handleSave = useCallback(
@@ -90,7 +94,6 @@ export function KanbanBoard() {
 
   const handleSubmit = useCallback(() => {
     mutations.submitTasks.mutate(tasks);
-    setLocalChanges([]);
   }, [tasks, mutations.submitTasks]);
 
   /**

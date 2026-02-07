@@ -13,7 +13,10 @@ interface ToastHelper {
   error: (message: string) => void;
 }
 
-export function useKanbanMutations(toast: ToastHelper) {
+export function useKanbanMutations(
+  toast: ToastHelper,
+  onSubmitSuccess?: () => void
+) {
   const queryClient = useQueryClient();
 
   const createMutation = useMutation({
@@ -72,10 +75,13 @@ export function useKanbanMutations(toast: ToastHelper) {
 
       return result;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+
+    onSuccess: async () => {
+      await queryClient.refetchQueries({ queryKey: ['tasks'] });
+      onSubmitSuccess?.();
       toast.success('업무계획서가 제출되었어요!');
     },
+
     onError: error => {
       console.error('제출 실패:', error);
       toast.error('제출 중 문제가 발생했어요.');
