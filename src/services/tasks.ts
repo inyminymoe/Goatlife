@@ -5,6 +5,7 @@ import {
   updateTaskStatus as serverUpdateTaskStatus,
   updateTask as serverUpdateTask,
   deleteTask as serverDeleteTask,
+  batchUpdateTasks as serverBatchUpdateTasks,
   type Task,
   type TaskStatus,
 } from '@/app/_actions/tasks';
@@ -105,6 +106,26 @@ export async function modifyTask(
     const result = await withTimeout(serverUpdateTask(taskId, updates));
     return result.ok
       ? { ok: true, data: result.data }
+      : { ok: false, error: result.error };
+  } catch {
+    return { ok: false, error: 'UNKNOWN' };
+  }
+}
+
+/**
+ * 여러 태스크를 한 번에 업데이트 (칸반보드 제출용)
+ */
+export async function batchUpdateTasksService(
+  updates: Array<{
+    id: string;
+    status: TaskStatus;
+    order_index: number;
+  }>
+): Promise<TasksResult<null>> {
+  try {
+    const result = await withTimeout(serverBatchUpdateTasks(updates));
+    return result.ok
+      ? { ok: true, data: null }
       : { ok: false, error: result.error };
   } catch {
     return { ok: false, error: 'UNKNOWN' };

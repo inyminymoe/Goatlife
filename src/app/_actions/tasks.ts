@@ -101,6 +101,19 @@ export async function createTask(input: {
     return { ok: false, error: '제목을 입력해주세요.' };
   }
 
+  // 현재 todo 상태의 최대 order_index 가져오기
+  const { data: existingTasks } = await client.supabase
+    .from('tasks')
+    .select('order_index')
+    .eq('user_id', client.user.id)
+    .eq('status', 'todo')
+    .order('order_index', { ascending: false })
+    .limit(1);
+
+  // 마지막 태스크의 order_index + 1000으로 설정
+  const maxOrderIndex = existingTasks?.[0]?.order_index ?? 0;
+  const newOrderIndex = maxOrderIndex + 1000;
+
   const { data, error } = await client.supabase
     .from('tasks')
     .insert({
@@ -109,7 +122,7 @@ export async function createTask(input: {
       description: input.description?.trim() || null,
       estimated_time: input.estimated_time || null,
       status: 'todo',
-      order_index: 0,
+      order_index: newOrderIndex,
     })
     .select()
     .single();
@@ -195,6 +208,47 @@ export async function updateTask(
   }
 
   return { ok: true, data: data as Task };
+}
+
+/**
+ * 여러 태스크를 한 번에 업데이트 (제출용)
+ */
+export async function batchUpdateTasks(
+  updates: Array<{
+    id: string;
+    status: TaskStatus;
+    order_index: number;
+  }>
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const client = await getUserSupabaseClient();
+  if (!client.ok) return client;
+
+  try {
+    // 각 태스크를 순차적으로 업데이트
+    for (const update of updates) {
+      const { error } = await client.supabase
+        .from('tasks')
+        .update({
+          status: update.status,
+          order_index: update.order_index,
+        })
+        .eq('id', update.id)
+        .eq('user_id', client.user.id);
+
+      if (error) {
+        throw error;
+      }
+    }
+
+    return { ok: true };
+  } catch (error) {
+    console.error('Batch update error:', error);
+    return {
+      ok: false,
+      error:
+        error instanceof Error ? error.message : '업데이트에 실패했습니다.',
+    };
+  }
 }
 
 /**
