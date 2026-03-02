@@ -82,14 +82,14 @@ SET email_confirmed_at = NOW()
 WHERE email_confirmed_at IS NULL;
 ```
 
-- `setup-auth-trigger.sql` 스크립트를 실행해 회원가입 시 `profiles` 레코드가 자동으로 생성되도록 설정하세요.
+- `supabase/sql/schema/setup-auth-trigger.sql` 스크립트를 실행해 회원가입 시 `profiles` 레코드가 자동으로 생성되도록 설정하세요.
 - `profiles.user_id` 컬럼에 UNIQUE 제약을 추가해 동일 사원 아이디로 중복 가입되는 것을 방지하는 것을 권장합니다.
 - Kakao OAuth를 사용하려면 Kakao Developers의 Redirect URI 목록에 아래 주소를 등록하세요.
   - 프로덕션: `https://vdiolcxwsdpsvxpwduos.supabase.co/auth/v1/callback`
   - 개발(로컬): `http://localhost:3000/auth/callback` (또는 실제 사용 중인 로컬 도메인)
   - `.env.local` 파일에 `NEXT_PUBLIC_SITE_URL=https://your-domain.com` 값을 설정하면 OAuth가 해당 도메인으로 리다이렉트됩니다.
 - Kakao Client Secret을 발급받은 경우 Supabase Dashboard → Authentication → Providers → Kakao에서 REST API 키와 함께 Client Secret을 입력하고 **사용함** 상태로 저장하세요. Secret을 재발급한 경우 즉시 해당 값을 갱신해야 합니다.
-- 기존 OAuth 사용자 프로필의 `last_name` 또는 `rank`가 비어 있다면 `supabase-backfill-oauth-profiles.sql` 스크립트를 SQL Editor에서 실행해 기본값을 채워주세요.
+- 기존 OAuth 사용자 프로필의 `last_name` 또는 `rank`가 비어 있다면 `supabase/sql/fixes/supabase-backfill-oauth-profiles.sql` 스크립트를 SQL Editor에서 실행해 기본값을 채워주세요.
 - 로컬/배포 환경 변수 권장값
   - `.env.local`
     ```
@@ -107,7 +107,7 @@ WHERE email_confirmed_at IS NULL;
     ```
   - Supabase Auth → Site URL에는 프로덕션 도메인을, Kakao Developers에서는 Local/Prod 두 도메인을 모두 등록하세요.
 - Kakao Client Secret을 발급받은 경우 Supabase Dashboard → Authentication → Providers → Kakao에서 REST API 키와 함께 Client Secret을 입력하고 **사용함** 상태로 저장하세요. Secret을 재발급한 경우 즉시 해당 값을 갱신해야 합니다.
-- 기존 OAuth 사용자 프로필의 `last_name` 또는 `rank`가 비어 있다면 `supabase-backfill-oauth-profiles.sql` 스크립트를 SQL Editor에서 실행해 기본값을 채워주세요.
+- 기존 OAuth 사용자 프로필의 `last_name` 또는 `rank`가 비어 있다면 `supabase/sql/fixes/supabase-backfill-oauth-profiles.sql` 스크립트를 SQL Editor에서 실행해 기본값을 채워주세요.
 
 ## 📁 프로젝트 구조
 

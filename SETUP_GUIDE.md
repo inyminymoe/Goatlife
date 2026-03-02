@@ -21,7 +21,7 @@ WHERE email_confirmed_at IS NULL;
 회원가입 시 profiles 테이블에 자동으로 데이터가 들어가려면 DB 트리거 필요
 
 **해결방법:**
-`setup-auth-trigger.sql` 파일을 Supabase SQL Editor에서 실행
+`supabase/sql/schema/setup-auth-trigger.sql` 파일을 Supabase SQL Editor에서 실행
 
 ---
 
@@ -30,7 +30,7 @@ WHERE email_confirmed_at IS NULL;
 ### Supabase 설정
 - [ ] Email provider 활성화
 - [ ] "Confirm email" OFF (개발 중)
-- [ ] setup-auth-trigger.sql 실행 완료
+- [ ] supabase/sql/schema/setup-auth-trigger.sql 실행 완료
 
 ### 회원가입 테스트
 1. http://localhost:3002/signup 접속
@@ -66,9 +66,9 @@ WHERE email_confirmed_at IS NULL;
 - `src/components/ui/Toast.tsx` - Toast 알림 (Portal 사용, z-index 9999)
 
 ### DB 설정 파일
-- `setup-auth-trigger.sql` - 회원가입 시 profiles 자동 생성 트리거
-- `supabase-email-confirmation-fix.sql` - 이메일 확인 상태 조회/수정 쿼리
-- `supabase-rls-policies.sql` - RLS 정책
+- `supabase/sql/schema/setup-auth-trigger.sql` - 회원가입 시 profiles 자동 생성 트리거
+- `supabase/sql/fixes/supabase-email-confirmation-fix.sql` - 이메일 확인 상태 조회/수정 쿼리
+- `supabase/sql/policies/supabase-rls-policies.sql` - RLS 정책
 
 ---
 
@@ -76,7 +76,7 @@ WHERE email_confirmed_at IS NULL;
 
 ### "아이디를 찾을 수 없습니다" 에러
 → profiles 테이블에 user_id가 없음
-→ `supabase-email-confirmation-fix.sql`의 4번 쿼리로 확인
+→ `supabase/sql/fixes/supabase-email-confirmation-fix.sql`의 4번 쿼리로 확인
 
 ### "이메일 인증이 필요합니다" 에러
 → email_confirmed_at이 NULL
