@@ -172,6 +172,8 @@ function MenuSection({
     else if (title === '사원정보') {
       if (item === '근태관리') {
         href = '/attendance';
+      } else if (item === '업무계획') {
+        href = '/work-plan';
       }
     }
     // 다른 섹션(사원정보 등)은 이후 실제 경로가 준비되면 여기에 매핑
