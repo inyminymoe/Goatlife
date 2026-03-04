@@ -107,13 +107,7 @@ function MenuContent({
       <MenuSection
         icon="icon-park:frog"
         title="사원정보"
-        items={[
-          '근태관리',
-          '업무계획',
-          '전자결재',
-          '사원정보 설정',
-          '부서이동 신청',
-        ]}
+        items={['근태관리', '업무계획', '전자결재', '사원정보 설정', '캘린더']}
         isLoggedIn={isLoggedIn}
         requireAuth={true}
         onClose={onClose}
@@ -174,6 +168,12 @@ function MenuSection({
         href = '/attendance';
       } else if (item === '업무계획') {
         href = '/work-plan';
+      } else if (item === '전자결재') {
+        href = '/approval';
+      } else if (item === '사원정보 설정') {
+        href = '/user-info';
+      } else if (item === '캘린더') {
+        href = '/calendar';
       }
     }
     // 다른 섹션(사원정보 등)은 이후 실제 경로가 준비되면 여기에 매핑
