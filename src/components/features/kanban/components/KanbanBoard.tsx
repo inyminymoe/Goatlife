@@ -50,9 +50,12 @@ export function KanbanBoard() {
         setLocalChanges(prev => {
           // 저장되지 않은 변경사항이 있으면 초기화하고 경고
           if (prev.length > 0) {
-            toast.warning(
-              '화면 크기 변경으로 저장되지 않은 변경사항이 초기화되었습니다.'
-            );
+            // 렌더링 사이클 밖에서 토스트 표시
+            setTimeout(() => {
+              toast.warning(
+                '화면 크기 변경으로 저장되지 않은 변경사항이 초기화되었습니다.'
+              );
+            }, 0);
             return [];
           }
           return prev;
