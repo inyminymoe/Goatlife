@@ -5,7 +5,7 @@ import {
   Draggable,
   type DropResult,
 } from '@hello-pangea/dnd';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState, useEffect, useRef } from 'react';
 import TodoItem from '@/components/ui/TodoItem';
 import TodoDrawer from '@/components/TodoDrawer';
 import Button from '@/components/ui/Button';
@@ -31,9 +31,42 @@ export function KanbanBoard() {
   const { tasks: serverTasks, isLoading } = useKanbanData();
 
   const [localChanges, setLocalChanges] = useState<LocalChange[]>([]);
+  const [isMobile, setIsMobile] = useState<boolean | null>(null);
+  const prevIsMobileRef = useRef<boolean | null>(null);
 
   const { isOpen, selectedTask, open, close } = useTaskDrawer();
   const mutations = useKanbanMutations(toast, () => setLocalChanges([]));
+
+  // 반응형 레이아웃 변경 감지
+  useEffect(() => {
+    const checkMobile = () => {
+      const newIsMobile = window.innerWidth < 768; // md breakpoint
+
+      // 이전 값이 존재하고, 레이아웃이 실제로 변경되었을 때
+      if (
+        prevIsMobileRef.current !== null &&
+        prevIsMobileRef.current !== newIsMobile
+      ) {
+        setLocalChanges(prev => {
+          // 저장되지 않은 변경사항이 있으면 초기화하고 경고
+          if (prev.length > 0) {
+            toast.warning(
+              '화면 크기 변경으로 저장되지 않은 변경사항이 초기화되었습니다.'
+            );
+            return [];
+          }
+          return prev;
+        });
+      }
+
+      prevIsMobileRef.current = newIsMobile;
+      setIsMobile(newIsMobile);
+    };
+
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, [toast]);
 
   // 서버 데이터 + 로컬 변경사항을 합쳐서 최종 상태 계산
   const tasks = useMemo(() => {
@@ -92,6 +125,29 @@ export function KanbanBoard() {
     [mutations.deleteTask]
   );
 
+  const handleToggle = useCallback(
+    (taskId: string) => {
+      const task = serverTasks.find(t => t.id === taskId);
+      if (!task) return;
+
+      const newStatus: TaskStatus = task.status === 'done' ? 'todo' : 'done';
+
+      setLocalChanges(prev => {
+        const filtered = prev.filter(change => change.taskId !== taskId);
+        return [
+          ...filtered,
+          {
+            taskId,
+            newStatus,
+            newIndex: 0,
+            sourceStatus: task.status,
+          },
+        ];
+      });
+    },
+    [serverTasks]
+  );
+
   const handleSubmit = useCallback(() => {
     mutations.submitTasks.mutate(tasks);
   }, [tasks, mutations.submitTasks]);
@@ -124,7 +180,7 @@ export function KanbanBoard() {
     });
   }, []);
 
-  if (isLoading) {
+  if (isLoading || isMobile === null) {
     return (
       <div className="flex items-center justify-center py-20">
         <div className="text-grey-500">업무계획서를 불러오는 중...</div>
@@ -157,17 +213,20 @@ export function KanbanBoard() {
         </strong>
       </div>
 
-      <DragDropContext onDragEnd={onDragEnd}>
-        <div className="flex overflow-x-auto">
+      <DragDropContext
+        key={isMobile ? 'mobile' : 'desktop'}
+        onDragEnd={onDragEnd}
+      >
+        <div className="flex flex-col md:flex-row md:overflow-x-auto gap-5">
           {BOARDS.map(board => (
-            <div key={board} className="flex-1 p-1.5 pt-0 min-w-[200px]">
+            <div key={board} className="flex-1 md:min-w-[200px]">
               <KanbanColumn board={board} taskCount={tasks[board].length} />
               <Droppable droppableId={board}>
                 {provided => (
                   <div
                     {...provided.droppableProps}
                     ref={provided.innerRef}
-                    className="min-h-[200px] py-1.5"
+                    className="min-h-[60px] py-1.5"
                   >
                     {tasks[board].map((task, index) => (
                       <Draggable
@@ -186,6 +245,7 @@ export function KanbanBoard() {
                               id={task.id}
                               text={task.title}
                               onSettings={() => handleOpenSettings(task.id)}
+                              onToggle={handleToggle}
                               completed={task.status === 'done'}
                             />
                           </div>
@@ -210,7 +270,7 @@ export function KanbanBoard() {
         </div>
       </DragDropContext>
 
-      <div className="text-right pt-4 border-t border-t-[#EAEAEA] flex items-center justify-end gap-2">
+      <div className="pt-4 border-t border-t-[#EAEAEA] flex items-center gap-2">
         {hasChanges && (
           <span className="text-sm text-orange-500">
             • 저장되지 않은 변경사항이 있습니다
@@ -219,6 +279,7 @@ export function KanbanBoard() {
         <Button
           onClick={handleSubmit}
           disabled={mutations.submitTasks.isPending}
+          className="ml-auto"
         >
           {mutations.submitTasks.isPending ? '제출 중...' : '제출'}
         </Button>

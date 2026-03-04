@@ -25,7 +25,7 @@ export default function TaskInput({ onSubmit, isLoading }: TaskInputProps) {
   };
 
   return (
-    <div className="w-full p-3 rounded-lg shadow-[2px_3px_8px_0px_rgba(0,0,0,0.08)] bg-white inline-flex items-start gap-2">
+    <div className="w-full px-3 py-3 rounded-lg shadow-[2px_3px_8px_0px_rgba(0,0,0,0.08)] bg-white flex items-center gap-2">
       <div className="flex-shrink-0 w-6 h-6 relative">
         <Image
           src="/images/icons/icon_unchecked.svg"
@@ -41,14 +41,14 @@ export default function TaskInput({ onSubmit, isLoading }: TaskInputProps) {
         onChange={e => setTitle(e.target.value)}
         onKeyPress={handleKeyPress}
         placeholder="할 일 작성하기"
-        className="flex-1 body-sm font-medium outline-none placeholder:text-grey-400"
+        className="flex-1 body-sm font-medium outline-none placeholder:text-grey-400 min-w-0"
         disabled={isLoading}
       />
 
       <button
         onClick={handleSubmit}
         disabled={isLoading || !title.trim()}
-        className="px-3 py-1 bg-primary-500 text-white text-sm rounded hover:bg-primary-600 disabled:opacity-50 transition-colors"
+        className="flex-shrink-0 px-3 py-1 bg-primary-500 text-white text-sm rounded hover:bg-primary-600 disabled:opacity-50 transition-colors whitespace-nowrap"
       >
         {isLoading ? '...' : '등록'}
       </button>
