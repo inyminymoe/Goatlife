@@ -34,3 +34,10 @@
 
 ## Future Admin
 - Admin 대비 원칙은 [FUTURE_ADMIN_GUIDE.md](FUTURE_ADMIN_GUIDE.md)에 정리합니다.
+
+## Design Tokens and Styling
+- 새 컴포넌트를 제작할 때는 반드시 `src/app/globals.css`를 참고합니다.
+- Figma 디자인을 픽셀 단위로 그대로 구현하지 않고, globals.css에 정의된 디자인 토큰(색상, 폰트, 유틸리티 클래스)을 우선 사용합니다.
+- 색상: `--color-*` 변수 및 유틸리티 클래스(`.bg-dark`, `.text-dark` 등)
+- 폰트: `.brand-h1~h6`, `.body-xl~2xs` 등 정의된 타이포그래피 클래스
+- 간격/레이아웃: `.app-container`, `.pt-safe`, `.pb-safe` 등 유틸리티 클래스
