@@ -1,3 +1,4 @@
+import { uploadBoardImage } from '@/app/board/new/actions';
 import Button from '@/components/ui/Button';
 
 import {
@@ -165,16 +166,21 @@ const ImageButton = () => {
     editor?.chain().focus().setImage({ src }).run();
   };
 
-  const onUpload = () => {
+  const onUpload = async () => {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'image/*';
 
-    input.onchange = e => {
+    input.onchange = async e => {
       const file = (e.target as HTMLInputElement).files?.[0];
-      if (file) {
-        const imageUrl = URL.createObjectURL(file);
-        onChange(imageUrl);
+      if (!file) return;
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const result = await uploadBoardImage(formData);
+      if (result.ok && result.url) {
+        onChange(result.url);
       }
     };
 

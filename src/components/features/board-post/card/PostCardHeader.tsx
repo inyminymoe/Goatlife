@@ -1,6 +1,7 @@
 'use client';
 import Badge from '@/components/ui/Badge';
 import IconButton from '@/components/ui/IconButton';
+import { getRelativeTimeString } from '@/lib/dateUtils';
 
 interface BoardPostHeaderProps {
   id: string;
@@ -21,6 +22,7 @@ export default function PostCardHeader({
   dateCreated,
 }: BoardPostHeaderProps) {
   const formatViewCount = viewCount >= 9999 ? '9999+' : viewCount;
+  const formatDate = getRelativeTimeString(dateCreated);
 
   return (
     <div className="space-y-3 mb-9 pl-6">
@@ -37,7 +39,7 @@ export default function PostCardHeader({
       <div className="flex items-center gap-5 text-xs text-grey-500">
         <span className="font-medium">{userName}</span>
         <span>👀{formatViewCount}</span>
-        <span>{dateCreated}</span>
+        <span>{formatDate}</span>
         <span className="font-semibold text-primary-500">💬{commentCount}</span>
       </div>
     </div>
