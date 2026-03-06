@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import BoardPostForm from '@/components/features/board/BoardPostForm';
+import BoardPostForm from '@/components/features/board/post/BoardPostForm';
 import { createServerSupabase } from '@/lib/supabase/server';
 import {
   COMPANY_BOARDS,
