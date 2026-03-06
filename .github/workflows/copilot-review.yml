@@ -1,0 +1,48 @@
+name: Copilot Code Review Request
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  request-copilot-review:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Request Copilot Review
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            // PR에 Copilot 리뷰 요청 코멘트 추가
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+            });
+
+            // 이미 Copilot 리뷰 요청이 있는지 확인
+            const hasCopilotRequest = comments.some(comment =>
+              comment.body && comment.body.includes('@github-copilot review')
+            );
+
+            if (!hasCopilotRequest) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                body: `@github-copilot review this PR
+
+코드 리뷰 포커스:
+- ✅ 타입 안전성
+- ✅ 접근성 (ARIA, 키보드 네비게이션)
+- ✅ 성능 최적화
+- ✅ 보안 취약점
+- ✅ 베스트 프랙티스
+
+자세한 가이드: [Copilot Instructions](../copilot-instructions.md)`
+              });
+            }
