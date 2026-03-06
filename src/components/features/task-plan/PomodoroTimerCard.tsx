@@ -59,7 +59,7 @@ export default function PomodoroTimerCard() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-1">
             <Icon
-              icon="icon-park:alarm-clock"
+              icon="icon-park:tomato"
               className="w-6 h-6 text-grey-900"
               aria-hidden="true"
             />
