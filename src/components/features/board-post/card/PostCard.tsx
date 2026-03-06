@@ -1,27 +1,18 @@
-'use client';
+import { PostForView } from '@/types/board';
 import { Hashtags } from './Hashtags';
 import { PostActionBar } from './PostActionBar';
 import PostCardHeader from './PostCardHeader';
 import { PostContent } from './PostContent';
 
 type PostCardProps = {
-  post: {
-    id: string;
-    topic: string;
-    title: string;
-    commentCount: number;
-    userName: string;
-    viewCount: number;
-    dateCreated: string;
-    content: string;
-    hashtags: string[];
-  };
+  post: PostForView;
+  isAuthor: boolean;
 };
 
-export function PostCard({ post }: PostCardProps) {
+export function PostCard({ post, isAuthor }: PostCardProps) {
   return (
     <>
-      <PostCardHeader {...post} />
+      <PostCardHeader {...post} isAuthor={isAuthor} />
       <PostContent content={post.content} />
       <Hashtags hashtags={post.hashtags} />
       <PostActionBar likes={0} />

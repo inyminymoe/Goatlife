@@ -14,9 +14,14 @@ import Link from '@tiptap/extension-link';
 interface EditorProps {
   errorMessage?: string;
   onContentChange?: () => void;
+  content?: string;
 }
 
-export const Editor = ({ errorMessage, onContentChange }: EditorProps) => {
+export const Editor = ({
+  errorMessage,
+  onContentChange,
+  content,
+}: EditorProps) => {
   const [, setEditor] = useAtom(editorAtom);
 
   const editor = useEditor({
@@ -68,7 +73,7 @@ export const Editor = ({ errorMessage, onContentChange }: EditorProps) => {
         defaultProtocol: 'https',
       }),
     ],
-    content: '<p>갓생이들에게 전할 말 🐴</p>',
+    content: content || '<p>갓생이들에게 전할 말 🐴</p>',
     immediatelyRender: false,
   });
 
