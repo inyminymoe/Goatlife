@@ -61,6 +61,7 @@ export default async function BoardNewPage({
 
   return (
     <BoardPostForm
+      mode="create"
       scope={scope}
       board={scope === 'company' ? board : undefined}
       dept={scope === 'department' ? dept : undefined}

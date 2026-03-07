@@ -1,4 +1,5 @@
 'use client';
+
 import type {} from '@tiptap/extension-image';
 import ImageResize from 'tiptap-extension-resize-image';
 import { TaskItem, TaskList } from '@tiptap/extension-list';
@@ -12,15 +13,18 @@ import { editorAtom } from '@/store/editor';
 import Link from '@tiptap/extension-link';
 
 interface EditorProps {
+  /** 에디터 초기 HTML 콘텐츠. 수정 모드에서 기존 content 주입 시 사용 */
+  initialContent?: string;
   errorMessage?: string;
   onContentChange?: () => void;
-  content?: string;
 }
 
+const DEFAULT_CONTENT = '<p>갓생이들에게 전할 말 🐴</p>';
+
 export const Editor = ({
+  initialContent,
   errorMessage,
   onContentChange,
-  content,
 }: EditorProps) => {
   const [, setEditor] = useAtom(editorAtom);
 
@@ -62,9 +66,7 @@ export const Editor = ({
       TextStyle,
       FontSize,
       TaskList,
-      TaskItem.configure({
-        nested: true,
-      }),
+      TaskItem.configure({ nested: true }),
       Color,
       ImageResize,
       Link.configure({
@@ -73,13 +75,11 @@ export const Editor = ({
         defaultProtocol: 'https',
       }),
     ],
-    content: content || '<p>갓생이들에게 전할 말 🐴</p>',
+    content: initialContent ?? DEFAULT_CONTENT,
     immediatelyRender: false,
   });
 
-  if (!editor) {
-    return null;
-  }
+  if (!editor) return null;
 
   return (
     <div>
