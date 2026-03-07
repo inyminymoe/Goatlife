@@ -34,20 +34,35 @@ export default async function BoardPostPage({
       : `/board?scope=department&dept=${encodeURIComponent(dept ?? DEFAULT_DEPT)}`;
 
   const supabase = await createServerSupabase();
-  const { data: post, error } = await supabase
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const baseQuery = supabase
     .from('board_posts')
-    .select('*')
-    .eq('id', postId)
-    .maybeSingle();
+    .select(
+      `
+    *,
+    board_post_likes(user_id),
+    board_post_bookmarks(user_id)
+  `
+    )
+    .eq('id', postId);
+
+  if (user) {
+    baseQuery
+      .eq('board_post_likes.user_id', user.id)
+      .eq('board_post_bookmarks.user_id', user.id);
+  }
+
+  const { data: post, error } = await baseQuery.maybeSingle();
 
   if (error || !post) {
     console.error('[BoardPostPage] post fetch failed', error);
     notFound();
   }
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   const isAuthor = !!user && user.id === post.author_id;
 
   const postForView: PostForView = {
@@ -69,6 +84,9 @@ export default async function BoardPostPage({
       post.scope === 'company'
         ? (post.board ?? '전사게시판')
         : (post.dept ?? '부서게시판'),
+    likeCount: post.like_count ?? 0,
+    isLiked: (post.board_post_likes ?? []).length > 0,
+    isBookmarked: (post.board_post_bookmarks ?? []).length > 0,
   };
   return (
     <main className="col-span-2 max-w-[1440px]">
