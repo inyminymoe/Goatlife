@@ -1,7 +1,6 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { Icon } from '@iconify/react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -46,12 +45,7 @@ export function PostActionMenu({
             <DropdownMenuItem onClick={() => router.push(editHref)}>
               수정
             </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={onDelete}
-              className="text-red-500 hover:text-red-600"
-            >
-              삭제
-            </DropdownMenuItem>
+            <DropdownMenuItem onClick={onDelete}>삭제</DropdownMenuItem>
           </>
         ) : (
           <DropdownMenuItem onClick={onReport}>신고</DropdownMenuItem>
