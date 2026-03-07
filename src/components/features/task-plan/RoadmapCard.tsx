@@ -242,7 +242,11 @@ export default function RoadmapCard() {
         title="루틴 관리"
       >
         <div className="flex flex-col gap-3">
+          <label htmlFor="edit-routine-title" className="sr-only">
+            루틴 이름
+          </label>
           <input
+            id="edit-routine-title"
             value={editTitle}
             onChange={event => setEditTitle(event.target.value)}
             className="w-full px-3 py-2 border border-grey-200 rounded-[8px] text-14 text-grey-900 bg-white"

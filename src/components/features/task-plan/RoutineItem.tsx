@@ -62,7 +62,7 @@ function RoutineItemComponent({ item, mode, onPress }: RoutineItemProps) {
       style={{
         transform: CSS.Transform.toString(transform),
         transition,
-        touchAction: 'none',
+        touchAction: isReordering ? 'none' : 'auto',
       }}
       onClick={() => onPress(item.id)}
       aria-label={`${item.title} 루틴`}

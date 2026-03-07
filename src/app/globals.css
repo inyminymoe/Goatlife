@@ -378,3 +378,10 @@ body {
   animation: routine-jiggle 0.5s ease-in-out infinite;
   will-change: transform;
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .routine-jiggle {
+    animation: none;
+    will-change: auto;
+  }
+}

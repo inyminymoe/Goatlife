@@ -1,10 +1,7 @@
 'use client';
 
 import { memo } from 'react';
-import {
-  SortableContext,
-  horizontalListSortingStrategy,
-} from '@dnd-kit/sortable';
+import { SortableContext, rectSortingStrategy } from '@dnd-kit/sortable';
 import RoutineItem from '../RoutineItem';
 import type { RoutineItemData, RoutineMode, RoutinePeriod } from './types';
 
@@ -17,17 +14,25 @@ interface RoutineTimelineProps {
 }
 
 interface AddButtonProps {
-  isViewMode: boolean;
+  mode: RoutineMode;
   period: RoutinePeriod;
   onAddClick: (period: RoutinePeriod) => void;
 }
 
-function AddButton({ isViewMode, period, onAddClick }: AddButtonProps) {
+const ADD_BUTTON_LABEL: Record<RoutineMode, string> = {
+  view: '루틴 추가',
+  edit: '편집 종료',
+  reorder: '순서 변경 종료',
+};
+
+function AddButton({ mode, period, onAddClick }: AddButtonProps) {
+  const isViewMode = mode === 'view';
+
   return (
     <button
       type="button"
       className="px-3 py-1.5 bg-grey-200 rounded-[5px] flex items-center justify-center"
-      aria-label={isViewMode ? '루틴 추가' : '편집 종료'}
+      aria-label={ADD_BUTTON_LABEL[mode]}
       onClick={() => onAddClick(period)}
     >
       <div
@@ -47,8 +52,6 @@ const RoutineTimeline = memo(function RoutineTimeline({
   mode,
   onItemClick,
 }: RoutineTimelineProps) {
-  const isViewMode = mode === 'view';
-
   return (
     <div className="flex items-start gap-4">
       {/* Period label — text-grey-500 for readable contrast in both light and dark mode */}
@@ -59,7 +62,7 @@ const RoutineTimeline = memo(function RoutineTimeline({
       </div>
       <SortableContext
         items={items.map(item => item.id)}
-        strategy={horizontalListSortingStrategy}
+        strategy={rectSortingStrategy}
       >
         <div className="flex items-center gap-2 flex-wrap">
           {items.map(item => (
@@ -70,11 +73,7 @@ const RoutineTimeline = memo(function RoutineTimeline({
               onPress={id => onItemClick(period, id)}
             />
           ))}
-          <AddButton
-            isViewMode={isViewMode}
-            period={period}
-            onAddClick={onAddClick}
-          />
+          <AddButton mode={mode} period={period} onAddClick={onAddClick} />
         </div>
       </SortableContext>
     </div>
