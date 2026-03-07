@@ -1,213 +1,303 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Icon } from '@iconify/react';
-
-type RoutineCategory = 'work' | 'break' | 'leisure';
-type RoutinePeriod = 'AM' | 'PM';
-
-interface RoutineItem {
-  id: string;
-  title: string;
-  category: RoutineCategory;
-}
-
-interface RoutineTimelineProps {
-  period: RoutinePeriod;
-  items: RoutineItem[];
-  onAddItem: (period: RoutinePeriod) => void;
-  onRemoveItem: (period: RoutinePeriod, id: string) => void;
-}
-
-const ROUTINE_COLORS: Record<RoutineCategory, string> = {
-  work: 'bg-primary-100',
-  break: 'bg-accent-orange-100',
-  leisure: 'bg-accent-green-500',
-};
-
-const CATEGORY_LABEL: Record<RoutineCategory, string> = {
-  work: '업무',
-  break: '휴식',
-  leisure: '여가',
-};
-
-function RoutineTimeline({
-  period,
-  items,
-  onAddItem,
-  onRemoveItem,
-}: RoutineTimelineProps) {
-  return (
-    <div className="flex items-start gap-4 rounded-[5px] p-2 hover:bg-white/70 transition-colors">
-      <div className="text-center text-grey-300 text-10 font-bold leading-5 whitespace-pre pt-1">
-        {period}
-      </div>
-      <div className="flex items-center gap-2 flex-wrap flex-1">
-        {items.map(item => (
-          <div
-            key={item.id}
-            className={`px-3 py-1.5 ${ROUTINE_COLORS[item.category]} rounded-[5px] flex items-center gap-1`}
-          >
-            <span className="text-11 text-primary-500 font-semibold">
-              [{CATEGORY_LABEL[item.category]}]
-            </span>
-            <span className="text-primary-500 text-14 font-medium">
-              {item.title}
-            </span>
-            <button
-              type="button"
-              className="ml-1 text-primary-500/60 hover:text-primary-500"
-              onClick={() => onRemoveItem(period, item.id)}
-              aria-label={`${item.title} 삭제`}
-            >
-              <Icon icon="icon-park:close-small" className="size-4" />
-            </button>
-          </div>
-        ))}
-        <button
-          type="button"
-          className="px-3 py-1.5 bg-grey-200 rounded-[5px] flex items-center justify-center"
-          aria-label={`${period} 루틴 추가`}
-          onClick={() => onAddItem(period)}
-        >
-          <div className="size-6 relative">
-            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-3.5 h-0.5 bg-grey-500" />
-            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-0.5 h-3.5 bg-grey-500" />
-          </div>
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// 초기 사용자를 위한 기본 플레이스홀더 루틴
-const DEFAULT_ROUTINES = {
-  am: [
-    { id: 'am-1', title: '명상', category: 'break' as RoutineCategory },
-    { id: 'am-2', title: '회의', category: 'work' as RoutineCategory },
-    { id: 'am-3', title: '업무계획 작성', category: 'work' as RoutineCategory },
-    { id: 'am-4', title: '스트레칭', category: 'break' as RoutineCategory },
-    { id: 'am-5', title: '생산 작업 1차', category: 'work' as RoutineCategory },
-    { id: 'am-6', title: '간식', category: 'leisure' as RoutineCategory },
-  ],
-  pm: [
-    { id: 'pm-1', title: '점심식사', category: 'break' as RoutineCategory },
-    { id: 'pm-2', title: '산책', category: 'break' as RoutineCategory },
-    { id: 'pm-3', title: '생산 작업 2차', category: 'work' as RoutineCategory },
-    { id: 'pm-4', title: '리뷰', category: 'work' as RoutineCategory },
-    { id: 'pm-5', title: '저녁식사', category: 'break' as RoutineCategory },
-    { id: 'pm-6', title: '헬스장', category: 'break' as RoutineCategory },
-    { id: 'pm-7', title: '게임', category: 'leisure' as RoutineCategory },
-    { id: 'pm-8', title: '웹툰', category: 'leisure' as RoutineCategory },
-  ],
-};
+import {
+  DndContext,
+  PointerSensor,
+  type DragEndEvent,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import { arrayMove } from '@dnd-kit/sortable';
+import BottomSheet from '@/components/ui/BottomSheet';
+import type { RoutineMode } from './RoutineItem';
+import type { RoutinePeriod, RoutineState } from './roadmap-card/types';
+import { DEFAULT_ROUTINES } from './roadmap-card/constants';
+import RoutineTimeline from './roadmap-card/RoutineTimeline';
 
 export default function RoadmapCard() {
-  const [routines, setRoutines] = useState(DEFAULT_ROUTINES);
-  const [nextCategory, setNextCategory] = useState<RoutineCategory>('work');
+  const [routines, setRoutines] = useState<RoutineState>(DEFAULT_ROUTINES);
+  const [mode, setMode] = useState<RoutineMode>('view');
+  const [isMenuBottomSheetOpen, setIsMenuBottomSheetOpen] = useState(false);
+  const [isAddBottomSheetOpen, setIsAddBottomSheetOpen] = useState(false);
+  const [isEditBottomSheetOpen, setIsEditBottomSheetOpen] = useState(false);
+  const [isStartBottomSheetOpen, setIsStartBottomSheetOpen] = useState(false);
+  const [selectedPeriod, setSelectedPeriod] = useState<RoutinePeriod>('AM');
+  const [selectedRoutineId, setSelectedRoutineId] = useState<string | null>(
+    null
+  );
+  const [editTitle, setEditTitle] = useState('');
+  const [startFrom, setStartFrom] = useState<{
+    period: RoutinePeriod;
+    title: string;
+  } | null>(null);
 
-  const totalRoutineCount = useMemo(
-    () => routines.am.length + routines.pm.length,
-    [routines]
+  const sensors = useSensors(useSensor(PointerSensor));
+
+  const handleAddClick = useCallback(
+    (period: RoutinePeriod) => {
+      if (mode !== 'view') {
+        setMode('view');
+        setIsEditBottomSheetOpen(false);
+        setSelectedRoutineId(null);
+        return;
+      }
+      setSelectedPeriod(period);
+      setIsAddBottomSheetOpen(true);
+    },
+    [mode]
   );
 
-  const addRoutine = (period: RoutinePeriod) => {
-    const title = window
-      .prompt(
-        `${period}에 추가할 루틴 이름을 입력해주세요.\n현재 카테고리: ${CATEGORY_LABEL[nextCategory]}`
-      )
-      ?.trim();
+  const handleItemClick = useCallback(
+    (period: RoutinePeriod, itemId: string) => {
+      if (mode === 'view') {
+        const items = period === 'AM' ? routines.am : routines.pm;
+        const target = items.find(item => item.id === itemId);
+        if (!target) return;
+        setStartFrom({ period, title: target.title });
+        setIsStartBottomSheetOpen(true);
+        return;
+      }
 
-    if (!title) {
-      return;
-    }
+      if (mode !== 'edit') return;
 
-    setRoutines(prev => {
-      const targetKey = period === 'AM' ? 'am' : 'pm';
-      const nextId = `${targetKey}-${Date.now()}`;
+      const items = period === 'AM' ? routines.am : routines.pm;
+      const target = items.find(item => item.id === itemId);
+      if (!target) return;
+      setSelectedPeriod(period);
+      setSelectedRoutineId(itemId);
+      setEditTitle(target.title);
+      setIsEditBottomSheetOpen(true);
+    },
+    [mode, routines]
+  );
 
-      return {
-        ...prev,
-        [targetKey]: [
-          ...prev[targetKey],
-          { id: nextId, title, category: nextCategory },
-        ],
-      };
-    });
-  };
+  const handleStartRoutine = useCallback(() => {
+    setIsStartBottomSheetOpen(false);
+  }, []);
 
-  const removeRoutine = (period: RoutinePeriod, id: string) => {
-    setRoutines(prev => {
-      const targetKey = period === 'AM' ? 'am' : 'pm';
-      return {
-        ...prev,
-        [targetKey]: prev[targetKey].filter(item => item.id !== id),
-      };
-    });
-  };
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      if (mode !== 'reorder') return;
 
-  const rotateCategory = () => {
-    setNextCategory(prev => {
-      if (prev === 'work') return 'break';
-      if (prev === 'break') return 'leisure';
-      return 'work';
-    });
-  };
+      const { active, over } = event;
+      if (!over || active.id === over.id) return;
+
+      const activeId = String(active.id);
+      const overId = String(over.id);
+      const getKey = (id: string): 'am' | 'pm' =>
+        id.startsWith('am-') ? 'am' : 'pm';
+      const sourceKey = getKey(activeId);
+
+      // AM ↔ PM 크로스리스트 이동 제한 — Supabase order_index를 리스트별로 관리
+      if (sourceKey !== getKey(overId)) return;
+
+      setRoutines(prev => {
+        const items = prev[sourceKey];
+        const oldIndex = items.findIndex(i => i.id === activeId);
+        const newIndex = items.findIndex(i => i.id === overId);
+        return { ...prev, [sourceKey]: arrayMove(items, oldIndex, newIndex) };
+      });
+    },
+    [mode]
+  );
+
+  const handleSaveRoutine = useCallback(() => {
+    if (!selectedRoutineId) return;
+    const nextTitle = editTitle.trim();
+    if (!nextTitle) return;
+    const key = selectedPeriod === 'AM' ? 'am' : 'pm';
+    setRoutines(prev => ({
+      ...prev,
+      [key]: prev[key].map(item =>
+        item.id === selectedRoutineId ? { ...item, title: nextTitle } : item
+      ),
+    }));
+    setIsEditBottomSheetOpen(false);
+  }, [selectedRoutineId, editTitle, selectedPeriod]);
+
+  const handleDeleteRoutine = useCallback(() => {
+    if (!selectedRoutineId) return;
+    const key = selectedPeriod === 'AM' ? 'am' : 'pm';
+    setRoutines(prev => ({
+      ...prev,
+      [key]: prev[key].filter(item => item.id !== selectedRoutineId),
+    }));
+    setIsEditBottomSheetOpen(false);
+  }, [selectedRoutineId, selectedPeriod]);
 
   return (
-    <section className="bg-grey-100 rounded-[5px] p-6 flex flex-col gap-5">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div className="flex items-end gap-1">
-          <Icon
-            icon="icon-park:road-sign-both"
-            className="size-6 text-grey-900"
-          />
-          <h2 className="brand-h3 text-grey-900">Roadmap</h2>
+    <>
+      <section
+        className="bg-grey-100 rounded-[5px] p-6 flex flex-col gap-5"
+        aria-label="Roadmap 루틴"
+      >
+        {/* Header */}
+        <div className="flex justify-between items-center">
+          <div className="flex items-end gap-1">
+            <Icon
+              icon="icon-park:road-sign-both"
+              className="size-6 text-grey-900"
+            />
+            <h2 className="brand-h3 text-grey-900">Roadmap</h2>
+          </div>
+          <button
+            type="button"
+            aria-label="메뉴"
+            onClick={() => setIsMenuBottomSheetOpen(true)}
+          >
+            <Icon icon="icon-park:more-one" className="size-6 text-grey-900" />
+          </button>
         </div>
-        <button type="button" aria-label="메뉴">
-          <Icon icon="icon-park:more-one" className="size-6 text-grey-900" />
-        </button>
-      </div>
 
-      {/* Timeline */}
-      <div className="flex flex-col gap-2">
-        <div className="flex items-center justify-between">
-          <p className="text-12 font-medium text-grey-500">
-            루틴 {totalRoutineCount}개
+        {/* Timeline — DndContext는 항상 유지, RoutineItem의 disabled prop이 모드를 제어 */}
+        <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+          <div className="flex flex-col gap-2">
+            <RoutineTimeline
+              period="AM"
+              items={routines.am}
+              onAddClick={handleAddClick}
+              mode={mode}
+              onItemClick={handleItemClick}
+            />
+            <RoutineTimeline
+              period="PM"
+              items={routines.pm}
+              onAddClick={handleAddClick}
+              mode={mode}
+              onItemClick={handleItemClick}
+            />
+          </div>
+        </DndContext>
+
+        {/* Action Button
+            bg-white은 다크모드에서도 흰색 유지 → text-fixed-grey-900으로 항상 어두운 텍스트 보장 */}
+        <button
+          type="button"
+          className="w-full px-20 py-2 bg-white rounded-[5px] flex items-center justify-center"
+          onClick={() => {
+            setStartFrom(null);
+            setIsStartBottomSheetOpen(true);
+          }}
+        >
+          <span className="text-fixed-grey-900 text-14 font-semibold">
+            루틴 시작하기
+          </span>
+        </button>
+      </section>
+
+      <BottomSheet
+        open={isMenuBottomSheetOpen}
+        onClose={() => setIsMenuBottomSheetOpen(false)}
+        title="설정"
+      >
+        <div className="flex flex-col gap-2">
+          <button
+            type="button"
+            className="w-full px-4 py-3 text-left text-14 font-medium text-grey-900"
+            onClick={() => {
+              setMode('edit');
+              setIsMenuBottomSheetOpen(false);
+            }}
+          >
+            루틴 수정
+          </button>
+          <button
+            type="button"
+            className="w-full px-4 py-3 text-left text-14 font-medium text-grey-900"
+            onClick={() => {
+              setMode('reorder');
+              setIsMenuBottomSheetOpen(false);
+            }}
+          >
+            순서 변경
+          </button>
+        </div>
+      </BottomSheet>
+
+      <BottomSheet
+        open={isAddBottomSheetOpen}
+        onClose={() => setIsAddBottomSheetOpen(false)}
+        title={`${selectedPeriod} 루틴 추가`}
+        description="임시 바텀시트입니다. 추후 Add UI 연결 예정"
+      >
+        <div className="flex flex-col gap-3">
+          <p className="text-14 text-grey-700">
+            {selectedPeriod} 타임라인에 루틴을 추가하는 바텀시트 자리입니다.
           </p>
           <button
             type="button"
-            className="px-2 py-1 rounded-[5px] bg-white text-12 font-medium text-grey-700 hover:bg-grey-200 transition-colors"
-            onClick={rotateCategory}
+            className="w-full px-4 py-2 bg-grey-100 rounded-[8px] text-14 font-medium text-grey-900"
+            onClick={() => setIsAddBottomSheetOpen(false)}
           >
-            추가 카테고리: {CATEGORY_LABEL[nextCategory]}
+            닫기
           </button>
         </div>
-        <RoutineTimeline
-          period="AM"
-          items={routines.am}
-          onAddItem={addRoutine}
-          onRemoveItem={removeRoutine}
-        />
-        <RoutineTimeline
-          period="PM"
-          items={routines.pm}
-          onAddItem={addRoutine}
-          onRemoveItem={removeRoutine}
-        />
-      </div>
+      </BottomSheet>
 
-      {/* Action Button */}
-      <button
-        type="button"
-        className="w-full px-20 py-2 bg-white rounded-[5px] flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
-        disabled={totalRoutineCount === 0}
+      <BottomSheet
+        open={isEditBottomSheetOpen}
+        onClose={() => setIsEditBottomSheetOpen(false)}
+        title="루틴 관리"
       >
-        <span className="text-grey-900 text-14 font-semibold">
-          루틴 시작하기
-        </span>
-      </button>
-    </section>
+        <div className="flex flex-col gap-3">
+          <input
+            value={editTitle}
+            onChange={event => setEditTitle(event.target.value)}
+            className="w-full px-3 py-2 border border-grey-200 rounded-[8px] text-14 text-grey-900 bg-white"
+          />
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              className="w-full px-4 py-2 bg-primary-500 rounded-[8px] text-14 font-medium text-white"
+              onClick={handleSaveRoutine}
+            >
+              저장
+            </button>
+            <button
+              type="button"
+              className="w-full px-4 py-2 bg-white border border-grey-200 rounded-[8px] text-14 font-medium text-primary-900"
+              onClick={handleDeleteRoutine}
+            >
+              삭제
+            </button>
+          </div>
+        </div>
+      </BottomSheet>
+
+      <BottomSheet
+        open={isStartBottomSheetOpen}
+        onClose={() => setIsStartBottomSheetOpen(false)}
+        title="루틴 시작하기"
+      >
+        <div className="flex flex-col gap-3">
+          <p className="text-14 text-grey-700">
+            하루 루틴 타이머를 재생합니다.
+          </p>
+          {startFrom && (
+            <p className="text-12 text-grey-500">
+              시작 지점: {startFrom.period} · {startFrom.title}
+            </p>
+          )}
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              className="w-full px-4 py-2 bg-primary-500 rounded-[8px] text-14 font-medium text-white"
+              onClick={handleStartRoutine}
+            >
+              시작하기
+            </button>
+            <button
+              type="button"
+              className="w-full px-4 py-2 bg-white border border-grey-200 rounded-[8px] text-14 font-medium text-grey-700"
+              onClick={() => setIsStartBottomSheetOpen(false)}
+            >
+              취소
+            </button>
+          </div>
+        </div>
+      </BottomSheet>
+    </>
   );
 }
