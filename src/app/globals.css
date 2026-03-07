@@ -361,3 +361,27 @@ body {
     }
   }
 }
+
+@keyframes routine-jiggle {
+  0% {
+    transform: translate3d(0, 0, 0) rotate(-0.5deg);
+  }
+  50% {
+    transform: translate3d(0, 0, 0) rotate(0.5deg);
+  }
+  100% {
+    transform: translate3d(0, 0, 0) rotate(-0.5deg);
+  }
+}
+
+.routine-jiggle {
+  animation: routine-jiggle 0.5s ease-in-out infinite;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .routine-jiggle {
+    animation: none;
+    will-change: auto;
+  }
+}
