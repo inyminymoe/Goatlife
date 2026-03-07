@@ -15,7 +15,12 @@ export function PostCard({ post, isAuthor }: PostCardProps) {
       <PostCardHeader {...post} isAuthor={isAuthor} />
       <PostContent content={post.content} />
       <Hashtags hashtags={post.hashtags} />
-      <PostActionBar likes={0} />
+      <PostActionBar
+        postId={post.id}
+        initialLikes={post.likeCount}
+        initialIsLiked={post.isLiked}
+        initialIsBookmarked={post.isBookmarked}
+      />
     </>
   );
 }
