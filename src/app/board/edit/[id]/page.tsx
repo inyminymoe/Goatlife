@@ -1,7 +1,7 @@
 import { notFound, redirect } from 'next/navigation';
 import { createServerSupabase } from '@/lib/supabase/server';
 import BoardPostForm from '@/components/features/board/post/BoardPostForm';
-import { getTagsByScope } from '@/constants/board';
+import { getTagsByScope, resolveScope } from '@/constants/board';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -31,7 +31,7 @@ export default async function BoardEditPage({
   if (error || !post) notFound();
   if (post.author_id !== user.id) redirect(`/board/${id}`);
 
-  const scope = query.scope ?? post.scope;
+  const scope = resolveScope(query.scope, post.scope);
   const board = query.board ?? post.board ?? '';
   const dept = query.dept ?? post.dept ?? '';
   const availableTopics = getTagsByScope(scope);

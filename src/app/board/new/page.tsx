@@ -5,6 +5,7 @@ import {
   COMPANY_BOARDS,
   getTagsByScope,
   isValidBoard,
+  resolveScope,
   type BoardScope,
 } from '@/constants/board';
 
@@ -14,18 +15,12 @@ type BoardNewPageProps = {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 };
 
-function resolveScope(rawScope: string | null): BoardScope {
-  return rawScope === 'department' ? 'department' : 'company';
-}
-
 export default async function BoardNewPage({
   searchParams,
 }: BoardNewPageProps) {
   const params = (await searchParams) ?? {};
 
-  const scope = resolveScope(
-    typeof params.scope === 'string' ? params.scope : null
-  );
+  const scope = resolveScope(params.scope as string | undefined);
   const board =
     typeof params.board === 'string'
       ? params.board
