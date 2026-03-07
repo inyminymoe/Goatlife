@@ -4,6 +4,10 @@ import Badge from '@/components/ui/Badge';
 import { getRelativeTimeString } from '@/lib/dateUtils';
 import { PostForView } from '@/types/board';
 import { PostActionMenu } from './PostActionMenu';
+import { useMutation } from '@tanstack/react-query';
+import { deleteBoardPost } from '@/app/board/_actions/deleteBoardPost';
+import { useRouter } from 'next/navigation';
+import { useToast } from '@/providers/ToastProvider';
 
 type PostCardHeaderProps = Pick<
   PostForView,
@@ -34,6 +38,8 @@ export default function PostCardHeader({
   board,
   dept,
 }: PostCardHeaderProps) {
+  const router = useRouter();
+  const toast = useToast();
   const formatViewCount = viewCount >= 9999 ? '9999+' : viewCount;
   const formatDate = getRelativeTimeString(dateCreated);
 
@@ -42,6 +48,24 @@ export default function PostCardHeader({
     ? getRelativeTimeString(dateUpdated)
     : null;
 
+  const { mutate: deleteMutate } = useMutation({
+    mutationFn: (id: string) => deleteBoardPost(id),
+    onSuccess: result => {
+      if (!result.ok) {
+        toast.error(result.error ?? '게시글 삭제 중 문제가 발생했어요.');
+        return;
+      }
+      router.push('/board');
+      toast.success('게시글이 삭제되었어요!');
+    },
+    onError: error => {
+      // 네트워크 오류 등 예외적인 상황
+      console.error('BoardPost delete failed', error);
+      toast.error(
+        '게시글 삭제 중 문제가 발생했어요. 잠시 후 다시 시도해주세요.'
+      );
+    },
+  });
   return (
     <div className="space-y-3 mb-9 pl-6">
       <div className="flex justify-between items-center">
@@ -54,9 +78,7 @@ export default function PostCardHeader({
           scope={scope}
           board={board}
           dept={dept}
-          onDelete={() => {
-            /* TODO: 삭제 핸들러 */
-          }}
+          onDelete={() => deleteMutate(id)}
           onReport={() => {
             /* TODO: 신고 핸들러 */
           }}
