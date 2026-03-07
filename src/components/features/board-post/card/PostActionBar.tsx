@@ -115,7 +115,8 @@ export function PostActionBar({
         onClick={() => {
           navigator.clipboard
             .writeText(`${window.location.origin}${pathname}`)
-            .then(() => toast.success('클립보드에 복사되었습니다!'));
+            .then(() => toast.success('클립보드에 복사되었어요!'))
+            .catch(() => toast.error('링크 복사에 실패했어요'));
         }}
       >
         <span>공유하기</span>
