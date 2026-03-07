@@ -34,13 +34,17 @@ export async function updateBoardPost(
   }
 
   // ── 작성자 권한 체크 ────────────────────────────────────────────────────────
-  const { data: existing } = await supabase
+  const { data: existing, error: fetchError } = await supabase
     .from('board_posts')
     .select('author_id')
     .eq('id', id)
     .single();
 
-  if (existing?.author_id !== user.id) {
+  if (fetchError || !existing) {
+    return { ok: false, error: '게시글을 찾을 수 없습니다.' };
+  }
+
+  if (existing.author_id !== user.id) {
     return { ok: false, error: '수정 권한이 없습니다.' };
   }
 
