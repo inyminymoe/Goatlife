@@ -148,9 +148,7 @@ export default function RoadmapCard() {
   );
 
   const handleStartRoutine = useCallback(() => {
-    const detail: RoutineTimerStartDetail = {
-      title: startFrom?.title,
-    };
+    const detail: RoutineTimerStartDetail = { title: startFrom?.title };
     window.dispatchEvent(
       new CustomEvent<RoutineTimerStartDetail>(ROUTINE_TIMER_START_EVENT, {
         detail,
@@ -167,7 +165,6 @@ export default function RoadmapCard() {
       toast.error('팝업이 차단되어 링크를 열 수 없어요.');
       return;
     }
-
     setIsStartBottomSheetOpen(false);
   }, [startFrom, toast]);
 
@@ -606,37 +603,57 @@ export default function RoadmapCard() {
         onClose={() => setIsStartBottomSheetOpen(false)}
         title="루틴 시작"
       >
-        <div className="flex flex-col gap-6">
-          <div className="flex flex-col gap-2">
-            <p className="text-16 font-medium text-dark">
+        <div className="w-full flex flex-col gap-6">
+          <div className="w-full flex flex-col gap-2">
+            <p className="body-md font-medium text-dark leading-6">
               {startFrom
                 ? `'${startFrom.title}' 시간을 시작할까요?`
                 : '루틴 타이머를 시작할까요?'}
             </p>
-            {startFrom && (
-              <p className="text-12 text-grey-500">
-                시작 지점: {startFrom.period} · {startFrom.title}
-                {startFrom.pomodoro_count
-                  ? ` · 예상 ${startFrom.pomodoro_count} 뽀모도로`
-                  : ''}
+            {!startFrom && (
+              <p className="body-xs text-grey-500 leading-5">
+                시작할 루틴을 선택하면 해당 지점부터 타이머가 시작됩니다.
               </p>
             )}
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+
+          <div className="w-full inline-flex items-center gap-4">
             <button
               type="button"
-              className="w-full px-4 py-3 bg-primary-500 rounded-[5px] text-14 font-semibold text-fixed-white disabled:opacity-40"
+              className="flex-1 px-6 py-3 bg-primary-500 rounded-[5px] inline-flex justify-center items-center gap-2 leading-none disabled:opacity-40"
               onClick={handleStartViaLink}
               disabled={!startFrom?.url}
             >
-              링크로 이동하기
+              <Icon
+                icon="mingcute:link-fill"
+                className="w-4 h-4 shrink-0 leading-none text-fixed-white [filter:drop-shadow(1px_0_0_var(--color-fixed-grey-900))_drop-shadow(-1px_0_0_var(--color-fixed-grey-900))_drop-shadow(0_1px_0_var(--color-fixed-grey-900))_drop-shadow(0_-1px_0_var(--color-fixed-grey-900))]"
+                aria-hidden="true"
+              />
+              <span className="text-14 font-semibold leading-none text-fixed-white translate-y-px">
+                링크로 이동하기
+              </span>
             </button>
             <button
               type="button"
-              className="w-full px-4 py-3 bg-dark border border-dark rounded-[5px] text-14 font-semibold text-dark hover:bg-grey-200 transition-colors"
+              className="flex-1 px-6 py-3 bg-dark border border-dark rounded-[5px] inline-flex justify-center items-center gap-2 leading-none hover:bg-grey-200 transition-colors"
               onClick={handleStartRoutine}
             >
-              타이머 시작하기
+              <span
+                className="relative inline-flex w-4 h-4 shrink-0 items-center justify-center leading-none"
+                aria-hidden="true"
+              >
+                <Icon
+                  icon="mingcute:play-fill"
+                  className="absolute inset-0 w-4 h-4 text-fixed-grey-900 scale-125"
+                />
+                <Icon
+                  icon="mingcute:play-fill"
+                  className="absolute inset-0 w-4 h-4 text-fixed-white"
+                />
+              </span>
+              <span className="text-14 font-semibold leading-none text-dark translate-y-px">
+                타이머 시작하기
+              </span>
             </button>
           </div>
         </div>
