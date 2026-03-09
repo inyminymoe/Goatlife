@@ -52,9 +52,13 @@ export default function RoutineAddContent({
   const handleSave = () => {
     const trimmed = title.trim();
     if (!trimmed) return;
+
+    const trimmedUrl = url.trim();
+    if (trimmedUrl && !/^https?:\/\//i.test(trimmedUrl)) return;
+
     onSave({
       title: trimmed,
-      url: url.trim() || undefined,
+      url: trimmedUrl || undefined,
       period,
       pomodoro_count,
       category,

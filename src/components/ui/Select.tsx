@@ -1,5 +1,5 @@
 'use client';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useId } from 'react';
 import { Icon } from '@iconify/react';
 
 export interface SelectOption {
@@ -28,6 +28,7 @@ export default function Select({
 }: SelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const triggerId = useId();
 
   const getDisplayLabel = () => {
     if (!value) return placeholder;
@@ -79,7 +80,10 @@ export default function Select({
       className={`ui-component w-full flex flex-col gap-2 ${className}`}
     >
       {label && (
-        <label className="body-sm font-medium font-body text-grey-900">
+        <label
+          htmlFor={triggerId}
+          className="body-sm font-medium font-body text-grey-900"
+        >
           {label}
         </label>
       )}
@@ -87,6 +91,7 @@ export default function Select({
       <div className="relative">
         {/* Trigger Button */}
         <button
+          id={triggerId}
           type="button"
           onClick={() => !disabled && setIsOpen(!isOpen)}
           onKeyDown={handleKeyDown}

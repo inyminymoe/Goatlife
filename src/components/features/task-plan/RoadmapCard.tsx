@@ -4,12 +4,13 @@ import { useCallback, useEffect, useState } from 'react';
 import { Icon } from '@iconify/react';
 import {
   DndContext,
+  KeyboardSensor,
   PointerSensor,
   type DragEndEvent,
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
-import { arrayMove } from '@dnd-kit/sortable';
+import { arrayMove, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import BottomSheet from '@/components/ui/BottomSheet';
 import type { RoutineMode, RoutineItemData } from './RoutineItem';
 import type { RoutinePeriod, RoutineState } from './roadmap-card/types';
@@ -35,6 +36,12 @@ function toRoutineState(items: RoutineItemData[]): RoutineState {
   };
 }
 
+function isPersistedRoutineId(id: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+    id
+  );
+}
+
 export default function RoadmapCard() {
   const [routines, setRoutines] = useState<RoutineState>({ am: [], pm: [] });
   const [isLoading, setIsLoading] = useState(true);
@@ -53,33 +60,46 @@ export default function RoadmapCard() {
   } | null>(null);
 
   const toast = useToast();
-  const sensors = useSensors(useSensor(PointerSensor));
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   // Supabase 로드
   useEffect(() => {
-    getRoutineItems().then(result => {
-      if (result.ok) {
-        if (result.data.length === 0) {
-          setRoutines(DEFAULT_ROUTINES);
+    const loadRoutines = async () => {
+      try {
+        const result = await getRoutineItems();
+        if (result.ok) {
+          if (result.data.length === 0) {
+            setRoutines(DEFAULT_ROUTINES);
+          } else {
+            setRoutines(
+              toRoutineState(
+                result.data.map(item => ({
+                  id: item.id,
+                  title: item.title,
+                  category: item.category,
+                  period: item.period,
+                  url: item.url ?? undefined,
+                  pomodoro_count: item.pomodoro_count,
+                }))
+              )
+            );
+          }
         } else {
-          setRoutines(
-            toRoutineState(
-              result.data.map(item => ({
-                id: item.id,
-                title: item.title,
-                category: item.category,
-                period: item.period,
-                url: item.url ?? undefined,
-                pomodoro_count: item.pomodoro_count,
-              }))
-            )
-          );
+          setRoutines(DEFAULT_ROUTINES);
         }
-      } else {
+      } catch {
         setRoutines(DEFAULT_ROUTINES);
+      } finally {
+        setIsLoading(false);
       }
-      setIsLoading(false);
-    });
+    };
+
+    loadRoutines();
   }, []);
 
   const handleAddClick = useCallback(
@@ -121,7 +141,7 @@ export default function RoadmapCard() {
   }, []);
 
   const handleDragEnd = useCallback(
-    (event: DragEndEvent) => {
+    async (event: DragEndEvent) => {
       if (mode !== 'reorder') return;
 
       const { active, over } = event;
@@ -137,64 +157,86 @@ export default function RoadmapCard() {
       if (sourceItem.period !== targetItem.period) return;
 
       const key = sourceItem.period === 'AM' ? 'am' : 'pm';
+      const items = routines[key];
+      const oldIndex = items.findIndex(i => i.id === activeId);
+      const newIndex = items.findIndex(i => i.id === overId);
+      if (oldIndex < 0 || newIndex < 0) return;
 
-      setRoutines(prev => {
-        const items = prev[key];
-        const oldIndex = items.findIndex(i => i.id === activeId);
-        const newIndex = items.findIndex(i => i.id === overId);
-        const reordered = arrayMove(items, oldIndex, newIndex);
+      const reordered = arrayMove(items, oldIndex, newIndex);
+      const hasLocalOnlyItem = reordered.some(
+        item => !isPersistedRoutineId(item.id)
+      );
 
-        reorderRoutineItems(
+      setRoutines(prev => ({ ...prev, [key]: reordered }));
+      if (hasLocalOnlyItem) return;
+
+      try {
+        const result = await reorderRoutineItems(
           reordered.map((item, idx) => ({
             id: item.id,
             order_index: (idx + 1) * 1000,
           }))
         );
-
-        return { ...prev, [key]: reordered };
-      });
+        if (!result.ok) {
+          throw new Error(result.error);
+        }
+      } catch {
+        setRoutines(prev => ({ ...prev, [key]: items }));
+        toast.error('순서 변경에 실패했습니다. 다시 시도해주세요.');
+      }
     },
-    [mode, routines]
+    [mode, routines, toast]
   );
 
-  const handleAddRoutine = useCallback(async (data: RoutineAddData) => {
-    const tempId = `temp-${Date.now()}`;
-    const newItem: RoutineItemData = {
-      id: tempId,
-      title: data.title,
-      category: data.category,
-      period: data.period,
-      url: data.url,
-      pomodoro_count: data.pomodoro_count,
-    };
-    const key = data.period === 'AM' ? 'am' : 'pm';
-    setRoutines(prev => ({ ...prev, [key]: [...prev[key], newItem] }));
-    setIsAddBottomSheetOpen(false);
+  const handleAddRoutine = useCallback(
+    async (data: RoutineAddData) => {
+      const tempId = `temp-${Date.now()}`;
+      const newItem: RoutineItemData = {
+        id: tempId,
+        title: data.title,
+        category: data.category,
+        period: data.period,
+        url: data.url,
+        pomodoro_count: data.pomodoro_count,
+      };
+      const key = data.period === 'AM' ? 'am' : 'pm';
+      setRoutines(prev => ({ ...prev, [key]: [...prev[key], newItem] }));
+      setIsAddBottomSheetOpen(false);
 
-    const result = await createRoutineItem({
-      title: data.title,
-      period: data.period,
-      category: data.category,
-      url: data.url,
-      pomodoro_count: data.pomodoro_count,
-    });
+      try {
+        const result = await createRoutineItem({
+          title: data.title,
+          period: data.period,
+          category: data.category,
+          url: data.url,
+          pomodoro_count: data.pomodoro_count,
+        });
 
-    if (result.ok) {
-      const saved = result.data;
-      setRoutines(prev => ({
-        ...prev,
-        [key]: prev[key].map(item =>
-          item.id === tempId ? { ...item, id: saved.id } : item
-        ),
-      }));
-    } else {
-      setRoutines(prev => ({
-        ...prev,
-        [key]: prev[key].filter(item => item.id !== tempId),
-      }));
-      toast.error('루틴 추가에 실패했습니다. 다시 시도해주세요.');
-    }
-  }, []);
+        if (result.ok) {
+          const saved = result.data;
+          setRoutines(prev => ({
+            ...prev,
+            [key]: prev[key].map(item =>
+              item.id === tempId ? { ...item, id: saved.id } : item
+            ),
+          }));
+        } else {
+          setRoutines(prev => ({
+            ...prev,
+            [key]: prev[key].filter(item => item.id !== tempId),
+          }));
+          toast.error('루틴 추가에 실패했습니다. 다시 시도해주세요.');
+        }
+      } catch {
+        setRoutines(prev => ({
+          ...prev,
+          [key]: prev[key].filter(item => item.id !== tempId),
+        }));
+        toast.error('루틴 추가에 실패했습니다. 다시 시도해주세요.');
+      }
+    },
+    [toast]
+  );
 
   const handleSaveRoutine = useCallback(
     async (data: RoutineAddData) => {
@@ -206,6 +248,9 @@ export default function RoadmapCard() {
         i => i.id === selectedRoutineId
       );
       if (!prevItem) return;
+      const prevIndex = routines[prevKey].findIndex(
+        i => i.id === selectedRoutineId
+      );
 
       const updatedItem: RoutineItemData = {
         ...prevItem,
@@ -217,6 +262,15 @@ export default function RoadmapCard() {
       };
 
       setRoutines(prev => {
+        if (prevKey === newKey) {
+          return {
+            ...prev,
+            [newKey]: prev[newKey].map(item =>
+              item.id === selectedRoutineId ? updatedItem : item
+            ),
+          };
+        }
+
         const withoutOld = {
           am: prev.am.filter(i => i.id !== selectedRoutineId),
           pm: prev.pm.filter(i => i.id !== selectedRoutineId),
@@ -228,35 +282,104 @@ export default function RoadmapCard() {
       });
       setIsEditBottomSheetOpen(false);
 
-      const result = await updateRoutineItem(selectedRoutineId, {
-        title: data.title,
-        period: data.period,
-        category: data.category,
-        url: data.url ?? null,
-        pomodoro_count: data.pomodoro_count,
-      });
+      if (!isPersistedRoutineId(selectedRoutineId)) return;
 
-      if (!result.ok) {
+      try {
+        const result = await updateRoutineItem(selectedRoutineId, {
+          title: data.title,
+          period: data.period,
+          category: data.category,
+          url: data.url ?? null,
+          pomodoro_count: data.pomodoro_count,
+        });
+
+        if (!result.ok) {
+          setRoutines(prev => {
+            if (prevKey === newKey) {
+              const list = prev[prevKey].filter(
+                i => i.id !== selectedRoutineId
+              );
+              const restoreIndex =
+                prevIndex >= 0 && prevIndex <= list.length
+                  ? prevIndex
+                  : list.length;
+              return {
+                ...prev,
+                [prevKey]: [
+                  ...list.slice(0, restoreIndex),
+                  prevItem,
+                  ...list.slice(restoreIndex),
+                ],
+              };
+            }
+
+            const withoutNew = {
+              am: prev.am.filter(i => i.id !== selectedRoutineId),
+              pm: prev.pm.filter(i => i.id !== selectedRoutineId),
+            };
+            const prevList = withoutNew[prevKey];
+            const restoreIndex =
+              prevIndex >= 0 && prevIndex <= prevList.length
+                ? prevIndex
+                : prevList.length;
+            return {
+              ...withoutNew,
+              [prevKey]: [
+                ...prevList.slice(0, restoreIndex),
+                prevItem,
+                ...prevList.slice(restoreIndex),
+              ],
+            };
+          });
+          toast.error('루틴 수정에 실패했습니다. 다시 시도해주세요.');
+        }
+      } catch {
         setRoutines(prev => {
+          if (prevKey === newKey) {
+            const list = prev[prevKey].filter(i => i.id !== selectedRoutineId);
+            const restoreIndex =
+              prevIndex >= 0 && prevIndex <= list.length
+                ? prevIndex
+                : list.length;
+            return {
+              ...prev,
+              [prevKey]: [
+                ...list.slice(0, restoreIndex),
+                prevItem,
+                ...list.slice(restoreIndex),
+              ],
+            };
+          }
+
           const withoutNew = {
             am: prev.am.filter(i => i.id !== selectedRoutineId),
             pm: prev.pm.filter(i => i.id !== selectedRoutineId),
           };
+          const prevList = withoutNew[prevKey];
+          const restoreIndex =
+            prevIndex >= 0 && prevIndex <= prevList.length
+              ? prevIndex
+              : prevList.length;
           return {
             ...withoutNew,
-            [prevKey]: [...withoutNew[prevKey], prevItem],
+            [prevKey]: [
+              ...prevList.slice(0, restoreIndex),
+              prevItem,
+              ...prevList.slice(restoreIndex),
+            ],
           };
         });
         toast.error('루틴 수정에 실패했습니다. 다시 시도해주세요.');
       }
     },
-    [selectedRoutineId, selectedPeriod, routines]
+    [selectedRoutineId, selectedPeriod, routines, toast]
   );
 
   const handleDeleteRoutine = useCallback(async () => {
     if (!selectedRoutineId) return;
 
     const key = selectedPeriod === 'AM' ? 'am' : 'pm';
+    const prevIndex = routines[key].findIndex(i => i.id === selectedRoutineId);
     const prevItem = routines[key].find(i => i.id === selectedRoutineId);
     if (!prevItem) return;
 
@@ -266,15 +389,33 @@ export default function RoadmapCard() {
     }));
     setIsEditBottomSheetOpen(false);
 
-    const result = await deleteRoutineItem(selectedRoutineId);
-    if (!result.ok) {
+    if (!isPersistedRoutineId(selectedRoutineId)) return;
+
+    try {
+      const result = await deleteRoutineItem(selectedRoutineId);
+      if (!result.ok) {
+        setRoutines(prev => ({
+          ...prev,
+          [key]: [
+            ...prev[key].slice(0, prevIndex),
+            prevItem,
+            ...prev[key].slice(prevIndex),
+          ],
+        }));
+        toast.error('루틴 삭제에 실패했습니다. 다시 시도해주세요.');
+      }
+    } catch {
       setRoutines(prev => ({
         ...prev,
-        [key]: [...prev[key], prevItem],
+        [key]: [
+          ...prev[key].slice(0, prevIndex),
+          prevItem,
+          ...prev[key].slice(prevIndex),
+        ],
       }));
       toast.error('루틴 삭제에 실패했습니다. 다시 시도해주세요.');
     }
-  }, [selectedRoutineId, selectedPeriod, routines]);
+  }, [selectedRoutineId, selectedPeriod, routines, toast]);
 
   const editingItem = selectedRoutineId
     ? [...routines.am, ...routines.pm].find(i => i.id === selectedRoutineId)

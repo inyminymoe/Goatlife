@@ -28,6 +28,27 @@ type RoutineItemResponse =
 
 type DeleteResponse = { ok: true; data: null } | { ok: false; error: string };
 
+function normalizeHttpUrl(input?: string | null) {
+  const trimmed = input?.trim() ?? '';
+  if (!trimmed) return { ok: true as const, value: null as string | null };
+
+  try {
+    const parsed = new URL(trimmed);
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      return {
+        ok: false as const,
+        error: 'URL은 http 또는 https 형식만 입력할 수 있습니다.',
+      };
+    }
+    return { ok: true as const, value: parsed.toString() };
+  } catch {
+    return {
+      ok: false as const,
+      error: 'URL 형식이 올바르지 않습니다.',
+    };
+  }
+}
+
 async function getUserSupabaseClient() {
   const supabase = await createServerSupabase();
   const {
@@ -68,6 +89,8 @@ export async function createRoutineItem(input: {
   if (!client.ok) return client;
 
   if (!input.title.trim()) return { ok: false, error: '제목을 입력해주세요.' };
+  const normalizedUrl = normalizeHttpUrl(input.url);
+  if (!normalizedUrl.ok) return { ok: false, error: normalizedUrl.error };
 
   const { data: existing } = await client.supabase
     .from('routine_items')
@@ -87,7 +110,7 @@ export async function createRoutineItem(input: {
       title: input.title.trim(),
       period: input.period,
       category: input.category,
-      url: input.url?.trim() || null,
+      url: normalizedUrl.value,
       pomodoro_count: input.pomodoro_count ?? 1,
       order_index: newOrderIndex,
     })
@@ -114,6 +137,10 @@ export async function updateRoutineItem(
   if (updates.title !== undefined && !updates.title.trim()) {
     return { ok: false, error: '제목을 입력해주세요.' };
   }
+  const normalizedUrl = 'url' in updates ? normalizeHttpUrl(updates.url) : null;
+  if (normalizedUrl && !normalizedUrl.ok) {
+    return { ok: false, error: normalizedUrl.error };
+  }
 
   const payload: Record<string, unknown> = {
     updated_at: new Date().toISOString(),
@@ -121,7 +148,7 @@ export async function updateRoutineItem(
   if (updates.title !== undefined) payload.title = updates.title.trim();
   if (updates.period !== undefined) payload.period = updates.period;
   if (updates.category !== undefined) payload.category = updates.category;
-  if ('url' in updates) payload.url = updates.url?.trim() || null;
+  if (normalizedUrl && normalizedUrl.ok) payload.url = normalizedUrl.value;
   if (updates.pomodoro_count !== undefined)
     payload.pomodoro_count = updates.pomodoro_count;
 
