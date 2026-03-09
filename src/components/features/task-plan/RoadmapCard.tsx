@@ -60,7 +60,6 @@ export default function RoadmapCard() {
     getRoutineItems().then(result => {
       if (result.ok) {
         if (result.data.length === 0) {
-          // 저장된 루틴 없으면 예시 데이터 표시
           setRoutines(DEFAULT_ROUTINES);
         } else {
           setRoutines(
@@ -77,7 +76,6 @@ export default function RoadmapCard() {
           );
         }
       } else {
-        // 로드 실패 시에도 예시 데이터 표시
         setRoutines(DEFAULT_ROUTINES);
       }
       setIsLoading(false);
@@ -136,7 +134,6 @@ export default function RoadmapCard() {
       const targetItem = allItems.find(i => i.id === overId);
 
       if (!sourceItem || !targetItem) return;
-      // AM ↔ PM 크로스리스트 이동 제한
       if (sourceItem.period !== targetItem.period) return;
 
       const key = sourceItem.period === 'AM' ? 'am' : 'pm';
@@ -147,7 +144,6 @@ export default function RoadmapCard() {
         const newIndex = items.findIndex(i => i.id === overId);
         const reordered = arrayMove(items, oldIndex, newIndex);
 
-        // 백그라운드 순서 저장
         reorderRoutineItems(
           reordered.map((item, idx) => ({
             id: item.id,
@@ -162,7 +158,6 @@ export default function RoadmapCard() {
   );
 
   const handleAddRoutine = useCallback(async (data: RoutineAddData) => {
-    // 옵티미스틱 업데이트
     const tempId = `temp-${Date.now()}`;
     const newItem: RoutineItemData = {
       id: tempId,
@@ -176,7 +171,6 @@ export default function RoadmapCard() {
     setRoutines(prev => ({ ...prev, [key]: [...prev[key], newItem] }));
     setIsAddBottomSheetOpen(false);
 
-    // Supabase 저장 후 실제 ID로 교체
     const result = await createRoutineItem({
       title: data.title,
       period: data.period,
@@ -222,7 +216,6 @@ export default function RoadmapCard() {
         pomodoro_count: data.pomodoro_count,
       };
 
-      // 옵티미스틱 업데이트 (period 변경 포함)
       setRoutines(prev => {
         const withoutOld = {
           am: prev.am.filter(i => i.id !== selectedRoutineId),
@@ -267,7 +260,6 @@ export default function RoadmapCard() {
     const prevItem = routines[key].find(i => i.id === selectedRoutineId);
     if (!prevItem) return;
 
-    // 옵티미스틱 삭제
     setRoutines(prev => ({
       ...prev,
       [key]: prev[key].filter(item => item.id !== selectedRoutineId),

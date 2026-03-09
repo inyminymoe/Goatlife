@@ -25,4 +25,7 @@ export interface PostForView {
   dateCreated: string;
   dateUpdated: string;
   boardLabel: string;
+  likeCount: number;
+  isLiked: boolean;
+  isBookmarked: boolean;
 }
