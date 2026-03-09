@@ -322,7 +322,11 @@ export default function RoadmapCard() {
             <div className="h-8 bg-grey-200 rounded-[5px]" />
           </div>
         ) : (
-          <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+          <DndContext
+            id="roadmap-routine-dnd"
+            sensors={sensors}
+            onDragEnd={handleDragEnd}
+          >
             <div className="flex flex-col gap-2">
               <RoutineTimeline
                 period="AM"
