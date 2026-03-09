@@ -24,6 +24,7 @@ interface PomodoroTimerResult {
   setBreakPresetMinutes: (minutes: number) => void;
   toggleRunning: () => void;
   startBreak: () => void;
+  startFocus: () => void;
 }
 
 export function usePomodoroTimer(
@@ -141,6 +142,12 @@ export function usePomodoroTimer(
     setIsRunning(true);
   }, [breakPresetMinutes]);
 
+  const startFocus = useCallback(() => {
+    setMode('focus');
+    setRemainingSeconds(focusPresetMinutes * 60);
+    setIsRunning(true);
+  }, [focusPresetMinutes]);
+
   return {
     mode,
     isRunning,
@@ -152,5 +159,6 @@ export function usePomodoroTimer(
     setBreakPresetMinutes,
     toggleRunning,
     startBreak,
+    startFocus,
   };
 }
