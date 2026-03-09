@@ -56,7 +56,7 @@ export default function Pagination({
       <button
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage === 1}
-        className="flex items-center text-grey-500 disabled:text-grey-300 disabled:cursor-not-allowed hover:text-grey-900 transition-colors"
+        className="flex items-center text-grey-500 disabled:opacity-40 disabled:cursor-not-allowed hover:text-grey-900 transition-colors"
         aria-label="이전 페이지"
       >
         <Icon
@@ -96,7 +96,7 @@ export default function Pagination({
       <button
         onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage === totalPages}
-        className="flex items-center justify-center text-grey-500 disabled:text-grey-300 disabled:cursor-not-allowed hover:text-grey-900 transition-colors"
+        className="flex items-center justify-center text-grey-500 disabled:opacity-40 disabled:cursor-not-allowed hover:text-grey-900 transition-colors"
         aria-label="다음 페이지"
       >
         <Icon

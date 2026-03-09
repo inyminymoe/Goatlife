@@ -14,7 +14,7 @@ export default function ViewToggle({
 }: ViewToggleProps) {
   return (
     <div
-      className={`inline-flex bg-white rounded-[5px] shadow-[4px_4px_4px_0px_rgba(47,136,255,0.08)] ${className}`}
+      className={`inline-flex bg-dark rounded-[5px] shadow-[4px_4px_4px_0px_rgba(47,136,255,0.08)] ${className}`}
     >
       {/* List View */}
       <button

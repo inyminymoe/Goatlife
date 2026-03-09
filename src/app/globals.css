@@ -1,5 +1,6 @@
 @import 'tailwindcss';
 @plugin "@tailwindcss/typography";
+@custom-variant dark (:root.dark &);
 
 html,
 body {
@@ -135,6 +136,10 @@ body {
   }
   .gl-text-footer {
     color: hsl(0 0% 100%);
+  }
+
+  :root.dark .icon-dark-invert {
+    filter: invert(1);
   }
 
   /* Safe Area */

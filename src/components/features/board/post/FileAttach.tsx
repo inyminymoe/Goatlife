@@ -22,7 +22,7 @@ export function FileAttach({ files, onAdd, onRemove }: FileAttachProps) {
   };
 
   return (
-    <div className="rounded-[5px] border border-dashed border-grey-300 bg-grey-50 px-4 py-3">
+    <div className="rounded-[5px] border border-dashed border-grey-200 bg-grey-50 px-4 py-3">
       <div className="flex items-start justify-between gap-3">
         <div className="flex flex-col gap-2 flex-1">
           {files.length === 0 ? (

@@ -36,7 +36,7 @@ export function TodayRankWidget({
   );
 
   const renderError = () => (
-    <div className="mt-4 rounded-[5px] border border-grey-200 bg-white/60 p-4">
+    <div className="mt-4 rounded-[5px] border border-grey-200 bg-dark p-4">
       <p className="body-sm text-grey-600">
         랭킹을 불러오는 중 문제가 발생했어요. 잠시 후 다시 시도해주세요.
       </p>

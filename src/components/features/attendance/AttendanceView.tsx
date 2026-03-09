@@ -178,7 +178,7 @@ export default function AttendanceView({
         <div className="grid grid-cols-2 gap-x-0 gap-y-4 items-start">
           <div className="flex flex-col gap-1 items-start text-left min-w-0">
             <div className="inline-flex items-center gap-2.5">
-              <span className="text-grey-300 body-sm font-semibold">Today</span>
+              <span className="text-grey-500 body-sm font-semibold">Today</span>
             </div>
             <div className="inline-flex items-end gap-1">
               <span className="brand-h1 text-primary-500 tabular-nums">
@@ -192,7 +192,7 @@ export default function AttendanceView({
 
           <div className="flex flex-col gap-1 items-start text-left min-w-0">
             <div className="inline-flex items-center gap-2.5">
-              <span className="text-grey-300 body-sm font-semibold">Total</span>
+              <span className="text-grey-500 body-sm font-semibold">Total</span>
             </div>
             <div className="inline-flex items-baseline gap-1">
               <span className="brand-h1 text-primary-500 tabular-nums">

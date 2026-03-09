@@ -1,6 +1,6 @@
 'use client';
 
-import AttendanceView from '@/components/shared/AttendanceView';
+import AttendanceView from './AttendanceView';
 import { useAttendance } from '@/hooks/useAttendance';
 
 export default function AttendanceCard() {
