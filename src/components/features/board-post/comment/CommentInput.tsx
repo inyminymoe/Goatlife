@@ -43,7 +43,7 @@ export function CommentInput({
           className="border-grey-200 rounded-none"
         />
 
-        <div className="flex justify-between items-center p-2 bg-white border border-grey-200">
+        <div className="flex justify-between items-center p-2 bg-dark border border-dark">
           <IconButton
             icon="material-symbols:image-outline"
             label=""

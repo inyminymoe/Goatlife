@@ -25,7 +25,7 @@ export default function TaskInput({ onSubmit, isLoading }: TaskInputProps) {
   };
 
   return (
-    <div className="w-full px-3 py-3 rounded-lg shadow-[2px_3px_8px_0px_rgba(0,0,0,0.08)] bg-white flex items-center gap-2">
+    <div className="w-full px-3 py-3 rounded-lg shadow-[2px_3px_8px_0px_rgba(0,0,0,0.08)] bg-dark flex items-center gap-2">
       <div className="flex-shrink-0 w-6 h-6 relative">
         <Image
           src="/images/icons/icon_unchecked.svg"

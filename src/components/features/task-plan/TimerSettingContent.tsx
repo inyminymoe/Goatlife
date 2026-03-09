@@ -24,7 +24,7 @@ export default function TimerSettingContent({
           {FOCUS_PRESETS.map(preset => (
             <label
               key={preset}
-              className="flex items-center gap-2 px-3 py-2 rounded-[5px] border border-grey-200 bg-white cursor-pointer"
+              className="flex items-center gap-2 px-3 py-2 rounded-[5px] border border-dark bg-dark cursor-pointer"
             >
               <input
                 type="radio"

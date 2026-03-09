@@ -204,11 +204,11 @@ export default function UserInfoView({
             )}
           </div>
 
-          <div className="body-sm text-grey-300 truncate">{userIdLabel}</div>
+          <div className="body-sm text-grey-500 truncate">{userIdLabel}</div>
 
           <div className="mt-2 grid grid-cols-2 gap-x-9 md:gap-x-14 gap-y-3 items-start">
             <div className="flex flex-col gap-1">
-              <span className="body-sm font-semibold text-grey-300">입사</span>
+              <span className="body-sm font-semibold text-grey-500">입사</span>
               <div className="flex items-end gap-1">
                 <span className="brand-h1 text-primary-500 tabular-nums">
                   {joinedDays}
@@ -217,7 +217,7 @@ export default function UserInfoView({
               </div>
             </div>
             <div className="flex flex-col gap-1">
-              <span className="body-sm font-semibold text-grey-300">
+              <span className="body-sm font-semibold text-grey-500">
                 업무성과
               </span>
               <div className="flex items-end gap-1">

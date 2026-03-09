@@ -71,13 +71,16 @@ export default function PomodoroTimerCard() {
             aria-label="타이머 설정 열기"
             onClick={() => setIsDrawerOpen(true)}
           >
-            <Icon icon="icon-park:more-one" className="w-6 h-6 text-grey-700" />
+            <Icon
+              icon="icon-park:more-one"
+              className="w-6 h-6 icon-dark-invert"
+            />
           </button>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="flex flex-col gap-1">
-            <span className="body-sm text-grey-300 font-semibold">Timer</span>
+            <span className="body-sm text-grey-500 font-semibold">Timer</span>
             <div className="inline-flex items-end gap-1">
               <span className="brand-h1 text-primary-500 tabular-nums">
                 {formatTime(remainingSeconds)}
@@ -89,7 +92,7 @@ export default function PomodoroTimerCard() {
           </div>
 
           <div className="flex flex-col gap-1">
-            <span className="body-sm text-grey-300 font-semibold">
+            <span className="body-sm text-grey-500 font-semibold">
               총 집중시간
             </span>
             <div className="inline-flex items-end gap-1">

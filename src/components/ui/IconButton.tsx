@@ -27,7 +27,7 @@ export default function IconButton({
 
   const variantClasses =
     variant === 'outline'
-      ? 'bg-white border border-grey-200 hover:bg-grey-100'
+      ? 'bg-dark border border-dark hover:bg-grey-200'
       : 'bg-transparent hover:bg-grey-100';
 
   const displayIcon = active && activeIcon ? activeIcon : icon;
