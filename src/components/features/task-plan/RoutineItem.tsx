@@ -12,6 +12,9 @@ export interface RoutineItemData {
   id: string;
   title: string;
   category: RoutineCategory;
+  period: 'AM' | 'PM';
+  url?: string;
+  pomodoro_count?: number;
 }
 
 interface RoutineItemProps {
