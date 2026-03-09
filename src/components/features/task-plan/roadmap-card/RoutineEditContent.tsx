@@ -1,10 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { overlay } from 'overlay-kit';
 import Select from '@/components/ui/Select';
-import Modal from '@/components/ui/Modal';
-import Button from '@/components/ui/Button';
 import type { RoutineCategory } from '../RoutineItem';
 import type { RoutinePeriod } from './types';
 import type { RoutineAddData } from './RoutineAddContent';
@@ -69,32 +66,10 @@ export default function RoutineEditContent({
   };
 
   const handleDeleteClick = () => {
-    overlay.open(({ isOpen, close, unmount }) => (
-      <Modal
-        open={isOpen}
-        onClose={unmount}
-        title="루틴을 삭제하시겠어요?"
-        description={`"${initialTitle}" 루틴이 삭제됩니다.`}
-        footer={
-          <>
-            <Button variant="outline" onClick={unmount}>
-              취소
-            </Button>
-            <Button
-              variant="primary"
-              onClick={() => {
-                onDelete();
-                close();
-              }}
-            >
-              삭제
-            </Button>
-          </>
-        }
-      >
-        <></>
-      </Modal>
-    ));
+    if (window.confirm('루틴을 삭제하시겠어요?')) {
+      onDelete();
+      onClose();
+    }
   };
 
   return (

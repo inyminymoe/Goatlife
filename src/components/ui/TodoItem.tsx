@@ -29,7 +29,7 @@ export default function TodoItem({
         shadow-[2px_3px_8px_0px_rgba(0,0,0,0.08)]
         inline-flex items-start gap-2
         transition-colors
-        ${completed ? 'bg-grey-100' : 'bg-dark'}
+        ${completed ? 'bg-grey-200' : 'bg-dark'}
       `}
     >
       {/* Checkbox */}
