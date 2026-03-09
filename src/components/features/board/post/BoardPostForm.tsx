@@ -240,7 +240,7 @@ export default function BoardPostForm(props: BoardPostFormProps) {
       </div>
 
       <form ref={formRef} onSubmit={handleSubmit}>
-        <div className="bg-white rounded-[5px] border border-grey-200">
+        <div className="bg-dark rounded-[5px] border border-dark">
           <div className="pt-4">
             <Toolbar />
             <div className="border-t border-fixed-grey-200" />
@@ -289,7 +289,7 @@ export default function BoardPostForm(props: BoardPostFormProps) {
             type="button"
             variant="outline"
             size="lg"
-            className="w-full md:flex-1 bg-white text-grey-700 border border-grey-200"
+            className="w-full md:flex-1 bg-dark text-dark border border-dark"
             onClick={() => router.push(cancelHref)}
           >
             취소

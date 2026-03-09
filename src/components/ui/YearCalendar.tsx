@@ -36,7 +36,7 @@ export function YearCalendar() {
         {months.map(month => (
           <div
             key={month}
-            className="bg-white rounded-[5px] p-4 flex flex-col gap-2"
+            className="bg-dark rounded-[5px] p-4 flex flex-col gap-2"
           >
             <div className="text-xs font-semibold text-grey-700">
               {month + 1}월

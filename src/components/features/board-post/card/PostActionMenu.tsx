@@ -37,7 +37,11 @@ export function PostActionMenu({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <IconButton icon="icon-park:more-one" variant="ghost" />
+        <IconButton
+          icon="icon-park:more-one"
+          variant="ghost"
+          className="icon-dark-invert"
+        />
       </DropdownMenuTrigger>
       <DropdownMenuContent placement="bottom-end" className="w-28">
         {isAuthor ? (
