@@ -11,6 +11,8 @@ interface PomodoroTimerOptions {
   autoReturnToFocus?: boolean;
   onFocusComplete?: () => void;
   onBreakComplete?: () => void;
+  onFocusFail?: (elapsedSeconds: number) => void;
+  onBreakStart?: (durationSeconds: number) => void;
 }
 
 interface PomodoroTimerResult {
@@ -36,6 +38,8 @@ export function usePomodoroTimer(
     autoReturnToFocus = true,
     onFocusComplete,
     onBreakComplete,
+    onFocusFail,
+    onBreakStart,
   } = options;
 
   const [mode, setMode] = useState<PomodoroMode>('focus');
@@ -136,10 +140,22 @@ export function usePomodoroTimer(
   ]);
 
   const startBreak = useCallback(() => {
+    if (mode === 'focus') {
+      const elapsed = focusPresetMinutes * 60 - remainingSeconds;
+      if (elapsed > 0) onFocusFail?.(elapsed);
+    }
+    onBreakStart?.(breakPresetMinutes * 60);
     setMode('break');
     setRemainingSeconds(breakPresetMinutes * 60);
     setIsRunning(true);
-  }, [breakPresetMinutes]);
+  }, [
+    mode,
+    remainingSeconds,
+    focusPresetMinutes,
+    breakPresetMinutes,
+    onFocusFail,
+    onBreakStart,
+  ]);
 
   return {
     mode,
