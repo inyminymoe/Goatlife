@@ -140,7 +140,8 @@ export function usePomodoroTimer(
   ]);
 
   const startBreak = useCallback(() => {
-    if (mode === 'focus') {
+    if (mode === 'break') return;
+    if (mode === 'focus' && remainingSeconds > 0) {
       const elapsed = focusPresetMinutes * 60 - remainingSeconds;
       if (elapsed > 0) onFocusFail?.(elapsed);
     }
