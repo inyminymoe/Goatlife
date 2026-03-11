@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Icon } from '@iconify/react';
 import Button from '@/components/ui/Button';
 import Toast from '@/components/ui/Toast';
@@ -26,9 +26,22 @@ function formatTotalFocus(seconds: number) {
   };
 }
 
-export default function PomodoroTimerCard() {
+interface PomodoroTimerCardProps {
+  onFocusDone?: (durationSeconds: number) => void;
+  onFocusFail?: (elapsedSeconds: number) => void;
+  onBreakStart?: (durationSeconds: number) => void;
+}
+
+export default function PomodoroTimerCard({
+  onFocusDone,
+  onFocusFail,
+  onBreakStart,
+}: PomodoroTimerCardProps = {}) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // ref로 preset 값 캡처 — onFocusComplete 콜백 클로저에서 최신 값 참조
+  const focusPresetRef = useRef(30);
 
   const {
     mode,
@@ -44,9 +57,16 @@ export default function PomodoroTimerCard() {
   } = usePomodoroTimer({
     initialFocusMinutes: 30,
     initialBreakMinutes: 15,
-    onFocusComplete: () => setToastMessage('1 뽀모도로 완성🍅'),
+    onFocusComplete: () => {
+      setToastMessage('1 뽀모도로 완성🍅');
+      onFocusDone?.(focusPresetRef.current * 60);
+    },
     onBreakComplete: () => setToastMessage('잘 쉬었나요? 다시 힘차게 달려요✊'),
+    onFocusFail,
+    onBreakStart,
   });
+
+  focusPresetRef.current = focusPresetMinutes;
 
   const totalFocus = useMemo(
     () => formatTotalFocus(totalFocusSeconds),
