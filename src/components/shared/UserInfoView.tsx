@@ -151,7 +151,7 @@ export default function UserInfoView({
       <div className="flex items-end gap-1">
         <Icon
           icon="icon-park:necktie"
-          className="w-6 h-6 text-grey-900"
+          className="w-6 h-6 icon-dark-invert"
           aria-hidden="true"
         />
         <h2 id="userinfo-title" className="brand-h3 text-grey-900">
