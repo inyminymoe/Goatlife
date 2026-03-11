@@ -12,7 +12,7 @@ interface PomodoroTimerOptions {
   onFocusComplete?: () => void;
   onBreakComplete?: () => void;
   onFocusFail?: (elapsedSeconds: number) => void;
-  onBreakStart?: (durationSeconds: number) => void;
+  onBreakRecorded?: (elapsedSeconds: number) => void;
 }
 
 interface PomodoroTimerResult {
@@ -26,7 +26,12 @@ interface PomodoroTimerResult {
   setBreakPresetMinutes: (minutes: number) => void;
   toggleRunning: () => void;
   startBreak: () => void;
+  skipToFocus: () => void;
+  resetTimer: () => void;
+  endSession: () => void;
 }
+
+const MIN_ELAPSED_FOR_STAMP = 60;
 
 export function usePomodoroTimer(
   options: PomodoroTimerOptions = {}
@@ -39,7 +44,7 @@ export function usePomodoroTimer(
     onFocusComplete,
     onBreakComplete,
     onFocusFail,
-    onBreakStart,
+    onBreakRecorded,
   } = options;
 
   const [mode, setMode] = useState<PomodoroMode>('focus');
@@ -52,7 +57,20 @@ export function usePomodoroTimer(
   );
   const [isRunning, setIsRunning] = useState(autoStart);
   const [totalFocusSeconds, setTotalFocusSeconds] = useState(0);
+
   const completionNotifiedRef = useRef(false);
+  const breakElapsedSecondsRef = useRef(0);
+
+  const getElapsedFocusSeconds = useCallback(() => {
+    return focusPresetMinutes * 60 - remainingSeconds;
+  }, [focusPresetMinutes, remainingSeconds]);
+
+  const flushBreakRecord = useCallback(() => {
+    if (breakElapsedSecondsRef.current <= 0) return;
+
+    onBreakRecorded?.(breakElapsedSecondsRef.current);
+    breakElapsedSecondsRef.current = 0;
+  }, [onBreakRecorded]);
 
   useEffect(() => {
     if (!isRunning) return;
@@ -63,6 +81,8 @@ export function usePomodoroTimer(
 
         if (mode === 'focus') {
           setTotalFocusSeconds(total => total + 1);
+        } else {
+          breakElapsedSecondsRef.current += 1;
         }
 
         return prev - 1;
@@ -73,33 +93,38 @@ export function usePomodoroTimer(
   }, [isRunning, mode]);
 
   useEffect(() => {
-    if (remainingSeconds === 0 && !completionNotifiedRef.current) {
-      completionNotifiedRef.current = true;
-      setIsRunning(false);
+    if (remainingSeconds !== 0 || completionNotifiedRef.current) return;
 
-      if (mode === 'focus') {
-        onFocusComplete?.();
-      } else {
-        onBreakComplete?.();
+    completionNotifiedRef.current = true;
+    setIsRunning(false);
 
-        if (autoReturnToFocus) {
-          setMode('focus');
-          setRemainingSeconds(focusPresetMinutes * 60);
-        }
-      }
+    if (mode === 'focus') {
+      onFocusComplete?.();
+      return;
     }
 
+    flushBreakRecord();
+    onBreakComplete?.();
+
+    if (autoReturnToFocus) {
+      setMode('focus');
+      setRemainingSeconds(focusPresetMinutes * 60);
+    }
+  }, [
+    autoReturnToFocus,
+    flushBreakRecord,
+    focusPresetMinutes,
+    mode,
+    onBreakComplete,
+    onFocusComplete,
+    remainingSeconds,
+  ]);
+
+  useEffect(() => {
     if (remainingSeconds > 0) {
       completionNotifiedRef.current = false;
     }
-  }, [
-    remainingSeconds,
-    mode,
-    autoReturnToFocus,
-    focusPresetMinutes,
-    onFocusComplete,
-    onBreakComplete,
-  ]);
+  }, [remainingSeconds]);
 
   const setFocusPresetMinutes = useCallback(
     (minutes: number) => {
@@ -141,21 +166,74 @@ export function usePomodoroTimer(
 
   const startBreak = useCallback(() => {
     if (mode === 'break') return;
-    if (mode === 'focus' && remainingSeconds > 0) {
-      const elapsed = focusPresetMinutes * 60 - remainingSeconds;
-      if (elapsed > 0) onFocusFail?.(elapsed);
+
+    if (remainingSeconds > 0) {
+      const elapsed = getElapsedFocusSeconds();
+      if (elapsed >= MIN_ELAPSED_FOR_STAMP) {
+        onFocusFail?.(elapsed);
+      }
     }
-    onBreakStart?.(breakPresetMinutes * 60);
+
+    breakElapsedSecondsRef.current = 0;
+    completionNotifiedRef.current = false;
     setMode('break');
     setRemainingSeconds(breakPresetMinutes * 60);
     setIsRunning(true);
   }, [
-    mode,
-    remainingSeconds,
-    focusPresetMinutes,
     breakPresetMinutes,
+    getElapsedFocusSeconds,
+    mode,
     onFocusFail,
-    onBreakStart,
+    remainingSeconds,
+  ]);
+
+  const skipToFocus = useCallback(() => {
+    if (mode !== 'break') return;
+
+    setIsRunning(false);
+    flushBreakRecord();
+    completionNotifiedRef.current = false;
+    setMode('focus');
+    setRemainingSeconds(focusPresetMinutes * 60);
+  }, [flushBreakRecord, focusPresetMinutes, mode]);
+
+  const resetTimer = useCallback(() => {
+    setIsRunning(false);
+    completionNotifiedRef.current = false;
+
+    if (mode === 'focus') {
+      setRemainingSeconds(focusPresetMinutes * 60);
+      return;
+    }
+
+    setRemainingSeconds(breakPresetMinutes * 60);
+  }, [breakPresetMinutes, focusPresetMinutes, mode]);
+
+  const endSession = useCallback(() => {
+    if (mode === 'focus' && remainingSeconds > 0) {
+      const elapsed = getElapsedFocusSeconds();
+      if (elapsed >= MIN_ELAPSED_FOR_STAMP) {
+        onFocusFail?.(elapsed);
+      }
+    }
+
+    if (mode === 'break') {
+      flushBreakRecord();
+    }
+
+    setIsRunning(false);
+    completionNotifiedRef.current = false;
+    breakElapsedSecondsRef.current = 0;
+    setMode('focus');
+    setRemainingSeconds(focusPresetMinutes * 60);
+    setTotalFocusSeconds(0);
+  }, [
+    flushBreakRecord,
+    focusPresetMinutes,
+    getElapsedFocusSeconds,
+    mode,
+    onFocusFail,
+    remainingSeconds,
   ]);
 
   return {
@@ -169,5 +247,8 @@ export function usePomodoroTimer(
     setBreakPresetMinutes,
     toggleRunning,
     startBreak,
+    skipToFocus,
+    resetTimer,
+    endSession,
   };
 }
