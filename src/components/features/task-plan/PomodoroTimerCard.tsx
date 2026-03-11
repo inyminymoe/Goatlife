@@ -80,7 +80,7 @@ export default function PomodoroTimerCard({
           <div className="flex items-center gap-1">
             <Icon
               icon="icon-park:tomato"
-              className="w-6 h-6 text-grey-900"
+              className="w-6 h-6 icon-dark-invert"
               aria-hidden="true"
             />
             <h2 className="brand-h3 text-grey-900">Timer</h2>
