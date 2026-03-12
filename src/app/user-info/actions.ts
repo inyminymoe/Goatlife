@@ -4,12 +4,10 @@ import { createServerSupabase } from '@/lib/supabase/server';
 import { admin } from '@/lib/supabase/admin';
 import { profileEditSchema, type ProfileEditFormValues } from './schema';
 
-async function isValidImageMagicBytes(file: File): Promise<boolean> {
-  const arrayBuf = await file.arrayBuffer();
-  const buf = new Uint8Array(arrayBuf, 0, Math.min(12, arrayBuf.byteLength));
+function checkMagicBytes(buf: Uint8Array): boolean {
   // JPEG: FF D8 FF
   if (buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) return true;
-  // PNG: 89 50 4E 47 0D 0A 1A 0A
+  // PNG: 89 50 4E 47
   if (buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47)
     return true;
   // GIF: 47 49 46 38
@@ -28,6 +26,12 @@ async function isValidImageMagicBytes(file: File): Promise<boolean> {
   )
     return true;
   return false;
+}
+
+async function isValidImageMagicBytes(file: File): Promise<boolean> {
+  const arrayBuf = await file.arrayBuffer();
+  const buf = new Uint8Array(arrayBuf, 0, Math.min(12, arrayBuf.byteLength));
+  return checkMagicBytes(buf);
 }
 
 /**
@@ -54,6 +58,13 @@ export async function uploadSignupAvatar(
   const buffer = Buffer.from(base64, 'base64');
 
   if (buffer.byteLength > 1 * 1024 * 1024) return null; // 가입 시 1MB 제한
+
+  const bufBytes = new Uint8Array(
+    buffer.buffer,
+    buffer.byteOffset,
+    Math.min(12, buffer.byteLength)
+  );
+  if (!checkMagicBytes(bufBytes)) return null;
 
   const ext = mimeType.split('/')[1];
   const fileName = `avatars/${userId}/${Date.now()}.${ext}`;
