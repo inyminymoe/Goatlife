@@ -1,3 +1,5 @@
+import { Comment } from '@/types/board';
+
 export async function fetchComments(
   postId: string,
   page: number
