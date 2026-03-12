@@ -98,6 +98,7 @@ export default function ProfileEditForm({
             value={watch('avatarUrl')}
             onChange={(url: string) => setValue('avatarUrl', url)}
             onUploadingChange={setIsUploading}
+            disabled={isLoading}
             uploadAction={async file => {
               const formData = new FormData();
               formData.append('file', file);
