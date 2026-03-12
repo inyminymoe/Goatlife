@@ -1,6 +1,6 @@
 import { createServerSupabase } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
-import ProfileEditForm from '@/components/features/auth/ProfileEditForm';
+import ProfileEditForm from '@/components/features/user-info/ProfileEditForm';
 import type { ProfileEditFormValues } from './schema';
 
 export default async function UserInfoPage() {

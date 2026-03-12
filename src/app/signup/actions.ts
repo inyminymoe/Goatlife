@@ -2,6 +2,8 @@
 
 import { signupSchema, type SignupFormValues } from '@/app/signup/schema';
 import { createServerSupabase } from '@/lib/supabase/server';
+import { uploadSignupAvatar } from '@/app/user-info/actions';
+import { admin } from '@/lib/supabase/admin';
 
 export async function createUser(form: SignupFormValues) {
   const parsed = signupSchema.safeParse(form);
@@ -70,6 +72,21 @@ export async function createUser(form: SignupFormValues) {
       success: false,
       error: '회원 생성 실패: ' + (authErr?.message ?? '알 수 없는 오류'),
     };
+  }
+
+  // base64 아바타가 있으면 계정 생성 직후 admin 클라이언트로 Storage 업로드
+  const rawAvatar = form.avatarUrl ?? '';
+  if (rawAvatar.startsWith('data:image/')) {
+    const publicUrl = await uploadSignupAvatar(authData.user.id, rawAvatar);
+    if (publicUrl) {
+      await admin.auth.admin
+        .updateUserById(authData.user.id, {
+          user_metadata: { avatar_url: publicUrl, avatarUrl: publicUrl },
+        })
+        .catch(e =>
+          console.error('[createUser] avatar metadata update failed', e)
+        );
+    }
   }
 
   return { success: true };

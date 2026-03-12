@@ -6,7 +6,15 @@ export const profileEditSchema = z.object({
     .min(1, '성을 입력하세요')
     .max(5, '성은 5자 이하여야 합니다'),
   firstName: z.string().max(5, '이름은 5자 이하여야 합니다').optional(),
-  avatarUrl: z.string().optional(),
+  avatarUrl: z
+    .union([
+      z.literal(''),
+      z
+        .string()
+        .url('올바른 이미지 URL을 입력하세요')
+        .refine(v => /^https?:\/\//.test(v), 'http(s) URL만 허용합니다'),
+    ])
+    .optional(),
   department: z.enum([
     'IT부',
     '공시부',

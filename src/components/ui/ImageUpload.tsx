@@ -11,6 +11,7 @@ interface ImageUploadProps {
   uploadAction?: (
     file: File
   ) => Promise<{ ok: true; url: string } | { ok: false; error: string }>;
+  onUploadingChange?: (isUploading: boolean) => void;
 }
 
 export default function ImageUpload({
@@ -18,6 +19,7 @@ export default function ImageUpload({
   onChange,
   disabled = false,
   uploadAction,
+  onUploadingChange,
 }: ImageUploadProps) {
   const [preview, setPreview] = useState<string | null>(value || null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -36,6 +38,7 @@ export default function ImageUpload({
     // 서버 업로드 액션이 있으면 우선 사용
     if (uploadAction) {
       setIsUploading(true);
+      onUploadingChange?.(true);
       uploadAction(file)
         .then(result => {
           if (result.ok) {
@@ -46,7 +49,10 @@ export default function ImageUpload({
           }
         })
         .catch(() => alert('이미지 업로드 중 오류가 발생했습니다.'))
-        .finally(() => setIsUploading(false));
+        .finally(() => {
+          setIsUploading(false);
+          onUploadingChange?.(false);
+        });
       return;
     }
 
