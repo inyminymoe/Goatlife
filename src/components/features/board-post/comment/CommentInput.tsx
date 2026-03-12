@@ -35,14 +35,19 @@ export function CommentInput({ postId, onCommentAdded }: CommentInputProps) {
     const urls: string[] = [];
 
     for (const file of files) {
-      const ext = file.name.split('.').pop();
+      const ext = file.name.includes('.') ? file.name.split('.').pop() : null;
+      if (!ext) {
+        throw new Error('지원하지 않는 파일 형식입니다.');
+      }
       const path = `comments/${postId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
 
       const { error: uploadError } = await supabase.storage
         .from(BUCKET)
         .upload(path, file, { upsert: false });
 
-      if (uploadError) throw new Error('이미지 업로드 실패');
+      if (uploadError) {
+        throw new Error('이미지 업로드 실패');
+      }
 
       const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
       urls.push(data.publicUrl);
