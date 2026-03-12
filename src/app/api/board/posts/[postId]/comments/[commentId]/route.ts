@@ -34,16 +34,17 @@ export async function PATCH(req: Request, { params }: Params) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    const { error, count } = await supabase
+    const { data, error } = await supabase
       .from('board_post_comments')
       .update({ is_pinned: body.is_pinned })
       .eq('id', commentId)
-      .eq('post_id', postId);
+      .eq('post_id', postId)
+      .select('id');
 
     if (error) {
       return NextResponse.json({ error: 'Request failed' }, { status: 500 });
     }
-    if (count === 0) {
+    if (!data || data.length === 0) {
       return NextResponse.json({ error: 'Comment not found' }, { status: 404 });
     }
 
