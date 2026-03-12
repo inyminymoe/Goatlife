@@ -32,6 +32,7 @@ export default function ProfileEditForm({
 }: ProfileEditFormProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [toast, setToast] = useState<{
     show: boolean;
     message: string;
@@ -55,17 +56,25 @@ export default function ProfileEditForm({
     setIsLoading(true);
     setToast({ show: false, message: '', type: 'success' });
 
-    const result = await updateUserProfile(data);
+    try {
+      const result = await updateUserProfile(data);
 
-    if (!result.ok) {
-      setToast({ show: true, type: 'error', message: result.error });
+      if (!result.ok) {
+        setToast({ show: true, type: 'error', message: result.error });
+        return;
+      }
+
+      setToast({ show: true, type: 'success', message: '저장되었습니다.' });
+      router.refresh();
+    } catch {
+      setToast({
+        show: true,
+        type: 'error',
+        message: '저장 중 오류가 발생했습니다.',
+      });
+    } finally {
       setIsLoading(false);
-      return;
     }
-
-    setToast({ show: true, type: 'success', message: '저장되었습니다.' });
-    router.refresh();
-    setIsLoading(false);
   });
 
   return (
@@ -88,6 +97,7 @@ export default function ProfileEditForm({
           <ImageUpload
             value={watch('avatarUrl')}
             onChange={(url: string) => setValue('avatarUrl', url)}
+            onUploadingChange={setIsUploading}
             uploadAction={async file => {
               const formData = new FormData();
               formData.append('file', file);
@@ -213,7 +223,7 @@ export default function ProfileEditForm({
             variant="primary"
             size="lg"
             fullWidth
-            disabled={isLoading}
+            disabled={isLoading || isUploading}
           >
             {isLoading ? '저장 중...' : '저장하기'}
           </Button>

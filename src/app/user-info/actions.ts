@@ -22,22 +22,24 @@ export async function updateUserProfile(
     return { ok: false, error: '로그인이 필요합니다.' };
   }
 
-  const { error: updateError } = await supabase
-    .from('profiles')
-    .update({
+  const { error: updateError } = await supabase.from('profiles').upsert(
+    {
+      id: user.id,
       last_name: form.lastName,
       first_name: form.firstName ?? null,
-      avatar_url: form.avatarUrl ?? null,
+      avatar_url: form.avatarUrl || null,
       department: form.department,
       work_hours: form.workHours,
       work_type: form.workType,
       work_style: form.workStyle ?? null,
       work_ethic: form.workEthic ?? null,
-    })
-    .eq('id', user.id);
+    },
+    { onConflict: 'id' }
+  );
 
   if (updateError) {
-    return { ok: false, error: '저장 실패: ' + updateError.message };
+    console.error('[updateUserProfile] upsert failed', updateError);
+    return { ok: false, error: '프로필 저장에 실패했습니다.' };
   }
 
   return { ok: true };
@@ -63,6 +65,20 @@ export async function uploadProfileImage(
 
   const file = formData.get('file') as File | null;
   if (!file) return { ok: false, error: '파일이 없습니다.' };
+
+  const maxFileSize = 5 * 1024 * 1024;
+  const allowedTypes = new Set([
+    'image/jpeg',
+    'image/png',
+    'image/webp',
+    'image/gif',
+  ]);
+  if (file.size > maxFileSize || !allowedTypes.has(file.type)) {
+    return {
+      ok: false,
+      error: '5MB 이하의 이미지 파일만 업로드할 수 있습니다.',
+    };
+  }
 
   const ext = file.name.split('.').pop() || 'png';
   const fileName = `avatars/${user.id}/${Date.now()}.${ext}`;

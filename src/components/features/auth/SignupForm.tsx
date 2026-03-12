@@ -13,7 +13,6 @@ import Toast from '@/components/ui/Toast';
 import Checkbox from '@/components/ui/Checkbox';
 import { signupSchema, type SignupFormValues } from '@/app/signup/schema';
 import { createUser } from '@/app/signup/actions';
-import { uploadProfileImage } from '@/app/user-info/actions';
 
 export default function SignupForm() {
   const router = useRouter();
@@ -118,11 +117,6 @@ export default function SignupForm() {
           <ImageUpload
             value={watch('avatarUrl')}
             onChange={(url: string) => setValue('avatarUrl', url)}
-            uploadAction={async file => {
-              const formData = new FormData();
-              formData.append('file', file);
-              return uploadProfileImage(formData);
-            }}
           />
 
           {/* 사원명 */}
