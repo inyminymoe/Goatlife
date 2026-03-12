@@ -1,3 +1,4 @@
+import { parseJsonBody } from '@/lib/parseJsonBody';
 import { createServerSupabase } from '@/lib/supabase/server';
 import { isValidUuid } from '@/lib/validate';
 import { NextResponse } from 'next/server';
@@ -39,7 +40,15 @@ export async function POST(
     return NextResponse.json({ error: 'Invalid postId' }, { status: 400 });
   }
 
-  const body = await req.json();
+  const { data: body, error: parseError } = await parseJsonBody<{
+    content?: string;
+    image_urls?: string[];
+  }>(req);
+
+  if (parseError) {
+    return parseError;
+  }
+
   const content = body?.content?.trim();
   if (!content)
     return NextResponse.json({ error: 'content is required' }, { status: 400 });

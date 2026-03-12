@@ -1,3 +1,4 @@
+import { parseJsonBody } from '@/lib/parseJsonBody';
 import { createServerSupabase } from '@/lib/supabase/server';
 import { isValidUuid } from '@/lib/validate';
 import { NextResponse } from 'next/server';
@@ -17,7 +18,14 @@ export async function PATCH(req: Request, { params }: Params) {
   if (!user)
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const body = await req.json();
+  const { data: body, error: parseError } = await parseJsonBody<{
+    is_pinned?: boolean;
+    content?: string;
+  }>(req);
+
+  if (parseError) {
+    return parseError;
+  }
 
   // 고정/해제 (게시글 작성자만)
   if ('is_pinned' in body) {
