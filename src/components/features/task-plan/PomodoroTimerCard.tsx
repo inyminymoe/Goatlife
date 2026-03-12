@@ -1,12 +1,17 @@
 'use client';
 
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Icon } from '@iconify/react';
 import Button from '@/components/ui/Button';
 import Toast from '@/components/ui/Toast';
 import BottomSheet from '@/components/ui/BottomSheet';
 import TimerSettingContent from './TimerSettingContent';
 import { usePomodoroTimer } from '@/hooks/usePomodoroTimer';
+import {
+  ROUTINE_TIMER_START_EVENT,
+  type RoutineTimerStartDetail,
+} from './routineStartEvent';
+import { useToast } from '@/providers/ToastProvider';
 
 function formatTime(seconds: number) {
   const safeSeconds = Math.max(0, seconds);
@@ -39,6 +44,7 @@ export default function PomodoroTimerCard({
 }: PomodoroTimerCardProps = {}) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const toast = useToast();
 
   const dismissToast = useCallback(() => setToastMessage(null), []);
   const closeDrawer = useCallback(() => setIsDrawerOpen(false), []);
@@ -55,6 +61,7 @@ export default function PomodoroTimerCard({
     setBreakPresetMinutes,
     toggleRunning,
     startBreak,
+    startFocus,
   } = usePomodoroTimer({
     initialFocusMinutes: 30,
     initialBreakMinutes: 15,
@@ -73,6 +80,25 @@ export default function PomodoroTimerCard({
     () => formatTotalFocus(totalFocusSeconds),
     [totalFocusSeconds]
   );
+
+  useEffect(() => {
+    const handleRoutineTimerStart = (event: Event) => {
+      const customEvent = event as CustomEvent<RoutineTimerStartDetail>;
+      startFocus();
+      const title = customEvent.detail?.title?.trim();
+      if (title) {
+        toast.success(`'${title}' 타이머를 시작했어요.`);
+      }
+    };
+
+    window.addEventListener(ROUTINE_TIMER_START_EVENT, handleRoutineTimerStart);
+    return () => {
+      window.removeEventListener(
+        ROUTINE_TIMER_START_EVENT,
+        handleRoutineTimerStart
+      );
+    };
+  }, [startFocus, toast]);
 
   const handleSaveSettings = useCallback(
     (settings: { focusPresetMinutes: number; breakPresetMinutes: number }) => {

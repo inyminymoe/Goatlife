@@ -28,6 +28,10 @@ import {
   reorderRoutineItems,
 } from '@/app/_actions/routineItems';
 import { useToast } from '@/providers/ToastProvider';
+import {
+  ROUTINE_TIMER_START_EVENT,
+  type RoutineTimerStartDetail,
+} from './routineStartEvent';
 
 function toRoutineState(items: RoutineItemData[]): RoutineState {
   return {
@@ -57,6 +61,8 @@ export default function RoadmapCard() {
   const [startFrom, setStartFrom] = useState<{
     period: RoutinePeriod;
     title: string;
+    url?: string;
+    pomodoro_count?: number;
   } | null>(null);
 
   const toast = useToast();
@@ -122,7 +128,12 @@ export default function RoadmapCard() {
         const items = period === 'AM' ? routines.am : routines.pm;
         const target = items.find(item => item.id === itemId);
         if (!target) return;
-        setStartFrom({ period, title: target.title });
+        setStartFrom({
+          period,
+          title: target.title,
+          url: target.url,
+          pomodoro_count: target.pomodoro_count,
+        });
         setIsStartBottomSheetOpen(true);
         return;
       }
@@ -137,8 +148,25 @@ export default function RoadmapCard() {
   );
 
   const handleStartRoutine = useCallback(() => {
+    const detail: RoutineTimerStartDetail = { title: startFrom?.title };
+    window.dispatchEvent(
+      new CustomEvent<RoutineTimerStartDetail>(ROUTINE_TIMER_START_EVENT, {
+        detail,
+      })
+    );
     setIsStartBottomSheetOpen(false);
-  }, []);
+  }, [startFrom]);
+
+  const handleStartViaLink = useCallback(() => {
+    if (!startFrom?.url) return;
+
+    const opened = window.open(startFrom.url, '_blank', 'noopener,noreferrer');
+    if (!opened) {
+      toast.error('팝업이 차단되어 링크를 열 수 없어요.');
+      return;
+    }
+    setIsStartBottomSheetOpen(false);
+  }, [startFrom, toast]);
 
   const handleDragEnd = useCallback(
     async (event: DragEndEvent) => {
@@ -484,7 +512,17 @@ export default function RoadmapCard() {
           type="button"
           className="w-full px-20 py-2 bg-white rounded-[5px] flex items-center justify-center"
           onClick={() => {
-            setStartFrom(null);
+            const firstRoutine = routines.am[0] ?? routines.pm[0];
+            setStartFrom(
+              firstRoutine
+                ? {
+                    period: firstRoutine.period,
+                    title: firstRoutine.title,
+                    url: firstRoutine.url,
+                    pomodoro_count: firstRoutine.pomodoro_count,
+                  }
+                : null
+            );
             setIsStartBottomSheetOpen(true);
           }}
         >
@@ -563,31 +601,59 @@ export default function RoadmapCard() {
       <BottomSheet
         open={isStartBottomSheetOpen}
         onClose={() => setIsStartBottomSheetOpen(false)}
-        title="루틴 시작하기"
+        title="루틴 시작"
       >
-        <div className="flex flex-col gap-3">
-          <p className="text-14 text-grey-700">
-            하루 루틴 타이머를 재생합니다.
-          </p>
-          {startFrom && (
-            <p className="text-12 text-grey-500">
-              시작 지점: {startFrom.period} · {startFrom.title}
+        <div className="w-full flex flex-col gap-6">
+          <div className="w-full flex flex-col gap-2">
+            <p className="body-md font-medium text-dark leading-6">
+              {startFrom
+                ? `'${startFrom.title}' 시간을 시작할까요?`
+                : '루틴 타이머를 시작할까요?'}
             </p>
-          )}
-          <div className="grid grid-cols-2 gap-2">
+            {!startFrom && (
+              <p className="body-xs text-grey-500 leading-5">
+                시작할 루틴을 선택하면 해당 지점부터 타이머가 시작됩니다.
+              </p>
+            )}
+          </div>
+
+          <div className="w-full inline-flex items-center gap-4">
             <button
               type="button"
-              className="w-full px-4 py-2 bg-primary-500 rounded-[8px] text-14 font-medium text-fixed-white"
-              onClick={handleStartRoutine}
+              className="flex-1 px-6 py-3 bg-primary-500 rounded-[5px] inline-flex justify-center items-center gap-2 leading-none disabled:opacity-40"
+              onClick={handleStartViaLink}
+              disabled={!startFrom?.url}
             >
-              시작하기
+              <Icon
+                icon="mingcute:link-fill"
+                className="w-4 h-4 shrink-0 leading-none text-fixed-white [filter:drop-shadow(1px_0_0_var(--color-fixed-grey-900))_drop-shadow(-1px_0_0_var(--color-fixed-grey-900))_drop-shadow(0_1px_0_var(--color-fixed-grey-900))_drop-shadow(0_-1px_0_var(--color-fixed-grey-900))]"
+                aria-hidden="true"
+              />
+              <span className="text-14 font-semibold leading-none text-fixed-white translate-y-px">
+                링크로 이동하기
+              </span>
             </button>
             <button
               type="button"
-              className="w-full px-4 py-2 bg-dark border border-dark rounded-[8px] text-14 font-medium text-dark"
-              onClick={() => setIsStartBottomSheetOpen(false)}
+              className="flex-1 px-6 py-3 bg-dark border border-dark rounded-[5px] inline-flex justify-center items-center gap-2 leading-none hover:bg-grey-200 transition-colors"
+              onClick={handleStartRoutine}
             >
-              취소
+              <span
+                className="relative inline-flex w-4 h-4 shrink-0 items-center justify-center leading-none"
+                aria-hidden="true"
+              >
+                <Icon
+                  icon="mingcute:play-fill"
+                  className="absolute inset-0 w-4 h-4 text-fixed-grey-900 scale-125"
+                />
+                <Icon
+                  icon="mingcute:play-fill"
+                  className="absolute inset-0 w-4 h-4 text-fixed-white"
+                />
+              </span>
+              <span className="text-14 font-semibold leading-none text-dark translate-y-px">
+                타이머 시작하기
+              </span>
             </button>
           </div>
         </div>
