@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Icon } from '@iconify/react';
 import Button from '@/components/ui/Button';
 import Toast from '@/components/ui/Toast';
@@ -31,10 +31,24 @@ function formatTotalFocus(seconds: number) {
   };
 }
 
-export default function PomodoroTimerCard() {
+interface PomodoroTimerCardProps {
+  onFocusDone?: (durationSeconds: number) => void;
+  onFocusFail?: (elapsedSeconds: number) => void;
+  onBreakRecorded?: (elapsedSeconds: number) => void;
+}
+
+export default function PomodoroTimerCard({
+  onFocusDone,
+  onFocusFail,
+  onBreakRecorded,
+}: PomodoroTimerCardProps = {}) {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const toast = useToast();
+
+  const dismissToast = useCallback(() => setToastMessage(null), []);
+  const closeDrawer = useCallback(() => setIsDrawerOpen(false), []);
+  const focusPresetRef = useRef(30);
 
   const {
     mode,
@@ -51,9 +65,16 @@ export default function PomodoroTimerCard() {
   } = usePomodoroTimer({
     initialFocusMinutes: 30,
     initialBreakMinutes: 15,
-    onFocusComplete: () => setToastMessage('1 뽀모도로 완성🍅'),
+    onFocusComplete: () => {
+      setToastMessage('1 뽀모도로 완성🍅');
+      onFocusDone?.(focusPresetRef.current * 60);
+    },
     onBreakComplete: () => setToastMessage('잘 쉬었나요? 다시 힘차게 달려요✊'),
+    onFocusFail,
+    onBreakRecorded,
   });
+
+  focusPresetRef.current = focusPresetMinutes;
 
   const totalFocus = useMemo(
     () => formatTotalFocus(totalFocusSeconds),
@@ -79,6 +100,15 @@ export default function PomodoroTimerCard() {
     };
   }, [startFocus, toast]);
 
+  const handleSaveSettings = useCallback(
+    (settings: { focusPresetMinutes: number; breakPresetMinutes: number }) => {
+      setFocusPresetMinutes(settings.focusPresetMinutes);
+      setBreakPresetMinutes(settings.breakPresetMinutes);
+      setToastMessage('타이머 설정을 저장했어요.');
+    },
+    [setBreakPresetMinutes, setFocusPresetMinutes]
+  );
+
   return (
     <>
       <section className="bg-grey-100 rounded-[5px] p-6 flex flex-col gap-5">
@@ -86,14 +116,14 @@ export default function PomodoroTimerCard() {
           <div className="flex items-center gap-1">
             <Icon
               icon="icon-park:tomato"
-              className="w-6 h-6 text-grey-900"
+              className="w-6 h-6 icon-dark-invert"
               aria-hidden="true"
             />
             <h2 className="brand-h3 text-grey-900">Timer</h2>
           </div>
           <button
             type="button"
-            className="p-1 rounded-full hover:bg-grey-200 transition-colors"
+            className="p-1 rounded-full transition-colors hover:bg-grey-200"
             aria-label="타이머 설정 열기"
             onClick={() => setIsDrawerOpen(true)}
           >
@@ -104,11 +134,11 @@ export default function PomodoroTimerCard() {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <div className="flex flex-col gap-1">
-            <span className="body-sm text-grey-500 font-semibold">Timer</span>
+            <span className="body-sm font-semibold text-grey-500">Timer</span>
             <div className="inline-flex items-end gap-1">
-              <span className="brand-h1 text-primary-500 tabular-nums">
+              <span className="brand-h1 tabular-nums text-primary-500">
                 {formatTime(remainingSeconds)}
               </span>
               <span className="body-xs text-grey-500">
@@ -118,15 +148,15 @@ export default function PomodoroTimerCard() {
           </div>
 
           <div className="flex flex-col gap-1">
-            <span className="body-sm text-grey-500 font-semibold">
+            <span className="body-sm font-semibold text-grey-500">
               총 집중시간
             </span>
             <div className="inline-flex items-end gap-1">
-              <span className="brand-h1 text-primary-500 tabular-nums">
+              <span className="brand-h1 tabular-nums text-primary-500">
                 {totalFocus.hours}
               </span>
               <span className="body-xs text-grey-500">시간</span>
-              <span className="brand-h1 text-primary-500 tabular-nums">
+              <span className="brand-h1 tabular-nums text-primary-500">
                 {totalFocus.minutes}
               </span>
               <span className="body-xs text-grey-500">분</span>
@@ -136,7 +166,7 @@ export default function PomodoroTimerCard() {
 
         <div className="grid grid-cols-2 gap-3">
           <Button variant="secondary" fullWidth onClick={toggleRunning}>
-            {isRunning ? '일시정지' : '재시작'}
+            {isRunning ? '일시정지' : '시작'}
           </Button>
           <Button variant="text" fullWidth onClick={startBreak}>
             휴식하기
@@ -146,14 +176,14 @@ export default function PomodoroTimerCard() {
 
       <BottomSheet
         open={isDrawerOpen}
-        onClose={() => setIsDrawerOpen(false)}
+        onClose={closeDrawer}
         title="타이머 설정"
       >
         <TimerSettingContent
           focusPresetMinutes={focusPresetMinutes}
           breakPresetMinutes={breakPresetMinutes}
-          setFocusPresetMinutes={setFocusPresetMinutes}
-          setBreakPresetMinutes={setBreakPresetMinutes}
+          onSave={handleSaveSettings}
+          onClose={closeDrawer}
         />
       </BottomSheet>
 
@@ -161,7 +191,7 @@ export default function PomodoroTimerCard() {
         show={!!toastMessage}
         message={toastMessage ?? ''}
         type="success"
-        onClose={() => setToastMessage(null)}
+        onClose={dismissToast}
       />
     </>
   );

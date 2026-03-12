@@ -460,7 +460,7 @@ export default function RoadmapCard() {
           <div className="flex items-end gap-1">
             <Icon
               icon="icon-park:road-sign-both"
-              className="size-6 text-grey-900"
+              className="size-6 icon-dark-invert"
             />
             <h2 className="brand-h3 text-grey-900">Roadmap</h2>
           </div>

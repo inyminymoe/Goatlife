@@ -60,7 +60,7 @@ export default function PerformanceWidget(props: PerformanceWidgetProps) {
         <div className="flex items-center gap-1 mb-4">
           <Icon
             icon="icon-park:pie-seven"
-            className="w-6 h-6 text-primary-500"
+            className="w-6 h-6 icon-dark-invert"
           />
           <h2 className="brand-h3 text-grey-900">성과 현황</h2>
         </div>
@@ -83,7 +83,7 @@ export default function PerformanceWidget(props: PerformanceWidgetProps) {
         <div className="flex items-center gap-1 mb-4">
           <Icon
             icon="icon-park:pie-seven"
-            className="w-6 h-6 text-primary-500"
+            className="w-6 h-6 icon-dark-invert"
           />
           <h2 className="brand-h3 text-grey-900">성과 현황</h2>
         </div>
@@ -105,7 +105,7 @@ export default function PerformanceWidget(props: PerformanceWidgetProps) {
         <div className="flex items-center gap-1 mb-4">
           <Icon
             icon="icon-park:pie-seven"
-            className="w-6 h-6 text-primary-500"
+            className="w-6 h-6 icon-dark-invert"
           />
           <h2 className="brand-h3 text-grey-900">성과 현황</h2>
         </div>

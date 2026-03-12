@@ -43,7 +43,7 @@ export default function ExecMessageView({
       <div className="flex items-end gap-1 mb-4">
         <Icon
           icon="icon-park:relieved-face"
-          className="w-6 h-6 text-primary-500"
+          className="w-6 h-6 icon-dark-invert"
           aria-hidden="true"
         />
         <h2 id="exec-message-title" className="brand-h3 text-grey-900">

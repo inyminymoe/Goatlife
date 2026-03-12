@@ -12,7 +12,7 @@ export function CommunityWidget({ posts }: CommunityWidgetProps) {
       <div className="flex items-center gap-1">
         <Icon
           icon="icon-park:message-emoji"
-          className="w-6 h-6 text-primary-500"
+          className="w-6 h-6 icon-dark-invert"
         />
         <h2 className="brand-h3 text-grey-900">커뮤니티</h2>
       </div>
