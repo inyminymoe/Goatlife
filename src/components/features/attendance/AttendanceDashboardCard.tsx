@@ -19,7 +19,7 @@ export default function AttendanceDashboardCard() {
       <div className="flex items-end gap-1">
         <Icon
           icon="icon-park:endocrine"
-          className="w-6 h-6 text-grey-900"
+          className="w-6 h-6 icon-dark-invert"
           aria-hidden="true"
         />
         <h2

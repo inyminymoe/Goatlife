@@ -12,7 +12,7 @@ export function BoardWidget({ posts }: BoardWidgetProps) {
       <div className="flex items-center gap-2">
         <Icon
           icon="icon-park:message-emoji"
-          className="w-6 h-6 text-primary-500"
+          className="w-6 h-6 icon-dark-invert"
         />
         <h2 className="brand-h3 text-grey-900">게시판</h2>
       </div>
