@@ -29,3 +29,15 @@ export interface PostForView {
   isLiked: boolean;
   isBookmarked: boolean;
 }
+
+export type Comment = {
+  id: string;
+  post_id: string;
+  user_id: string;
+  author_name: string | null;
+  content: string;
+  is_pinned: boolean;
+  image_urls: string[];
+  created_at: string;
+  updated_at: string;
+};

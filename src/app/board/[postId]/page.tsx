@@ -88,6 +88,7 @@ export default async function BoardPostPage({
     isLiked: (post.board_post_likes ?? []).length > 0,
     isBookmarked: (post.board_post_bookmarks ?? []).length > 0,
   };
+
   return (
     <main className="col-span-2 max-w-[1440px]">
       <BoardPostView
@@ -95,7 +96,11 @@ export default async function BoardPostPage({
         listHref={listHref}
         isAuthor={isAuthor}
       />
-      <CommentSection postId={postId} commentCount={postForView.commentCount} />
+      <CommentSection
+        postId={postId}
+        postAuthorId={post.author_id}
+        commentCount={postForView.commentCount}
+      />
     </main>
   );
 }
