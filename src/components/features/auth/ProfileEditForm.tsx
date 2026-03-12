@@ -1,4 +1,5 @@
 'use client';
+
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
@@ -10,15 +11,27 @@ import TextArea from '@/components/ui/TextArea';
 import Button from '@/components/ui/Button';
 import ImageUpload from '@/components/ui/ImageUpload';
 import Toast from '@/components/ui/Toast';
-import Checkbox from '@/components/ui/Checkbox';
-import { signupSchema, type SignupFormValues } from '@/app/signup/schema';
-import { createUser } from '@/app/signup/actions';
-import { uploadProfileImage } from '@/app/user-info/actions';
+import {
+  profileEditSchema,
+  type ProfileEditFormValues,
+} from '@/app/user-info/schema';
+import { updateUserProfile, uploadProfileImage } from '@/app/user-info/actions';
 
-export default function SignupForm() {
+interface ProfileEditFormProps {
+  defaultValues: ProfileEditFormValues;
+  userId: string;
+  email: string;
+  rank: string;
+}
+
+export default function ProfileEditForm({
+  defaultValues,
+  userId,
+  email,
+  rank,
+}: ProfileEditFormProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
   const [toast, setToast] = useState<{
     show: boolean;
     message: string;
@@ -31,71 +44,28 @@ export default function SignupForm() {
     watch,
     setValue,
     formState: { errors },
-  } = useForm<SignupFormValues>({
-    resolver: zodResolver(signupSchema),
-    defaultValues: {
-      department: 'IT부',
-      workHours: '주간(09:00-18:00)',
-      workType: '풀타임',
-      consent: false,
-    },
+  } = useForm<ProfileEditFormValues>({
+    resolver: zodResolver(profileEditSchema),
+    defaultValues,
   });
+
   const workStyle = watch('workStyle') ?? '';
-  const consent = watch('consent');
-  const consentErrorRaw = errors.consent?.message;
-  const consentError = consentErrorRaw?.toLowerCase().includes('expected true')
-    ? '개인정보 수집·이용에 동의해야 가입이 가능합니다.'
-    : consentErrorRaw;
 
   const onSubmit = handleSubmit(async data => {
-    if (!data.consent) {
-      setToast({
-        show: true,
-        type: 'error',
-        message: '개인정보 수집·이용에 동의해야 가입할 수 있어요.',
-      });
-      return;
-    }
-
     setIsLoading(true);
     setToast({ show: false, message: '', type: 'success' });
 
-    // 호출 전/후 로그로 흐름 보이게
-    console.log('[signup] submitting form…', {
-      userId: data.userId,
-      email: data.email,
-    });
+    const result = await updateUserProfile(data);
 
-    try {
-      const res = await createUser(data);
-      console.log('[signup] server action returned:', res);
-
-      if (!res.success) {
-        console.error('[signup] client received error:', res.error);
-        setToast({
-          show: true,
-          type: 'error',
-          message: res.error ?? '회원가입에 실패했습니다.',
-        });
-        return;
-      }
-
-      setToast({
-        show: true,
-        type: 'success',
-        message: '회원가입이 완료되었습니다! 로그인 페이지로 이동합니다.',
-      });
-      setTimeout(() => router.push('/login'), 2000);
-    } catch (e) {
-      console.error('[signup] client catch:', e);
-      setToast({
-        show: true,
-        type: 'error',
-        message: '요청 처리 중 오류가 발생했습니다.',
-      });
-    } finally {
+    if (!result.ok) {
+      setToast({ show: true, type: 'error', message: result.error });
       setIsLoading(false);
+      return;
     }
+
+    setToast({ show: true, type: 'success', message: '저장되었습니다.' });
+    router.refresh();
+    setIsLoading(false);
   });
 
   return (
@@ -110,7 +80,7 @@ export default function SignupForm() {
             height={24}
             className="w-6 h-6"
           />
-          <h2 className="brand-h3 font-brand text-dark">입사 지원서</h2>
+          <h2 className="brand-h3 font-brand text-dark">사원정보 설정</h2>
         </div>
 
         <form onSubmit={onSubmit} className="space-y-6">
@@ -147,43 +117,30 @@ export default function SignupForm() {
                 <label className="body-sm font-medium text-dark">직급</label>
                 <div className="px-3 py-2 bg-grey-200 rounded-[5px] flex items-center justify-center h-10">
                   <span className="body-sm text-grey-500 font-semibold">
-                    인턴
+                    {rank}
                   </span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* 사원 ID */}
+          {/* 사원 ID (읽기 전용) */}
           <Input
-            {...register('userId', {
-              setValueAs: v => (v ? String(v).toLowerCase() : ''),
-            })}
             label="사원 ID"
-            placeholder="아이디를 입력하세요"
-            maxLength={20}
-            error={errors.userId?.message}
+            value={userId}
+            readOnly
+            disabled
+            className="disabled:opacity-40"
           />
 
-          {/* 사원 이메일 */}
+          {/* 사원 이메일 (읽기 전용) */}
           <Input
-            {...register('email')}
             label="사원 이메일"
             type="email"
-            placeholder="이메일을 입력하세요"
-            error={errors.email?.message}
-          />
-
-          {/* 비밀번호 */}
-          <Input
-            {...register('password')}
-            label="비밀번호"
-            type={showPassword ? 'text' : 'password'}
-            placeholder="*********"
-            error={errors.password?.message}
-            showPasswordToggle
-            showPassword={showPassword}
-            onPasswordToggle={() => setShowPassword(!showPassword)}
+            value={email}
+            readOnly
+            disabled
+            className="disabled:opacity-40"
           />
 
           {/* 소속 부서 */}
@@ -191,16 +148,7 @@ export default function SignupForm() {
             label="소속 부서"
             value={watch('department')}
             onChange={(val: string) =>
-              setValue(
-                'department',
-                val as
-                  | 'IT부'
-                  | '공시부'
-                  | '취업부'
-                  | '자격부'
-                  | '창작부'
-                  | '글로벌부'
-              )
+              setValue('department', val as ProfileEditFormValues['department'])
             }
             options={[
               { value: 'IT부', label: 'IT부' },
@@ -217,13 +165,7 @@ export default function SignupForm() {
             label="근무시간"
             value={watch('workHours')}
             onChange={(val: string) =>
-              setValue(
-                'workHours',
-                val as
-                  | '주간(09:00-18:00)'
-                  | '오후(17:00-01:00)'
-                  | '야간(22:00-06:00)'
-              )
+              setValue('workHours', val as ProfileEditFormValues['workHours'])
             }
             options={[
               { value: '주간(09:00-18:00)', label: '🐰 주간 (09:00 - 18:00)' },
@@ -237,7 +179,7 @@ export default function SignupForm() {
             label="근무형태"
             value={watch('workType')}
             onChange={(val: string) =>
-              setValue('workType', val as '풀타임' | '파트타임')
+              setValue('workType', val as ProfileEditFormValues['workType'])
             }
             options={[
               { value: '풀타임', label: '풀타임 (8시간)' },
@@ -265,59 +207,19 @@ export default function SignupForm() {
             />
           </div>
 
-          <div className="space-y-2">
-            <h4 className="brand-h4 font-brand text-dark">약관 동의</h4>
-            <div className="rounded-[5px] bg-grey-100 dark:bg-grey-900/40 border border-grey-200 dark:border-grey-700 p-3 space-y-3">
-              <div className="max-h-36 overflow-auto pr-1 body-sm text-grey-800 dark:text-grey-100/90">
-                <p className="mb-2">
-                  회원가입을 위해{' '}
-                  <a href="/privacy" className="underline">
-                    개인정보 처리방침
-                  </a>{' '}
-                  및{' '}
-                  <a href="/terms" className="underline">
-                    이용약관
-                  </a>
-                  에 동의해 주세요.
-                </p>
-              </div>
-              <div>
-                <Checkbox
-                  checked={!!consent}
-                  onChange={next =>
-                    setValue('consent', next, {
-                      shouldDirty: true,
-                      shouldValidate: true,
-                    })
-                  }
-                  label="개인정보 수집·이용에 동의합니다 (필수)"
-                />
-                {consentError && (
-                  <p
-                    className="mt-1 body-xs font-medium"
-                    style={{ color: 'hsl(296, 94%, 77%)' }}
-                  >
-                    {consentError}
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* 제출 버튼 */}
+          {/* 저장 버튼 */}
           <Button
             type="submit"
             variant="primary"
             size="lg"
             fullWidth
-            disabled={isLoading || !consent}
+            disabled={isLoading}
           >
-            {isLoading ? '저장 중...' : '입사 지원하기'}
+            {isLoading ? '저장 중...' : '저장하기'}
           </Button>
         </form>
       </div>
 
-      {/* Toast 알림 */}
       <Toast
         show={toast.show}
         message={toast.message}
