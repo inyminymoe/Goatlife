@@ -1,12 +1,19 @@
 import {
-  clockIn as serverClockIn,
-  clockOut as serverClockOut,
+  checkIn as serverCheckIn,
+  checkOut as serverCheckOut,
   earlyLeave as serverEarlyLeave,
+  getAttendanceLogs as serverGetAttendanceLogs,
   getAttendanceRate as serverGetAttendanceRate,
-  getTodayStatus as serverGetTodayStatus,
-  type AttendanceLog,
-  type AttendanceStatus,
+  getAttendanceSummary as serverGetAttendanceSummary,
+  getAttendanceToday as serverGetAttendanceToday,
 } from '@/app/_actions/attendance';
+import type {
+  AttendanceErrorCode,
+  AttendanceLogsParams,
+  AttendanceRecord,
+  AttendanceSummary,
+  AttendanceSummaryPeriod,
+} from '@/types/attendance';
 
 const DEFAULT_TIMEOUT = 6000;
 
@@ -19,41 +26,69 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs = DEFAULT_TIMEOUT) {
   ]);
 }
 
-type AttendanceResult<T> = { ok: true; data: T } | { ok: false; error: string };
+type AttendanceResult<T> =
+  | { ok: true; data: T }
+  | { ok: false; error: AttendanceErrorCode };
 
-export type { AttendanceLog, AttendanceStatus };
+type AttendanceRateResult =
+  | { ok: true; rate: number }
+  | { ok: false; error: AttendanceErrorCode };
 
-export async function fetchTodayAttendance(): Promise<
-  AttendanceResult<AttendanceLog | null>
+export type {
+  AttendanceErrorCode,
+  AttendanceLogsParams,
+  AttendanceRecord,
+  AttendanceSummary,
+  AttendanceSummaryPeriod,
+};
+
+export async function fetchAttendanceToday(): Promise<
+  AttendanceResult<AttendanceRecord | null>
 > {
   try {
-    const result = await withTimeout(serverGetTodayStatus());
-    return result.ok
-      ? { ok: true, data: result.data ?? null }
-      : { ok: false, error: result.error };
+    return await withTimeout(serverGetAttendanceToday());
   } catch (error) {
-    console.error('[services/attendance] fetchTodayAttendance failed', error);
+    console.error('[services/attendance] fetchAttendanceToday failed', error);
     return { ok: false, error: 'UNKNOWN' };
   }
 }
 
-export async function fetchAttendanceRate(): Promise<
-  { ok: true; rate: number } | { ok: false; error: string }
-> {
+export async function fetchAttendanceLogs(
+  params: AttendanceLogsParams
+): Promise<AttendanceResult<AttendanceRecord[]>> {
   try {
-    const result = await withTimeout(serverGetAttendanceRate());
-    return result;
+    return await withTimeout(serverGetAttendanceLogs(params));
+  } catch (error) {
+    console.error('[services/attendance] fetchAttendanceLogs failed', error);
+    return { ok: false, error: 'UNKNOWN' };
+  }
+}
+
+export async function fetchAttendanceSummary(
+  period: AttendanceSummaryPeriod
+): Promise<AttendanceResult<AttendanceSummary>> {
+  try {
+    return await withTimeout(serverGetAttendanceSummary(period));
+  } catch (error) {
+    console.error('[services/attendance] fetchAttendanceSummary failed', error);
+    return { ok: false, error: 'UNKNOWN' };
+  }
+}
+
+export async function fetchAttendanceRate(): Promise<AttendanceRateResult> {
+  try {
+    return await withTimeout(serverGetAttendanceRate());
   } catch (error) {
     console.error('[services/attendance] fetchAttendanceRate failed', error);
     return { ok: false, error: 'UNKNOWN' };
   }
 }
 
-export async function requestClockIn() {
+export async function requestCheckIn() {
   try {
-    return await withTimeout(serverClockIn());
+    return await withTimeout(serverCheckIn());
   } catch (error) {
-    console.error('[services/attendance] requestClockIn failed', error);
+    console.error('[services/attendance] requestCheckIn failed', error);
     return { ok: false as const, error: 'UNKNOWN' };
   }
 }
@@ -67,11 +102,11 @@ export async function requestEarlyLeave() {
   }
 }
 
-export async function requestClockOut() {
+export async function requestCheckOut() {
   try {
-    return await withTimeout(serverClockOut());
+    return await withTimeout(serverCheckOut());
   } catch (error) {
-    console.error('[services/attendance] requestClockOut failed', error);
+    console.error('[services/attendance] requestCheckOut failed', error);
     return { ok: false as const, error: 'UNKNOWN' };
   }
 }
