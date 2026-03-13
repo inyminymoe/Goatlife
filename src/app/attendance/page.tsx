@@ -1,11 +1,20 @@
-'use client';
-
+import { redirect } from 'next/navigation';
 import AttendanceDashboardCard from '@/components/features/attendance/AttendanceDashboardCard';
 import AttendanceCard from '@/components/home/AttendanceCard';
 import { Calendar } from '@/components/ui/Calendar';
 import { AttendanceHeatmap } from '@/components/features/attendance/AttendanceHeatmap';
+import { createServerSupabase } from '@/lib/supabase/server';
 
-export default function AttendancePage() {
+export default async function AttendancePage() {
+  const supabase = await createServerSupabase();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect('/login');
+  }
+
   return (
     <div className="col-span-2">
       <div className="mx-auto max-w-[1440px] space-y-6">
