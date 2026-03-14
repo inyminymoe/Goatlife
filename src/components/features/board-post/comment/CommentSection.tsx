@@ -34,7 +34,7 @@ export function CommentSection({
 
   const onCommentAdded = () => {
     handleCommentAdded();
-    setCurrentPage(1); // 댓글 추가 후 1페이지로
+    setCurrentPage(1);
     queryClient.invalidateQueries({ queryKey: ['comments', postId] });
   };
 

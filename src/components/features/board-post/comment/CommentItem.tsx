@@ -21,6 +21,7 @@ type CommentItemProps = Comment & {
   onDelete?: (commentId: string, parentId?: string) => void;
   onPin?: (commentId: string, is_pinned: boolean) => void;
   isReply?: boolean;
+  /** 답글 아이템에서 "답글달기" 클릭 시 부모의 입력창을 열도록 위임 */
   onReplyClick?: () => void;
 };
 
