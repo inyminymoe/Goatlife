@@ -238,10 +238,15 @@ export function usePomodoroTimer(
   ]);
 
   const startFocus = useCallback(() => {
+    if (mode === 'break') {
+      flushBreakRecord();
+      breakElapsedSecondsRef.current = 0;
+    }
+    completionNotifiedRef.current = false;
     setMode('focus');
     setRemainingSeconds(focusPresetMinutes * 60);
     setIsRunning(true);
-  }, [focusPresetMinutes]);
+  }, [flushBreakRecord, focusPresetMinutes, mode]);
 
   return {
     mode,

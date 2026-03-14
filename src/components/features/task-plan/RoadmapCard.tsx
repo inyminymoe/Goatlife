@@ -160,7 +160,20 @@ export default function RoadmapCard() {
   const handleStartViaLink = useCallback(() => {
     if (!startFrom?.url) return;
 
-    const opened = window.open(startFrom.url, '_blank', 'noopener,noreferrer');
+    let safeUrl: string;
+    try {
+      const parsed = new URL(startFrom.url, window.location.origin);
+      if (!['http:', 'https:'].includes(parsed.protocol)) {
+        toast.error('올바른 링크만 열 수 있어요.');
+        return;
+      }
+      safeUrl = parsed.toString();
+    } catch {
+      toast.error('올바른 링크만 열 수 있어요.');
+      return;
+    }
+
+    const opened = window.open(safeUrl, '_blank', 'noopener,noreferrer');
     if (!opened) {
       toast.error('팝업이 차단되어 링크를 열 수 없어요.');
       return;

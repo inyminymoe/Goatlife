@@ -8,15 +8,22 @@ interface ImageUploadProps {
   value?: string;
   onChange?: (url: string) => void;
   disabled?: boolean;
+  uploadAction?: (
+    file: File
+  ) => Promise<{ ok: true; url: string } | { ok: false; error: string }>;
+  onUploadingChange?: (isUploading: boolean) => void;
 }
 
 export default function ImageUpload({
   value,
   onChange,
   disabled = false,
+  uploadAction,
+  onUploadingChange,
 }: ImageUploadProps) {
   const [preview, setPreview] = useState<string | null>(value || null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -28,7 +35,28 @@ export default function ImageUpload({
       return;
     }
 
-    // 이미지 미리보기
+    // 서버 업로드 액션이 있으면 우선 사용
+    if (uploadAction) {
+      setIsUploading(true);
+      onUploadingChange?.(true);
+      uploadAction(file)
+        .then(result => {
+          if (result.ok) {
+            setPreview(result.url);
+            onChange?.(result.url);
+          } else {
+            alert(result.error ?? '이미지 업로드에 실패했습니다.');
+          }
+        })
+        .catch(() => alert('이미지 업로드 중 오류가 발생했습니다.'))
+        .finally(() => {
+          setIsUploading(false);
+          onUploadingChange?.(false);
+        });
+      return;
+    }
+
+    // 업로드 액션이 없으면 base64 미리보기만 반환
     const reader = new FileReader();
     reader.onloadend = () => {
       const result = reader.result as string;
@@ -83,10 +111,10 @@ export default function ImageUpload({
           variant="outline"
           size="md"
           onClick={handleClick}
-          disabled={disabled}
+          disabled={disabled || isUploading}
           className="w-24 justify-center"
         >
-          업로드
+          {isUploading ? '업로드 중' : '업로드'}
         </Button>
       </div>
     </div>
