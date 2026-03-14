@@ -52,6 +52,7 @@ export function CommentSection({
       <div className="mb-8 grow-1">
         <CommentList
           comments={comments}
+          postId={postId}
           postAuthorId={postAuthorId}
           onDeleteComment={handleDelete}
           onPinComment={handlePin}

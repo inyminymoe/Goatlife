@@ -11,6 +11,21 @@ export async function fetchComments(
   return res.json();
 }
 
+export async function fetchReplies(
+  postId: string,
+  parentId: string
+): Promise<Comment[]> {
+  const res = await fetch(
+    `/api/board/posts/${postId}/comments?parent_id=${parentId}`
+  );
+
+  if (!res.ok) {
+    throw new Error('답글 조회 실패');
+  }
+
+  return res.json();
+}
+
 export async function deleteComment(postId: string, commentId: string) {
   const res = await fetch(`/api/board/posts/${postId}/comments/${commentId}`, {
     method: 'DELETE',

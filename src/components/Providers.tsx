@@ -41,15 +41,15 @@ export default function Providers({
 
   return (
     <QueryClientProvider client={queryClient}>
-      <OverlayProvider>
-        <JotaiProvider>
+      <JotaiProvider>
+        <OverlayProvider>
           <ToastProvider>
             <HydrateUser user={hydratedUser} />
             <SupabaseAuthListener />
             {children}
           </ToastProvider>
-        </JotaiProvider>
-      </OverlayProvider>
+        </OverlayProvider>
+      </JotaiProvider>
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>
   );

@@ -40,4 +40,7 @@ export type Comment = {
   image_urls: string[];
   created_at: string;
   updated_at: string;
+  parent_id: string | null; // 루트 댓글이면 null, 답글이면 부모 댓글 id
+  reply_to_name: string | null; // 나중에 @멘션 표시용, 지금은 null로
+  reply_count: number;
 };

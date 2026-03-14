@@ -34,24 +34,13 @@ export function CommentActionMenu({
   const showPin = !!user && canPinComment(user.id, postAuthorId);
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <IconButton
-          icon="icon-park:more-one"
-          variant="ghost"
-          className="icon-dark-invert"
-        />
-      </DropdownMenuTrigger>
-      <DropdownMenuContent placement="bottom-end" className="w-28">
-        {showPin && (
-          <DropdownMenuItem onClick={() => onPin?.(commentId, !isPinned)}>
-            {isPinned ? '고정 해제' : '고정'}
-          </DropdownMenuItem>
-        )}
-        {showDelete && (
-          <DropdownMenuItem onClick={onDelete}>삭제</DropdownMenuItem>
-        )}
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <div className="flex flex-col gap-6">
+      {showPin && (
+        <div onClick={() => onPin?.(commentId, !isPinned)}>
+          {isPinned ? '고정 해제' : '고정'}
+        </div>
+      )}
+      {showDelete && <div onClick={onDelete}>삭제</div>}
+    </div>
   );
 }

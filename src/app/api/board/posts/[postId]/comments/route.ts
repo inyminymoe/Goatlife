@@ -15,12 +15,34 @@ export async function GET(
 
   const { searchParams } = new URL(req.url);
   const page = Number(searchParams.get('page')) || 1;
+  const parentId = searchParams.get('parent_id');
 
   const supabase = await createServerSupabase();
+
+  // 답글 더보기 버튼 클릭 시
+  if (parentId) {
+    if (!isValidUuid(parentId))
+      return NextResponse.json({ error: 'Invalid parentId' }, { status: 400 });
+
+    const { data, error } = await supabase
+      .from('board_post_comments')
+      .select('*')
+      .eq('post_id', postId)
+      .eq('parent_id', parentId)
+      .order('created_at', { ascending: true });
+
+    if (error)
+      return NextResponse.json({ error: 'Request failed' }, { status: 500 });
+
+    return NextResponse.json(data);
+  }
+
+  // 루트 댓글 fetch — 뷰에서 조회
   const { data, error } = await supabase
-    .from('board_post_comments')
+    .from('board_post_comments_with_reply_count')
     .select('*')
     .eq('post_id', postId)
+    .is('parent_id', null)
     .order('is_pinned', { ascending: false })
     .order('created_at', { ascending: true })
     .range((page - 1) * COMMENTS_PER_PAGE, page * COMMENTS_PER_PAGE - 1);
@@ -43,13 +65,17 @@ export async function POST(
   const { data: body, error: parseError } = await parseJsonBody<{
     content?: string;
     image_urls?: string[];
+    parent_id?: string;
+    reply_to_name?: string;
   }>(req);
 
   if (parseError) {
     return parseError;
   }
 
+  const parentId = body?.parent_id ?? null;
   const content = body?.content?.trim();
+
   if (!content)
     return NextResponse.json({ error: 'content is required' }, { status: 400 });
 
@@ -59,8 +85,21 @@ export async function POST(
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  let resolvedParentId = parentId;
+  if (parentId) {
+    const { data: parentComment } = await supabase
+      .from('board_post_comments')
+      .select('id, parent_id')
+      .eq('id', parentId)
+      .single();
+
+    // 답글의 답글이면 → 원댓글의 parent_id로 올려줌 (2depth 고정)
+    resolvedParentId = parentComment?.parent_id ?? parentId;
   }
 
   const metadata = user.user_metadata ?? {};
@@ -70,6 +109,8 @@ export async function POST(
     author_name: metadata.firstName + metadata.lastName,
     content,
     image_urls: imageUrls,
+    parent_id: resolvedParentId,
+    reply_to_name: body?.reply_to_name ?? null,
   });
 
   if (error) {

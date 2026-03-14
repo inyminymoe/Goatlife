@@ -9,9 +9,23 @@ export function useCommentActions(postId: string, initialCommentCount: number) {
   const toast = useToast();
 
   const deleteMutation = useMutation({
-    mutationFn: (commentId: string) => deleteComment(postId, commentId),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ['comments', postId] }),
+    mutationFn: ({
+      commentId,
+      parentId,
+    }: {
+      commentId: string;
+      parentId?: string;
+    }) => deleteComment(postId, commentId),
+    onSuccess: (_data, variables) => {
+      if (variables.parentId) {
+        queryClient.invalidateQueries({
+          queryKey: ['replies', variables.parentId],
+        });
+        queryClient.invalidateQueries({ queryKey: ['comments', postId] });
+      } else {
+        queryClient.invalidateQueries({ queryKey: ['comments', postId] });
+      }
+    },
     onError: () => toast.error('잠시 후 다시 시도해주세요.'),
   });
 
@@ -28,11 +42,18 @@ export function useCommentActions(postId: string, initialCommentCount: number) {
     onError: () => toast.error('잠시 후 다시 시도해주세요.'),
   });
 
-  const handleDelete = (commentId: string) => {
-    setCommentCount(prev => Math.max(prev - 1, 0));
-    deleteMutation.mutate(commentId, {
-      onError: () => setCommentCount(prev => prev + 1), // 롤백
-    });
+  const handleDelete = (commentId: string, parentId?: string) => {
+    if (!parentId) {
+      setCommentCount(prev => Math.max(prev - 1, 0));
+    }
+    deleteMutation.mutate(
+      { commentId, parentId },
+      {
+        onError: () => {
+          if (!parentId) setCommentCount(prev => prev + 1);
+        },
+      }
+    );
   };
 
   const handlePin = (commentId: string, is_pinned: boolean) => {

@@ -15,6 +15,7 @@ const MAX_FILES = 5;
 
 interface CommentInputProps {
   postId: string;
+  parentId?: string;
   onCommentAdded?: () => void;
 }
 
@@ -23,7 +24,11 @@ type PreviewItem = {
   file: File;
 };
 
-export function CommentInput({ postId, onCommentAdded }: CommentInputProps) {
+export function CommentInput({
+  postId,
+  parentId,
+  onCommentAdded,
+}: CommentInputProps) {
   const [content, setContent] = useState('');
   const [previews, setPreviews] = useState<PreviewItem[]>([]);
   const toast = useToast();
@@ -70,7 +75,11 @@ export function CommentInput({ postId, onCommentAdded }: CommentInputProps) {
       const res = await fetch(`/api/board/posts/${postId}/comments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content, image_urls: imageUrls }),
+        body: JSON.stringify({
+          content,
+          image_urls: imageUrls,
+          parent_id: parentId ?? null,
+        }),
       });
 
       if (!res.ok) {
@@ -86,7 +95,11 @@ export function CommentInput({ postId, onCommentAdded }: CommentInputProps) {
     onSuccess: () => {
       setContent('');
       setPreviews([]);
-      queryClient.invalidateQueries({ queryKey: ['comments', postId] });
+      if (parentId) {
+        queryClient.invalidateQueries({ queryKey: ['replies', parentId] });
+      } else {
+        queryClient.invalidateQueries({ queryKey: ['comments', postId] });
+      }
       onCommentAdded?.();
     },
     onError: () => {
