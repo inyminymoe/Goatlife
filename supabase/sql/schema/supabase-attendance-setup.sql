@@ -19,20 +19,22 @@ CREATE TABLE IF NOT EXISTS public.attendance_logs (
   early_leave_at TIMESTAMPTZ,
   clock_out_at TIMESTAMPTZ,
   work_minutes INTEGER DEFAULT 0,
-  status TEXT NOT NULL DEFAULT 'none' CHECK (status IN ('none', 'in', 'early', 'out')),
+  note TEXT,
+  status TEXT NOT NULL DEFAULT 'absent'
+    CHECK (status IN ('present', 'late', 'early_leave', 'absent', 'vacation')),
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
 
-  -- 한 사용자는 하루에 하나의 근태 기록만 가질 수 있음
   UNIQUE(user_id, work_date)
 );
 
--- 인덱스 생성 (성능 최적화)
-CREATE INDEX IF NOT EXISTS idx_attendance_logs_user_id ON public.attendance_logs(user_id);
-CREATE INDEX IF NOT EXISTS idx_attendance_logs_work_date ON public.attendance_logs(work_date);
-CREATE INDEX IF NOT EXISTS idx_attendance_logs_user_date ON public.attendance_logs(user_id, work_date);
+CREATE INDEX IF NOT EXISTS idx_attendance_logs_user_id
+  ON public.attendance_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_attendance_logs_work_date
+  ON public.attendance_logs(work_date);
+CREATE INDEX IF NOT EXISTS idx_attendance_logs_user_date
+  ON public.attendance_logs(user_id, work_date);
 
--- updated_at 자동 업데이트 트리거
 CREATE OR REPLACE FUNCTION public.update_attendance_logs_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -41,7 +43,8 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-DROP TRIGGER IF EXISTS trigger_update_attendance_logs_updated_at ON public.attendance_logs;
+DROP TRIGGER IF EXISTS trigger_update_attendance_logs_updated_at
+  ON public.attendance_logs;
 CREATE TRIGGER trigger_update_attendance_logs_updated_at
   BEFORE UPDATE ON public.attendance_logs
   FOR EACH ROW
@@ -52,24 +55,23 @@ CREATE TRIGGER trigger_update_attendance_logs_updated_at
 -- ============================================================================
 ALTER TABLE public.attendance_logs ENABLE ROW LEVEL SECURITY;
 
--- 기존 정책 삭제 (재실행 시 충돌 방지)
-DROP POLICY IF EXISTS "Users can view own attendance logs" ON public.attendance_logs;
-DROP POLICY IF EXISTS "Users can insert own attendance logs" ON public.attendance_logs;
-DROP POLICY IF EXISTS "Users can update own attendance logs" ON public.attendance_logs;
+DROP POLICY IF EXISTS "Users can view own attendance logs"
+  ON public.attendance_logs;
+DROP POLICY IF EXISTS "Users can insert own attendance logs"
+  ON public.attendance_logs;
+DROP POLICY IF EXISTS "Users can update own attendance logs"
+  ON public.attendance_logs;
 
--- 사용자는 자신의 근태 기록만 조회 가능
 CREATE POLICY "Users can view own attendance logs"
   ON public.attendance_logs
   FOR SELECT
   USING (auth.uid() = user_id);
 
--- 사용자는 자신의 근태 기록만 생성 가능
 CREATE POLICY "Users can insert own attendance logs"
   ON public.attendance_logs
   FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
--- 사용자는 자신의 근태 기록만 업데이트 가능
 CREATE POLICY "Users can update own attendance logs"
   ON public.attendance_logs
   FOR UPDATE
@@ -79,23 +81,37 @@ CREATE POLICY "Users can update own attendance logs"
 -- ============================================================================
 -- 3. v_attendance_summary 뷰 생성 (출근율 계산)
 -- ============================================================================
--- 기존 뷰 삭제 (재실행 시 충돌 방지)
 DROP VIEW IF EXISTS public.v_attendance_summary;
 
 CREATE VIEW public.v_attendance_summary AS
 SELECT
   user_id,
   COUNT(*) AS total_days,
-  COUNT(CASE WHEN status != 'none' THEN 1 END) AS attended_days,
+  COUNT(
+    CASE
+      WHEN status IN ('present', 'late', 'early_leave') THEN 1
+      ELSE NULL
+    END
+  ) AS attended_days,
+  COUNT(CASE WHEN status = 'late' THEN 1 ELSE NULL END) AS late_days,
+  COUNT(CASE WHEN status = 'early_leave' THEN 1 ELSE NULL END) AS early_leave_days,
+  COUNT(CASE WHEN status = 'vacation' THEN 1 ELSE NULL END) AS vacation_days,
+  COUNT(CASE WHEN status = 'absent' THEN 1 ELSE NULL END) AS absent_days,
   CASE
     WHEN COUNT(*) > 0 THEN
-      ROUND((COUNT(CASE WHEN status != 'none' THEN 1 END)::NUMERIC / COUNT(*)::NUMERIC) * 100, 2)
+      ROUND((
+        COUNT(
+          CASE
+            WHEN status IN ('present', 'late', 'early_leave') THEN 1
+            ELSE NULL
+          END
+        )::NUMERIC / COUNT(*)::NUMERIC
+      ) * 100, 2)
     ELSE 0
   END AS attendance_rate
 FROM public.attendance_logs
 GROUP BY user_id;
 
--- 뷰에 대한 RLS 정책
 ALTER VIEW public.v_attendance_summary SET (security_invoker = on);
 
 -- ============================================================================
@@ -113,33 +129,53 @@ AS $$
 DECLARE
   v_existing_log public.attendance_logs;
   v_result public.attendance_logs;
+  v_status TEXT;
 BEGIN
-  -- 권한 확인: 본인만 출근 처리 가능
   IF auth.uid() != p_user_id THEN
     RAISE EXCEPTION 'Unauthorized: You can only clock in for yourself';
   END IF;
 
-  -- 기존 기록 확인
   SELECT * INTO v_existing_log
   FROM public.attendance_logs
   WHERE user_id = p_user_id AND work_date = p_work_date;
 
-  -- 이미 출근 기록이 있으면 에러
   IF v_existing_log.id IS NOT NULL AND v_existing_log.clock_in_at IS NOT NULL THEN
     RAISE EXCEPTION 'Already clocked in today';
   END IF;
 
-  -- 새 출근 기록 생성 또는 업데이트
-  INSERT INTO public.attendance_logs (user_id, work_date, clock_in_at, status)
-  VALUES (p_user_id, p_work_date, NOW(), 'in')
+  v_status := CASE
+    WHEN (timezone('Asia/Seoul', NOW()))::time > TIME '09:00' THEN 'late'
+    ELSE 'present'
+  END;
+
+  INSERT INTO public.attendance_logs (
+    user_id,
+    work_date,
+    clock_in_at,
+    early_leave_at,
+    clock_out_at,
+    work_minutes,
+    status
+  )
+  VALUES (
+    p_user_id,
+    p_work_date,
+    NOW(),
+    NULL,
+    NULL,
+    0,
+    v_status
+  )
   ON CONFLICT (user_id, work_date)
   DO UPDATE SET
     clock_in_at = NOW(),
-    status = 'in',
+    early_leave_at = NULL,
+    clock_out_at = NULL,
+    work_minutes = 0,
+    status = v_status,
     updated_at = NOW()
   RETURNING * INTO v_result;
 
-  -- JSON 형식으로 반환
   RETURN row_to_json(v_result);
 END;
 $$;
@@ -161,40 +197,33 @@ DECLARE
   v_result public.attendance_logs;
   v_work_minutes INTEGER;
 BEGIN
-  -- 권한 확인: 본인만 조퇴 처리 가능
   IF auth.uid() != p_user_id THEN
     RAISE EXCEPTION 'Unauthorized: You can only process early leave for yourself';
   END IF;
 
-  -- 기존 기록 확인
   SELECT * INTO v_existing_log
   FROM public.attendance_logs
   WHERE user_id = p_user_id AND work_date = p_work_date;
 
-  -- 출근 기록이 없으면 에러
   IF v_existing_log.id IS NULL OR v_existing_log.clock_in_at IS NULL THEN
     RAISE EXCEPTION 'No clock-in record found for today';
   END IF;
 
-  -- 이미 조퇴 또는 퇴근 처리된 경우 에러
-  IF v_existing_log.status IN ('early', 'out') THEN
+  IF v_existing_log.early_leave_at IS NOT NULL OR v_existing_log.clock_out_at IS NOT NULL THEN
     RAISE EXCEPTION 'Already processed early leave or clock out';
   END IF;
 
-  -- 근무 시간 계산 (분 단위)
   v_work_minutes := EXTRACT(EPOCH FROM (NOW() - v_existing_log.clock_in_at)) / 60;
 
-  -- 조퇴 처리
   UPDATE public.attendance_logs
   SET
     early_leave_at = NOW(),
     work_minutes = v_work_minutes,
-    status = 'early',
+    status = 'early_leave',
     updated_at = NOW()
   WHERE id = v_existing_log.id
   RETURNING * INTO v_result;
 
-  -- JSON 형식으로 반환
   RETURN row_to_json(v_result);
 END;
 $$;
@@ -215,46 +244,46 @@ DECLARE
   v_existing_log public.attendance_logs;
   v_result public.attendance_logs;
   v_work_minutes INTEGER;
+  v_next_status TEXT;
 BEGIN
-  -- 권한 확인: 본인만 퇴근 처리 가능
   IF auth.uid() != p_user_id THEN
     RAISE EXCEPTION 'Unauthorized: You can only clock out for yourself';
   END IF;
 
-  -- 기존 기록 확인
   SELECT * INTO v_existing_log
   FROM public.attendance_logs
   WHERE user_id = p_user_id AND work_date = p_work_date;
 
-  -- 출근 기록이 없으면 에러
   IF v_existing_log.id IS NULL OR v_existing_log.clock_in_at IS NULL THEN
     RAISE EXCEPTION 'No clock-in record found for today';
   END IF;
 
-  -- 이미 퇴근 처리된 경우 에러
-  IF v_existing_log.status = 'out' THEN
+  IF v_existing_log.clock_out_at IS NOT NULL THEN
     RAISE EXCEPTION 'Already clocked out';
   END IF;
 
-  -- 근무 시간 계산 (분 단위)
-  -- 조퇴한 경우 조퇴 시간부터 퇴근 시간까지는 계산하지 않음
-  IF v_existing_log.status = 'early' AND v_existing_log.early_leave_at IS NOT NULL THEN
-    v_work_minutes := EXTRACT(EPOCH FROM (v_existing_log.early_leave_at - v_existing_log.clock_in_at)) / 60;
+  IF v_existing_log.status = 'early_leave' AND v_existing_log.early_leave_at IS NOT NULL THEN
+    v_work_minutes := EXTRACT(
+      EPOCH FROM (v_existing_log.early_leave_at - v_existing_log.clock_in_at)
+    ) / 60;
+    v_next_status := 'early_leave';
   ELSE
     v_work_minutes := EXTRACT(EPOCH FROM (NOW() - v_existing_log.clock_in_at)) / 60;
+    v_next_status := CASE
+      WHEN v_existing_log.status = 'late' THEN 'late'
+      ELSE 'present'
+    END;
   END IF;
 
-  -- 퇴근 처리
   UPDATE public.attendance_logs
   SET
     clock_out_at = NOW(),
     work_minutes = v_work_minutes,
-    status = 'out',
+    status = v_next_status,
     updated_at = NOW()
   WHERE id = v_existing_log.id
   RETURNING * INTO v_result;
 
-  -- JSON 형식으로 반환
   RETURN row_to_json(v_result);
 END;
 $$;
@@ -262,8 +291,6 @@ $$;
 -- ============================================================================
 -- 7. RPC 함수에 대한 권한 부여
 -- ============================================================================
--- 인증된 사용자만 RPC 함수 실행 가능
 GRANT EXECUTE ON FUNCTION public.fn_clock_in TO authenticated;
 GRANT EXECUTE ON FUNCTION public.fn_early_leave TO authenticated;
 GRANT EXECUTE ON FUNCTION public.fn_clock_out TO authenticated;
-

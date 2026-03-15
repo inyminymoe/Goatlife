@@ -1,21 +1,14 @@
 'use client';
 
 import {
-  fetchAttendanceRate,
-  fetchTodayAttendance,
-  requestClockIn,
-  requestClockOut,
-  requestEarlyLeave,
-  type AttendanceLog,
-  type AttendanceStatus,
-} from '@/services/attendance';
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-  useTransition,
-} from 'react';
+  ATTENDANCE_ERROR_MESSAGES,
+  calculateWorkMinutes,
+} from '@/lib/attendance';
+import { useAttendanceActions } from '@/hooks/useAttendanceActions';
+import { useAttendanceSummary } from '@/hooks/useAttendanceSummary';
+import { useAttendanceToday } from '@/hooks/useAttendanceToday';
+import type { AttendanceRecord } from '@/types/attendance';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 export type AttendanceMode = 'compact' | 'full';
 export type AttendanceLifecycle = 'idle' | 'loading' | 'ready' | 'error';
@@ -23,7 +16,7 @@ export type AttendanceLifecycle = 'idle' | 'loading' | 'ready' | 'error';
 export type ToastState = { message: string; type: 'success' | 'error' } | null;
 
 export type AttendanceViewState = {
-  status: AttendanceStatus;
+  status: 'none' | 'in' | 'early' | 'out';
   clockInAt: string | null;
   earlyLeaveAt: string | null;
   clockOutAt: string | null;
@@ -54,8 +47,6 @@ export interface UseAttendanceResult {
   error: string | null;
 }
 
-const MS_IN_MINUTE = 60_000;
-
 const initialAttendanceState: AttendanceViewState = {
   status: 'none',
   clockInAt: null,
@@ -64,40 +55,76 @@ const initialAttendanceState: AttendanceViewState = {
   workMinutes: 0,
 };
 
-function deriveAttendanceState(log: AttendanceLog | null): AttendanceViewState {
-  if (!log) return initialAttendanceState;
+function resolveAttendanceErrorMessage(error: string | null | undefined) {
+  if (!error) {
+    return ATTENDANCE_ERROR_MESSAGES.UNKNOWN;
+  }
 
-  return {
-    status: (log.status as AttendanceStatus) ?? 'none',
-    clockInAt: log.clock_in_at,
-    earlyLeaveAt: log.early_leave_at,
-    clockOutAt: log.clock_out_at,
-    workMinutes: log.work_minutes ?? 0,
-  };
+  return (
+    ATTENDANCE_ERROR_MESSAGES[
+      error as keyof typeof ATTENDANCE_ERROR_MESSAGES
+    ] ?? ATTENDANCE_ERROR_MESSAGES.UNKNOWN
+  );
 }
 
-function diffMinutes(from?: string | null, to?: string | null) {
-  if (!from || !to) return 0;
-  const start = new Date(from).getTime();
-  const end = new Date(to).getTime();
-  if (Number.isNaN(start) || Number.isNaN(end) || end <= start) return 0;
-  return Math.round((end - start) / MS_IN_MINUTE);
+function deriveAttendanceState(
+  record: AttendanceRecord | null
+): AttendanceViewState {
+  if (!record) {
+    return initialAttendanceState;
+  }
+
+  if (record.status === 'vacation' || record.status === 'absent') {
+    return initialAttendanceState;
+  }
+
+  if (record.status === 'early_leave') {
+    return {
+      status: 'early',
+      clockInAt: record.checkInAt,
+      earlyLeaveAt: record.earlyLeaveAt,
+      clockOutAt: record.checkOutAt,
+      workMinutes:
+        record.workMinutes ||
+        calculateWorkMinutes(record.checkInAt, record.earlyLeaveAt),
+    };
+  }
+
+  if (record.checkOutAt) {
+    return {
+      status: 'out',
+      clockInAt: record.checkInAt,
+      earlyLeaveAt: record.earlyLeaveAt,
+      clockOutAt: record.checkOutAt,
+      workMinutes:
+        record.workMinutes ||
+        calculateWorkMinutes(record.checkInAt, record.checkOutAt),
+    };
+  }
+
+  if (record.checkInAt) {
+    return {
+      status: 'in',
+      clockInAt: record.checkInAt,
+      earlyLeaveAt: record.earlyLeaveAt,
+      clockOutAt: record.checkOutAt,
+      workMinutes: record.workMinutes,
+    };
+  }
+
+  return initialAttendanceState;
 }
 
 export function useAttendance(
   options: UseAttendanceOptions = {}
 ): UseAttendanceResult {
-  const { autoLoad = true, mode = 'compact' } = options;
-
-  const [lifecycle, setLifecycle] = useState<AttendanceLifecycle>('idle');
-  const [attendance, setAttendance] = useState<AttendanceViewState>(
-    initialAttendanceState
-  );
-  const [attendanceRate, setAttendanceRate] = useState(0);
-  const [liveMinutes, setLiveMinutes] = useState(0);
-  const [error, setError] = useState<string | null>(null);
+  const { mode = 'compact' } = options;
   const [toast, setToast] = useState<ToastState>(null);
-  const [isPending, startTransition] = useTransition();
+  const [liveMinutes, setLiveMinutes] = useState(0);
+
+  const todayQuery = useAttendanceToday();
+  const summaryQuery = useAttendanceSummary({ period: 'month' });
+  const attendanceActions = useAttendanceActions();
 
   const showToast = useCallback(
     (message: string, type: 'success' | 'error') => {
@@ -108,52 +135,10 @@ export function useAttendance(
 
   const dismissToast = useCallback(() => setToast(null), []);
 
-  const refreshRate = useCallback(async () => {
-    const result = await fetchAttendanceRate();
-    if (result.ok) {
-      setAttendanceRate(result.rate ?? 0);
-    } else if (result.error !== 'UNAUTHENTICATED') {
-      showToast('출근율 정보를 갱신하지 못했어요.', 'error');
-    }
-  }, [showToast]);
-
-  const loadInitial = useCallback(async () => {
-    setLifecycle('loading');
-    setError(null);
-    try {
-      const [statusRes, rateRes] = await Promise.all([
-        fetchTodayAttendance(),
-        fetchAttendanceRate(),
-      ]);
-
-      if (statusRes.ok) {
-        setAttendance(deriveAttendanceState(statusRes.data));
-      } else if (statusRes.error === 'UNAUTHENTICATED') {
-        setError('UNAUTHENTICATED');
-      } else {
-        showToast('근태 정보를 불러오지 못했어요.', 'error');
-        setError(statusRes.error);
-      }
-
-      if (rateRes.ok) {
-        setAttendanceRate(rateRes.rate ?? 0);
-      } else if (rateRes.error !== 'UNAUTHENTICATED') {
-        showToast('출근율 정보를 불러오지 못했어요.', 'error');
-      }
-
-      setLifecycle('ready');
-    } catch (err) {
-      console.error('[useAttendance] initial load failed', err);
-      setLifecycle('error');
-      setError('UNKNOWN');
-      showToast('근태 데이터를 불러오는 중 문제가 발생했어요.', 'error');
-    }
-  }, [showToast]);
-
-  useEffect(() => {
-    if (!autoLoad) return;
-    void loadInitial();
-  }, [autoLoad, loadInitial]);
+  const attendance = useMemo(
+    () => deriveAttendanceState(todayQuery.record),
+    [todayQuery.record]
+  );
 
   useEffect(() => {
     if (attendance.status !== 'in' || !attendance.clockInAt) {
@@ -162,17 +147,36 @@ export function useAttendance(
     }
 
     const updateMinutes = () => {
-      const diff = diffMinutes(
-        attendance.clockInAt ?? undefined,
-        new Date().toISOString()
+      setLiveMinutes(
+        calculateWorkMinutes(attendance.clockInAt, new Date().toISOString())
       );
-      setLiveMinutes(diff);
     };
 
     updateMinutes();
     const timer = setInterval(updateMinutes, 10_000);
+
     return () => clearInterval(timer);
-  }, [attendance.status, attendance.clockInAt]);
+  }, [attendance.clockInAt, attendance.status]);
+
+  const lifecycle = useMemo<AttendanceLifecycle>(() => {
+    if (todayQuery.isLoading || summaryQuery.isLoading) {
+      return 'loading';
+    }
+
+    if (
+      (todayQuery.error && todayQuery.error !== 'UNAUTHENTICATED') ||
+      (summaryQuery.error && summaryQuery.error !== 'UNAUTHENTICATED')
+    ) {
+      return 'error';
+    }
+
+    return 'ready';
+  }, [
+    summaryQuery.error,
+    summaryQuery.isLoading,
+    todayQuery.error,
+    todayQuery.isLoading,
+  ]);
 
   const todayMinutes = useMemo(() => {
     switch (attendance.status) {
@@ -180,138 +184,68 @@ export function useAttendance(
         return liveMinutes;
       case 'early':
         return (
-          diffMinutes(attendance.clockInAt, attendance.earlyLeaveAt) ||
-          attendance.workMinutes
+          attendance.workMinutes ||
+          calculateWorkMinutes(attendance.clockInAt, attendance.earlyLeaveAt)
         );
       case 'out':
-        return attendance.workMinutes;
+        return (
+          attendance.workMinutes ||
+          calculateWorkMinutes(attendance.clockInAt, attendance.clockOutAt)
+        );
       default:
         return 0;
     }
   }, [attendance, liveMinutes]);
 
-  const handleClockIn = useCallback(() => {
-    if (isPending) return;
+  const attendanceRate = summaryQuery.summary?.attendanceRate ?? 0;
+  // UNAUTHENTICATED는 auth guard가 리다이렉트 처리하므로 소비자에게 노출하지 않음
+  const error =
+    (todayQuery.error !== 'UNAUTHENTICATED' ? todayQuery.error : null) ??
+    (summaryQuery.error !== 'UNAUTHENTICATED' ? summaryQuery.error : null) ??
+    null;
 
-    const previous = attendance;
-    const nextState: AttendanceViewState = {
-      status: 'in',
-      clockInAt: new Date().toISOString(),
-      earlyLeaveAt: null,
-      clockOutAt: null,
-      workMinutes: 0,
-    };
+  const refresh = useCallback(async () => {
+    await Promise.all([todayQuery.refetch(), summaryQuery.refetch()]);
+  }, [summaryQuery, todayQuery]);
 
-    setAttendance(nextState);
+  const handleClockIn = useCallback(async () => {
+    if (attendanceActions.isMutating) return;
 
-    startTransition(() => {
-      void (async () => {
-        const result = await requestClockIn();
-        if (!result.ok) {
-          setAttendance(previous);
-          const message =
-            result.error === 'UNAUTHENTICATED'
-              ? '로그인이 필요해요.'
-              : '출근 처리에 실패했어요.';
-          showToast(message, 'error');
-          return;
-        }
+    const result = await attendanceActions.checkIn.mutateAsync();
 
-        if (!result.data) {
-          setAttendance(previous);
-          showToast('출근 정보가 확인되지 않아요.', 'error');
-          return;
-        }
+    if (!result.ok) {
+      showToast(resolveAttendanceErrorMessage(result.error), 'error');
+      return;
+    }
 
-        setAttendance(deriveAttendanceState(result.data));
-        await refreshRate();
-        showToast('출근 완료! 활기찬 갓생 보내세요.', 'success');
-      })();
-    });
-  }, [attendance, isPending, refreshRate, showToast]);
+    showToast('출근 완료! 활기찬 갓생 보내세요.', 'success');
+  }, [attendanceActions, showToast]);
 
-  const handleEarlyLeave = useCallback(() => {
-    if (isPending || attendance.status !== 'in') return;
+  const handleEarlyLeave = useCallback(async () => {
+    if (attendanceActions.isMutating) return;
 
-    const previous = attendance;
-    const nextState: AttendanceViewState = {
-      ...attendance,
-      status: 'early',
-      earlyLeaveAt: new Date().toISOString(),
-    };
-    setAttendance(nextState);
+    const result = await attendanceActions.earlyLeave.mutateAsync();
 
-    startTransition(() => {
-      void (async () => {
-        const result = await requestEarlyLeave();
-        if (!result.ok) {
-          setAttendance(previous);
-          const errorMessage =
-            result.error === 'UNAUTHENTICATED'
-              ? '로그인이 필요해요.'
-              : result.error.includes('No clock-in record')
-                ? '오늘 출근 기록이 없습니다.'
-                : '조퇴 처리에 실패했어요.';
-          showToast(errorMessage, 'error');
-          return;
-        }
+    if (!result.ok) {
+      showToast(resolveAttendanceErrorMessage(result.error), 'error');
+      return;
+    }
 
-        if (!result.data) {
-          setAttendance(previous);
-          showToast('조퇴 정보가 확인되지 않아요.', 'error');
-          return;
-        }
+    showToast('조퇴가 기록되었어요.', 'success');
+  }, [attendanceActions, showToast]);
 
-        setAttendance(deriveAttendanceState(result.data));
-        showToast('조퇴가 기록되었어요.', 'success');
-      })();
-    });
-  }, [attendance, isPending, showToast]);
+  const handleClockOut = useCallback(async () => {
+    if (attendanceActions.isMutating) return;
 
-  const handleClockOut = useCallback(() => {
-    if (isPending || attendance.status === 'none') return;
+    const result = await attendanceActions.checkOut.mutateAsync();
 
-    const nowIso = new Date().toISOString();
-    const previous = attendance;
-    const optimistic: AttendanceViewState = {
-      ...attendance,
-      status: 'out',
-      clockOutAt: nowIso,
-      workMinutes:
-        attendance.status === 'early'
-          ? diffMinutes(attendance.clockInAt, attendance.earlyLeaveAt)
-          : diffMinutes(attendance.clockInAt, nowIso),
-    };
+    if (!result.ok) {
+      showToast(resolveAttendanceErrorMessage(result.error), 'error');
+      return;
+    }
 
-    setAttendance(optimistic);
-
-    startTransition(() => {
-      void (async () => {
-        const result = await requestClockOut();
-        if (!result.ok) {
-          setAttendance(previous);
-          const errorMessage =
-            result.error === 'UNAUTHENTICATED'
-              ? '로그인이 필요해요.'
-              : result.error.includes('No clock-in record')
-                ? '오늘 출근 기록이 없습니다.'
-                : '퇴근 처리에 실패했어요.';
-          showToast(errorMessage, 'error');
-          return;
-        }
-
-        if (!result.data) {
-          setAttendance(previous);
-          showToast('퇴근 정보가 확인되지 않아요.', 'error');
-          return;
-        }
-
-        setAttendance(deriveAttendanceState(result.data));
-        await refreshRate();
-        showToast('퇴근 완료! 수고하셨습니다.', 'success');
-      })();
-    });
-  }, [attendance, isPending, refreshRate, showToast]);
+    showToast('퇴근 완료! 수고하셨습니다.', 'success');
+  }, [attendanceActions, showToast]);
 
   return {
     lifecycle,
@@ -319,14 +253,14 @@ export function useAttendance(
     attendanceRate,
     todayMinutes,
     isLoading: lifecycle === 'loading',
-    isMutating: isPending,
+    isMutating: attendanceActions.isMutating,
     toast,
     dismissToast,
-    refresh: loadInitial,
+    refresh,
     actions: {
-      clockIn: handleClockIn,
-      earlyLeave: handleEarlyLeave,
-      clockOut: handleClockOut,
+      clockIn: () => void handleClockIn(),
+      earlyLeave: () => void handleEarlyLeave(),
+      clockOut: () => void handleClockOut(),
     },
     mode,
     error,

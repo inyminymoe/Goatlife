@@ -18,7 +18,7 @@ import {
 import { createServerSupabase } from '@/lib/supabase/server';
 
 const AttendanceCard = dynamicImport(
-  () => import('@/components/home/AttendanceCard'),
+  () => import('@/components/features/attendance/AttendanceCard'),
   {
     loading: () => (
       <section className="bg-grey-100 rounded-[5px] p-6 animate-pulse">

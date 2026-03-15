@@ -102,7 +102,7 @@ export default function ExecQuotesAdmin() {
         <h2 className="brand-h3 text-grey-900">임원진 명언 관리</h2>
         <div className="ml-auto flex gap-2">
           <input
-            className="border border-grey-300 rounded px-3 py-1 text-sm"
+            className="border border-grey-200 rounded px-3 py-1 text-sm"
             placeholder="메시지 검색"
             value={q}
             onChange={e => setQ(e.target.value)}
@@ -121,12 +121,12 @@ export default function ExecQuotesAdmin() {
       {/* 생성 폼 */}
       <form
         onSubmit={onCreate}
-        className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end outline outline-1 outline-grey-200 p-4 rounded bg-white"
+        className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end outline outline-1 outline-grey-200 p-4 rounded bg-dark"
       >
         <div className="flex flex-col gap-1">
           <label className="text-xs text-grey-600">이름</label>
           <input
-            className="border border-grey-300 rounded px-3 py-2 text-sm"
+            className="border border-grey-200 rounded px-3 py-2 text-sm"
             placeholder="갓끼"
             value={form.author_name}
             onChange={e => setForm({ ...form, author_name: e.target.value })}
@@ -136,7 +136,7 @@ export default function ExecQuotesAdmin() {
         <div className="flex flex-col gap-1">
           <label className="text-xs text-grey-600">직책</label>
           <select
-            className="border border-grey-300 rounded px-3 py-2 text-sm"
+            className="border border-grey-200 rounded px-3 py-2 text-sm"
             value={form.author_title}
             onChange={e =>
               setForm({
@@ -153,7 +153,7 @@ export default function ExecQuotesAdmin() {
         <div className="flex flex-col gap-1 md:col-span-3">
           <label className="text-xs text-grey-600">메시지 (최대 500자)</label>
           <textarea
-            className="border border-grey-300 rounded px-3 py-2 text-sm resize-none"
+            className="border border-grey-200 rounded px-3 py-2 text-sm resize-none"
             placeholder="일찍 일어나는 새는 수업가서 존다. 8시간 이상 숙면🩷"
             rows={3}
             value={form.message}
@@ -164,7 +164,7 @@ export default function ExecQuotesAdmin() {
         <div className="flex flex-col gap-1 md:col-span-2">
           <label className="text-xs text-grey-600">아바타 URL (옵션)</label>
           <input
-            className="border border-grey-300 rounded px-3 py-2 text-sm"
+            className="border border-grey-200 rounded px-3 py-2 text-sm"
             placeholder="https://example.com/avatar.jpg"
             value={form.avatar_url}
             onChange={e => setForm({ ...form, avatar_url: e.target.value })}
@@ -213,7 +213,7 @@ export default function ExecQuotesAdmin() {
             {data.items.map(q => (
               <li
                 key={q.id}
-                className="p-4 rounded outline outline-1 outline-grey-200 bg-white"
+                className="p-4 rounded outline outline-1 outline-grey-200 bg-dark"
               >
                 <div className="flex items-center gap-2 mb-2">
                   <strong className="text-sm font-medium text-grey-900">

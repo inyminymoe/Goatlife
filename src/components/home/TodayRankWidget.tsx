@@ -36,7 +36,7 @@ export function TodayRankWidget({
   );
 
   const renderError = () => (
-    <div className="mt-4 rounded-[5px] border border-grey-200 bg-white/60 p-4">
+    <div className="mt-4 rounded-[5px] border border-grey-200 bg-dark p-4">
       <p className="body-sm text-grey-600">
         랭킹을 불러오는 중 문제가 발생했어요. 잠시 후 다시 시도해주세요.
       </p>
@@ -97,7 +97,7 @@ export function TodayRankWidget({
     <section className="bg-grey-100 rounded-[5px] p-6 flex flex-col gap-2 md:min-h-[210px]">
       <div className="flex flex-col gap-1">
         <div className="flex items-center gap-1">
-          <Icon icon="icon-park:trophy" className="w-6 h-6 text-primary-500" />
+          <Icon icon="icon-park:trophy" className="w-6 h-6 icon-dark-invert" />
           <h2 className="brand-h3 text-grey-900">Today 갓생이</h2>
         </div>
       </div>
