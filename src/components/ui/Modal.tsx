@@ -109,7 +109,7 @@ export default function Modal({
               transition={{ duration: 0.2 }}
               className={`
                 relative w-full ${sizeClasses[size]}
-                bg-white rounded-lg shadow-2xl
+                bg-dark rounded-lg shadow-2xl
                 flex flex-col
                 max-h-[90vh]
               `}

@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import { BoardPostView } from '@/components/features/board-post/BoardPostView';
 import { CommentSection } from '@/components/features/board-post/comment/CommentSection';
 import { createServerSupabase } from '@/lib/supabase/server';
+import { PostForView } from '@/types/board';
 
 type BoardDetailPageProps = {
   params: Promise<{ postId: string }>;
@@ -33,44 +34,73 @@ export default async function BoardPostPage({
       : `/board?scope=department&dept=${encodeURIComponent(dept ?? DEFAULT_DEPT)}`;
 
   const supabase = await createServerSupabase();
-  const { data: post, error } = await supabase
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const baseQuery = supabase
     .from('board_posts')
     .select(
-      'id, scope, board, dept, topic, title, content, hashtags, author_name, created_at'
+      `
+    *,
+    board_post_likes(user_id),
+    board_post_bookmarks(user_id)
+  `
     )
-    .eq('id', postId)
-    .maybeSingle();
+    .eq('id', postId);
+
+  if (user) {
+    baseQuery
+      .eq('board_post_likes.user_id', user.id)
+      .eq('board_post_bookmarks.user_id', user.id);
+  }
+
+  const { data: post, error } = await baseQuery.maybeSingle();
 
   if (error || !post) {
     console.error('[BoardPostPage] post fetch failed', error);
     notFound();
   }
 
-  const postForView = {
+  const isAuthor = !!user && user.id === post.author_id;
+
+  const postForView: PostForView = {
     id: post.id,
+    scope: post.scope,
+    board: post.board ?? undefined,
+    dept: post.dept ?? undefined,
     topic: post.topic ?? '정보',
     title: post.title,
-    commentCount:
-      ((post as Record<string, unknown>)['comment_count'] as
-        | number
-        | undefined) ?? 0,
-    userName: post.author_name ?? '익명',
-    viewCount:
-      ((post as Record<string, unknown>)['view_count'] as number | undefined) ??
-      0,
-    dateCreated: post.created_at,
     content: post.content,
     hashtags: post.hashtags ?? [],
+    author_id: post.author_id,
+    userName: post.author_name ?? '익명',
+    viewCount: post.view_count ?? 0,
+    commentCount: post.comment_count ?? 0,
+    dateCreated: post.created_at,
+    dateUpdated: post.updated_at,
     boardLabel:
       post.scope === 'company'
         ? (post.board ?? '전사게시판')
         : (post.dept ?? '부서게시판'),
+    likeCount: post.like_count ?? 0,
+    isLiked: (post.board_post_likes ?? []).length > 0,
+    isBookmarked: (post.board_post_bookmarks ?? []).length > 0,
   };
 
   return (
     <main className="col-span-2 max-w-[1440px]">
-      <BoardPostView post={postForView} listHref={listHref} />
-      <CommentSection postId={postId} commentCount={postForView.commentCount} />
+      <BoardPostView
+        post={postForView}
+        listHref={listHref}
+        isAuthor={isAuthor}
+      />
+      <CommentSection
+        postId={postId}
+        postAuthorId={post.author_id}
+        commentCount={postForView.commentCount}
+      />
     </main>
   );
 }

@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import AttendanceDashboardCard from '@/components/features/attendance/AttendanceDashboardCard';
-import AttendanceCard from '@/components/home/AttendanceCard';
+import AttendanceCard from '@/components/features/attendance/AttendanceCard';
 import { Calendar } from '@/components/ui/Calendar';
 import { AttendanceHeatmap } from '@/components/features/attendance/AttendanceHeatmap';
 import { createServerSupabase } from '@/lib/supabase/server';

@@ -8,6 +8,7 @@ import { userAtom } from '@/store/atoms';
 import type { User } from '@/types/user';
 import SupabaseAuthListener from '@/components/SupabaseAuthListener';
 import { ToastProvider } from '@/providers/ToastProvider';
+import { OverlayProvider } from 'overlay-kit';
 
 interface ProvidersProps {
   children: ReactNode;
@@ -41,11 +42,13 @@ export default function Providers({
   return (
     <QueryClientProvider client={queryClient}>
       <JotaiProvider>
-        <ToastProvider>
-          <HydrateUser user={hydratedUser} />
-          <SupabaseAuthListener />
-          {children}
-        </ToastProvider>
+        <OverlayProvider>
+          <ToastProvider>
+            <HydrateUser user={hydratedUser} />
+            <SupabaseAuthListener />
+            {children}
+          </ToastProvider>
+        </OverlayProvider>
       </JotaiProvider>
       <ReactQueryDevtools initialIsOpen={false} />
     </QueryClientProvider>

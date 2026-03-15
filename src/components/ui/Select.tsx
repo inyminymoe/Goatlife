@@ -1,5 +1,5 @@
 'use client';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useId } from 'react';
 import { Icon } from '@iconify/react';
 
 export interface SelectOption {
@@ -28,6 +28,7 @@ export default function Select({
 }: SelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const triggerId = useId();
 
   const getDisplayLabel = () => {
     if (!value) return placeholder;
@@ -40,7 +41,6 @@ export default function Select({
     setIsOpen(false);
   };
 
-  // 외부 클릭 감지
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -79,44 +79,40 @@ export default function Select({
       ref={containerRef}
       className={`ui-component w-full flex flex-col gap-2 ${className}`}
     >
-      {/* Label */}
       {label && (
         <label
-          className="body-sm font-medium font-body"
-          style={{ color: 'var(--color-dark-text)' }}
+          htmlFor={triggerId}
+          className="body-sm font-medium font-body text-grey-900"
         >
           {label}
         </label>
       )}
 
-      {/* Select Container */}
       <div className="relative">
         {/* Trigger Button */}
         <button
+          id={triggerId}
           type="button"
           onClick={() => !disabled && setIsOpen(!isOpen)}
           onKeyDown={handleKeyDown}
           disabled={disabled}
           aria-haspopup="listbox"
           aria-expanded={isOpen}
-          className="w-full px-3 py-2 rounded-[5px] border body-sm font-medium font-body text-left transition-colors focus:outline-none"
-          style={{
-            backgroundColor: disabled ? 'hsl(0, 0%, 92%)' : 'hsl(0, 0%, 100%)',
-            borderColor: isOpen ? 'hsl(212, 100%, 60%)' : 'hsl(0, 0%, 78%)',
-            color: !value
-              ? 'hsl(0, 0%, 78%)'
-              : disabled
-                ? 'hsl(0, 0%, 48%)'
-                : 'hsl(0, 0%, 21%)',
-            cursor: disabled ? 'not-allowed' : 'pointer',
-          }}
+          className={`
+            w-full px-3 py-2 rounded-[5px] border body-sm font-medium font-body text-left
+            bg-dark text-dark border-dark
+            focus:outline-none focus:border-primary-500
+            transition-colors
+            disabled:opacity-50 disabled:cursor-not-allowed
+            ${isOpen ? 'border-primary-500' : ''}
+            ${!value ? 'text-grey-500' : ''}
+          `}
         >
           <div className="flex items-center justify-between">
             <span className="truncate">{getDisplayLabel()}</span>
             <Icon
               icon="material-symbols:keyboard-arrow-down-rounded"
-              className={`w-6 h-6 flex-shrink-0 transition-transform ${isOpen ? 'rotate-180' : ''}`}
-              style={{ color: 'hsl(0, 0%, 48%)' }}
+              className={`w-6 h-6 flex-shrink-0 text-grey-500 transition-transform ${isOpen ? 'rotate-180' : ''}`}
             />
           </div>
         </button>
@@ -125,11 +121,7 @@ export default function Select({
         {isOpen && (
           <div
             role="listbox"
-            className="absolute left-0 top-full mt-1 w-full rounded-[5px] border shadow-lg max-h-60 overflow-y-auto z-50"
-            style={{
-              backgroundColor: 'hsl(0, 0%, 100%)',
-              borderColor: 'hsl(0, 0%, 78%)',
-            }}
+            className="absolute left-0 top-full mt-1 w-full rounded-[5px] border border-dark bg-dark shadow-lg max-h-60 overflow-y-auto z-50"
           >
             {options.map(option => {
               const isSelected = value === option.value;
@@ -140,25 +132,11 @@ export default function Select({
                   role="option"
                   aria-selected={isSelected}
                   onClick={() => handleSelect(option.value)}
-                  className="w-full px-3 py-2 text-left body-sm font-body transition-colors"
-                  style={{
-                    backgroundColor: isSelected
-                      ? 'hsl(210, 18%, 96%)'
-                      : 'transparent',
-                    color: 'hsl(0, 0%, 21%)',
-                    fontWeight: isSelected ? 500 : 400,
-                  }}
-                  onMouseEnter={e => {
-                    if (!isSelected) {
-                      e.currentTarget.style.backgroundColor =
-                        'hsl(210, 18%, 96%)';
-                    }
-                  }}
-                  onMouseLeave={e => {
-                    if (!isSelected) {
-                      e.currentTarget.style.backgroundColor = 'transparent';
-                    }
-                  }}
+                  className={`
+                    w-full px-3 py-2 text-left body-sm font-body text-dark transition-colors
+                    hover:bg-grey-200
+                    ${isSelected ? 'bg-grey-200 font-medium' : 'font-normal'}
+                  `}
                 >
                   {option.label}
                 </button>

@@ -170,12 +170,11 @@ export function DropdownMenuContent({
       role="dialog"
       className={`
         absolute z-50
-        rounded-[5px] border shadow-lg
-        bg-white
+        rounded-[5px] border border-dark shadow-lg
+        bg-dark
         ${placementClass[placement]}
         ${className}
       `}
-      style={{ borderColor: 'hsl(0, 0%, 78%)' }}
       {...rest}
     >
       {children}

@@ -60,7 +60,7 @@ export function AttendanceHeatmap() {
       <div className="mb-6 inline-flex justify-start items-end gap-1">
         <Icon
           icon="icon-park:endocrine"
-          className="w-6 h-6 text-primary-500"
+          className="w-6 h-6 icon-dark-invert"
           aria-hidden="true"
         />
         <h2 className="text-grey-900 text-base font-normal font-['DNF_Bit_Bit_v2']">
@@ -76,7 +76,7 @@ export function AttendanceHeatmap() {
             {MONTH_LABELS.map((label, idx) => (
               <div
                 key={`month-${idx}`}
-                className="h-5 flex items-center justify-end pr-2 text-grey-300 text-xs font-medium font-['S-Core_Dream']"
+                className="h-5 flex items-center justify-end pr-2 text-grey-500 text-xs font-medium font-['S-Core_Dream']"
               >
                 {label}
               </div>
@@ -90,7 +90,7 @@ export function AttendanceHeatmap() {
               {DAY_LABELS.map((label, idx) => (
                 <div
                   key={`day-${idx}`}
-                  className="w-5 text-center text-grey-300 text-xs font-medium font-['S-Core_Dream']"
+                  className="w-5 text-center text-grey-500 text-xs font-medium font-['S-Core_Dream']"
                 >
                   {label}
                 </div>

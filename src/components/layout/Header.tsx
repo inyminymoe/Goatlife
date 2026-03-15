@@ -162,13 +162,13 @@ export default function Header({
               {isMenuOpen && (
                 <div
                   role="menu"
-                  className="absolute right-0 mt-3 w-48 rounded-lg bg-white shadow-[0_10px_30px_rgba(15,23,42,0.2)] overflow-hidden z-50"
+                  className="absolute right-0 mt-3 w-48 rounded-lg bg-dark shadow-[0_10px_30px_rgba(15,23,42,0.2)] overflow-hidden z-50"
                 >
                   <button
                     type="button"
                     onClick={handleLogout}
                     disabled={isSigningOut}
-                    className="text-left px-4 py-2 body-sm text-fixed-grey-900 hover:bg-dark-subtle focus-visible:outline disabled:opacity-50 transition-colors"
+                    className="text-left px-4 py-2 body-sm text-dark hover:bg-grey-200 focus-visible:outline disabled:opacity-50 transition-colors"
                     role="menuitem"
                   >
                     {isSigningOut ? '로그아웃 중...' : '로그아웃'}

@@ -29,7 +29,7 @@ export default function TodoItem({
         shadow-[2px_3px_8px_0px_rgba(0,0,0,0.08)]
         inline-flex items-start gap-2
         transition-colors
-        ${completed ? 'bg-grey-300' : 'bg-white'}
+        ${completed ? 'bg-grey-100' : 'bg-dark'}
       `}
     >
       {/* Checkbox */}
@@ -60,7 +60,7 @@ export default function TodoItem({
       <p
         className={`
           flex-1 body-sm font-medium leading-normal
-          text-fixed-grey-900 ${completed ? 'line-through' : ''}
+          text-dark ${completed ? 'line-through opacity-60' : ''}
         `}
       >
         {text}
@@ -74,7 +74,10 @@ export default function TodoItem({
           className="flex-shrink-0 w-6 h-6 relative hover:bg-grey-100 rounded transition-colors"
           aria-label="설정"
         >
-          <Icon icon="icon-park:more-one" className="w-6 h-6 text-grey-700" />
+          <Icon
+            icon="icon-park:more-one"
+            className="w-6 h-6 icon-dark-invert"
+          />
         </button>
       )}
     </div>

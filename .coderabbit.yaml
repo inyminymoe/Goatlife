@@ -1,4 +1,6 @@
-language: ko
+# yaml-language-server: $schema=https://storage.googleapis.com/coderabbit_public_assets/schema.v2.json
+
+language: "ko-KR"
 reviews:
   auto_review:
     enabled: true

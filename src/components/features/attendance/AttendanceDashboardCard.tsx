@@ -19,7 +19,7 @@ export default function AttendanceDashboardCard() {
       <div className="flex items-end gap-1">
         <Icon
           icon="icon-park:endocrine"
-          className="w-6 h-6 text-grey-900"
+          className="w-6 h-6 icon-dark-invert"
           aria-hidden="true"
         />
         <h2
@@ -33,7 +33,7 @@ export default function AttendanceDashboardCard() {
 
       <div className="grid grid-cols-2 gap-8 items-start">
         <div className="flex flex-col gap-1">
-          <span className="text-sm font-semibold text-grey-300 leading-6">
+          <span className="text-sm font-semibold text-grey-500 leading-6">
             입사한 지
           </span>
           <div className="flex items-end gap-2">
@@ -46,7 +46,7 @@ export default function AttendanceDashboardCard() {
           </div>
         </div>
         <div className="flex flex-col gap-1">
-          <span className="text-sm font-semibold text-grey-300 leading-6">
+          <span className="text-sm font-semibold text-grey-500 leading-6">
             다음 승진까지
           </span>
           <div className="flex items-end gap-2">

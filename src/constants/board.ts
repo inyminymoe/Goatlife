@@ -30,3 +30,13 @@ export function isValidBoard(scope: BoardScope, board?: string, dept?: string) {
 
   return !!(dept && dept.trim());
 }
+
+export function resolveScope(
+  raw: string | undefined,
+  fallback: BoardScope = 'company'
+): BoardScope {
+  if (raw === 'company' || raw === 'department') {
+    return raw;
+  }
+  return fallback;
+}

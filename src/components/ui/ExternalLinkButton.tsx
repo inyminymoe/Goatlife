@@ -41,13 +41,25 @@ export default function ExternalLinkButton({
 }: ExternalLinkButtonProps) {
   const config = platformConfig[platform];
   const displayLabel = label || config.label;
+  let safeUrl: string | null = null;
+
+  try {
+    const parsedUrl = new URL(url);
+    if (parsedUrl.protocol === 'http:' || parsedUrl.protocol === 'https:') {
+      safeUrl = parsedUrl.toString();
+    }
+  } catch {
+    safeUrl = null;
+  }
+
+  if (!safeUrl) return null;
 
   return (
     <a
-      href={url}
+      href={safeUrl}
       target="_blank"
       rel="noopener noreferrer"
-      className="inline-flex items-center gap-1 p-2 bg-white rounded-[5px] shadow-[4px_4px_4px_0px_rgba(47,136,255,0.08)] hover:shadow-[4px_4px_6px_0px_rgba(47,136,255,0.25)] transition-shadow"
+      className="inline-flex items-center gap-1 p-2 bg-dark rounded-[5px] shadow-[4px_4px_4px_0px_rgba(47,136,255,0.08)] hover:shadow-[4px_4px_6px_0px_rgba(47,136,255,0.25)] transition-shadow"
       aria-label={displayLabel}
     >
       <Icon icon={config.icon} className={`w-3.5 h-3.5 ${config.color}`} />

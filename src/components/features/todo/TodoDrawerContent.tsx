@@ -96,7 +96,7 @@ export default function TodoDrawerContent({
         <Button
           variant="outline"
           onClick={handleDelete}
-          className="text-grey-900 border-grey-300 hover:bg-grey-100"
+          className="text-grey-900 border-grey-200 hover:bg-grey-100"
         >
           삭제
         </Button>

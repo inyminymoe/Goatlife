@@ -1,9 +1,676 @@
+'use client';
+
+import { useCallback, useEffect, useState } from 'react';
+import { Icon } from '@iconify/react';
+import {
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  type DragEndEvent,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core';
+import { arrayMove, sortableKeyboardCoordinates } from '@dnd-kit/sortable';
+import BottomSheet from '@/components/ui/BottomSheet';
+import type { RoutineMode, RoutineItemData } from './RoutineItem';
+import type { RoutinePeriod, RoutineState } from './roadmap-card/types';
+import { DEFAULT_ROUTINES } from './roadmap-card/constants';
+import RoutineTimeline from './roadmap-card/RoutineTimeline';
+import RoutineAddContent, {
+  type RoutineAddData,
+} from './roadmap-card/RoutineAddContent';
+import RoutineEditContent from './roadmap-card/RoutineEditContent';
+import {
+  getRoutineItems,
+  createRoutineItem,
+  updateRoutineItem,
+  deleteRoutineItem,
+  reorderRoutineItems,
+} from '@/app/_actions/routineItems';
+import { useToast } from '@/providers/ToastProvider';
+import {
+  ROUTINE_TIMER_START_EVENT,
+  type RoutineTimerStartDetail,
+} from './routineStartEvent';
+
+function toRoutineState(items: RoutineItemData[]): RoutineState {
+  return {
+    am: items.filter(i => i.period === 'AM'),
+    pm: items.filter(i => i.period === 'PM'),
+  };
+}
+
+function isPersistedRoutineId(id: string) {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+    id
+  );
+}
+
 export default function RoadmapCard() {
+  const [routines, setRoutines] = useState<RoutineState>({ am: [], pm: [] });
+  const [isLoading, setIsLoading] = useState(true);
+  const [mode, setMode] = useState<RoutineMode>('view');
+  const [isMenuBottomSheetOpen, setIsMenuBottomSheetOpen] = useState(false);
+  const [isAddBottomSheetOpen, setIsAddBottomSheetOpen] = useState(false);
+  const [isEditBottomSheetOpen, setIsEditBottomSheetOpen] = useState(false);
+  const [isStartBottomSheetOpen, setIsStartBottomSheetOpen] = useState(false);
+  const [selectedPeriod, setSelectedPeriod] = useState<RoutinePeriod>('AM');
+  const [selectedRoutineId, setSelectedRoutineId] = useState<string | null>(
+    null
+  );
+  const [startFrom, setStartFrom] = useState<{
+    period: RoutinePeriod;
+    title: string;
+    url?: string;
+    pomodoro_count?: number;
+  } | null>(null);
+
+  const toast = useToast();
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  // Supabase 로드
+  useEffect(() => {
+    const loadRoutines = async () => {
+      try {
+        const result = await getRoutineItems();
+        if (result.ok) {
+          if (result.data.length === 0) {
+            setRoutines(DEFAULT_ROUTINES);
+          } else {
+            setRoutines(
+              toRoutineState(
+                result.data.map(item => ({
+                  id: item.id,
+                  title: item.title,
+                  category: item.category,
+                  period: item.period,
+                  url: item.url ?? undefined,
+                  pomodoro_count: item.pomodoro_count,
+                }))
+              )
+            );
+          }
+        } else {
+          setRoutines(DEFAULT_ROUTINES);
+        }
+      } catch {
+        setRoutines(DEFAULT_ROUTINES);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadRoutines();
+  }, []);
+
+  const handleAddClick = useCallback(
+    (period: RoutinePeriod) => {
+      if (mode !== 'view') {
+        setMode('view');
+        setIsEditBottomSheetOpen(false);
+        setSelectedRoutineId(null);
+        return;
+      }
+      setSelectedPeriod(period);
+      setIsAddBottomSheetOpen(true);
+    },
+    [mode]
+  );
+
+  const handleItemClick = useCallback(
+    (period: RoutinePeriod, itemId: string) => {
+      if (mode === 'view') {
+        const items = period === 'AM' ? routines.am : routines.pm;
+        const target = items.find(item => item.id === itemId);
+        if (!target) return;
+        setStartFrom({
+          period,
+          title: target.title,
+          url: target.url,
+          pomodoro_count: target.pomodoro_count,
+        });
+        setIsStartBottomSheetOpen(true);
+        return;
+      }
+
+      if (mode !== 'edit') return;
+
+      setSelectedPeriod(period);
+      setSelectedRoutineId(itemId);
+      setIsEditBottomSheetOpen(true);
+    },
+    [mode, routines]
+  );
+
+  const handleStartRoutine = useCallback(() => {
+    const detail: RoutineTimerStartDetail = { title: startFrom?.title };
+    window.dispatchEvent(
+      new CustomEvent<RoutineTimerStartDetail>(ROUTINE_TIMER_START_EVENT, {
+        detail,
+      })
+    );
+    setIsStartBottomSheetOpen(false);
+  }, [startFrom]);
+
+  const handleStartViaLink = useCallback(() => {
+    if (!startFrom?.url) return;
+
+    let safeUrl: string;
+    try {
+      const parsed = new URL(startFrom.url, window.location.origin);
+      if (!['http:', 'https:'].includes(parsed.protocol)) {
+        toast.error('올바른 링크만 열 수 있어요.');
+        return;
+      }
+      safeUrl = parsed.toString();
+    } catch {
+      toast.error('올바른 링크만 열 수 있어요.');
+      return;
+    }
+
+    const opened = window.open(safeUrl, '_blank', 'noopener,noreferrer');
+    if (!opened) {
+      toast.error('팝업이 차단되어 링크를 열 수 없어요.');
+      return;
+    }
+    setIsStartBottomSheetOpen(false);
+  }, [startFrom, toast]);
+
+  const handleDragEnd = useCallback(
+    async (event: DragEndEvent) => {
+      if (mode !== 'reorder') return;
+
+      const { active, over } = event;
+      if (!over || active.id === over.id) return;
+
+      const activeId = String(active.id);
+      const overId = String(over.id);
+      const allItems = [...routines.am, ...routines.pm];
+      const sourceItem = allItems.find(i => i.id === activeId);
+      const targetItem = allItems.find(i => i.id === overId);
+
+      if (!sourceItem || !targetItem) return;
+      if (sourceItem.period !== targetItem.period) return;
+
+      const key = sourceItem.period === 'AM' ? 'am' : 'pm';
+      const items = routines[key];
+      const oldIndex = items.findIndex(i => i.id === activeId);
+      const newIndex = items.findIndex(i => i.id === overId);
+      if (oldIndex < 0 || newIndex < 0) return;
+
+      const reordered = arrayMove(items, oldIndex, newIndex);
+      const hasLocalOnlyItem = reordered.some(
+        item => !isPersistedRoutineId(item.id)
+      );
+
+      setRoutines(prev => ({ ...prev, [key]: reordered }));
+      if (hasLocalOnlyItem) return;
+
+      try {
+        const result = await reorderRoutineItems(
+          reordered.map((item, idx) => ({
+            id: item.id,
+            order_index: (idx + 1) * 1000,
+          }))
+        );
+        if (!result.ok) {
+          throw new Error(result.error);
+        }
+      } catch {
+        setRoutines(prev => ({ ...prev, [key]: items }));
+        toast.error('순서 변경에 실패했습니다. 다시 시도해주세요.');
+      }
+    },
+    [mode, routines, toast]
+  );
+
+  const handleAddRoutine = useCallback(
+    async (data: RoutineAddData) => {
+      const tempId = `temp-${Date.now()}`;
+      const newItem: RoutineItemData = {
+        id: tempId,
+        title: data.title,
+        category: data.category,
+        period: data.period,
+        url: data.url,
+        pomodoro_count: data.pomodoro_count,
+      };
+      const key = data.period === 'AM' ? 'am' : 'pm';
+      setRoutines(prev => ({ ...prev, [key]: [...prev[key], newItem] }));
+      setIsAddBottomSheetOpen(false);
+
+      try {
+        const result = await createRoutineItem({
+          title: data.title,
+          period: data.period,
+          category: data.category,
+          url: data.url,
+          pomodoro_count: data.pomodoro_count,
+        });
+
+        if (result.ok) {
+          const saved = result.data;
+          setRoutines(prev => ({
+            ...prev,
+            [key]: prev[key].map(item =>
+              item.id === tempId ? { ...item, id: saved.id } : item
+            ),
+          }));
+        } else {
+          setRoutines(prev => ({
+            ...prev,
+            [key]: prev[key].filter(item => item.id !== tempId),
+          }));
+          toast.error('루틴 추가에 실패했습니다. 다시 시도해주세요.');
+        }
+      } catch {
+        setRoutines(prev => ({
+          ...prev,
+          [key]: prev[key].filter(item => item.id !== tempId),
+        }));
+        toast.error('루틴 추가에 실패했습니다. 다시 시도해주세요.');
+      }
+    },
+    [toast]
+  );
+
+  const handleSaveRoutine = useCallback(
+    async (data: RoutineAddData) => {
+      if (!selectedRoutineId) return;
+
+      const prevKey = selectedPeriod === 'AM' ? 'am' : 'pm';
+      const newKey = data.period === 'AM' ? 'am' : 'pm';
+      const prevItem = [...routines.am, ...routines.pm].find(
+        i => i.id === selectedRoutineId
+      );
+      if (!prevItem) return;
+      const prevIndex = routines[prevKey].findIndex(
+        i => i.id === selectedRoutineId
+      );
+
+      const updatedItem: RoutineItemData = {
+        ...prevItem,
+        title: data.title,
+        category: data.category,
+        period: data.period,
+        url: data.url,
+        pomodoro_count: data.pomodoro_count,
+      };
+
+      setRoutines(prev => {
+        if (prevKey === newKey) {
+          return {
+            ...prev,
+            [newKey]: prev[newKey].map(item =>
+              item.id === selectedRoutineId ? updatedItem : item
+            ),
+          };
+        }
+
+        const withoutOld = {
+          am: prev.am.filter(i => i.id !== selectedRoutineId),
+          pm: prev.pm.filter(i => i.id !== selectedRoutineId),
+        };
+        return {
+          ...withoutOld,
+          [newKey]: [...withoutOld[newKey], updatedItem],
+        };
+      });
+      setIsEditBottomSheetOpen(false);
+
+      if (!isPersistedRoutineId(selectedRoutineId)) return;
+
+      try {
+        const result = await updateRoutineItem(selectedRoutineId, {
+          title: data.title,
+          period: data.period,
+          category: data.category,
+          url: data.url ?? null,
+          pomodoro_count: data.pomodoro_count,
+        });
+
+        if (!result.ok) {
+          setRoutines(prev => {
+            if (prevKey === newKey) {
+              const list = prev[prevKey].filter(
+                i => i.id !== selectedRoutineId
+              );
+              const restoreIndex =
+                prevIndex >= 0 && prevIndex <= list.length
+                  ? prevIndex
+                  : list.length;
+              return {
+                ...prev,
+                [prevKey]: [
+                  ...list.slice(0, restoreIndex),
+                  prevItem,
+                  ...list.slice(restoreIndex),
+                ],
+              };
+            }
+
+            const withoutNew = {
+              am: prev.am.filter(i => i.id !== selectedRoutineId),
+              pm: prev.pm.filter(i => i.id !== selectedRoutineId),
+            };
+            const prevList = withoutNew[prevKey];
+            const restoreIndex =
+              prevIndex >= 0 && prevIndex <= prevList.length
+                ? prevIndex
+                : prevList.length;
+            return {
+              ...withoutNew,
+              [prevKey]: [
+                ...prevList.slice(0, restoreIndex),
+                prevItem,
+                ...prevList.slice(restoreIndex),
+              ],
+            };
+          });
+          toast.error('루틴 수정에 실패했습니다. 다시 시도해주세요.');
+        }
+      } catch {
+        setRoutines(prev => {
+          if (prevKey === newKey) {
+            const list = prev[prevKey].filter(i => i.id !== selectedRoutineId);
+            const restoreIndex =
+              prevIndex >= 0 && prevIndex <= list.length
+                ? prevIndex
+                : list.length;
+            return {
+              ...prev,
+              [prevKey]: [
+                ...list.slice(0, restoreIndex),
+                prevItem,
+                ...list.slice(restoreIndex),
+              ],
+            };
+          }
+
+          const withoutNew = {
+            am: prev.am.filter(i => i.id !== selectedRoutineId),
+            pm: prev.pm.filter(i => i.id !== selectedRoutineId),
+          };
+          const prevList = withoutNew[prevKey];
+          const restoreIndex =
+            prevIndex >= 0 && prevIndex <= prevList.length
+              ? prevIndex
+              : prevList.length;
+          return {
+            ...withoutNew,
+            [prevKey]: [
+              ...prevList.slice(0, restoreIndex),
+              prevItem,
+              ...prevList.slice(restoreIndex),
+            ],
+          };
+        });
+        toast.error('루틴 수정에 실패했습니다. 다시 시도해주세요.');
+      }
+    },
+    [selectedRoutineId, selectedPeriod, routines, toast]
+  );
+
+  const handleDeleteRoutine = useCallback(async () => {
+    if (!selectedRoutineId) return;
+
+    const key = selectedPeriod === 'AM' ? 'am' : 'pm';
+    const prevIndex = routines[key].findIndex(i => i.id === selectedRoutineId);
+    const prevItem = routines[key].find(i => i.id === selectedRoutineId);
+    if (!prevItem) return;
+
+    setRoutines(prev => ({
+      ...prev,
+      [key]: prev[key].filter(item => item.id !== selectedRoutineId),
+    }));
+    setIsEditBottomSheetOpen(false);
+
+    if (!isPersistedRoutineId(selectedRoutineId)) return;
+
+    try {
+      const result = await deleteRoutineItem(selectedRoutineId);
+      if (!result.ok) {
+        setRoutines(prev => ({
+          ...prev,
+          [key]: [
+            ...prev[key].slice(0, prevIndex),
+            prevItem,
+            ...prev[key].slice(prevIndex),
+          ],
+        }));
+        toast.error('루틴 삭제에 실패했습니다. 다시 시도해주세요.');
+      }
+    } catch {
+      setRoutines(prev => ({
+        ...prev,
+        [key]: [
+          ...prev[key].slice(0, prevIndex),
+          prevItem,
+          ...prev[key].slice(prevIndex),
+        ],
+      }));
+      toast.error('루틴 삭제에 실패했습니다. 다시 시도해주세요.');
+    }
+  }, [selectedRoutineId, selectedPeriod, routines, toast]);
+
+  const editingItem = selectedRoutineId
+    ? [...routines.am, ...routines.pm].find(i => i.id === selectedRoutineId)
+    : null;
+
   return (
-    <section className="bg-grey-100 rounded-[5px] p-6 min-h-[240px]">
-      <div className="flex items-center gap-1">
-        <h2 className="brand-h3 text-grey-900">Roadmap</h2>
-      </div>
-    </section>
+    <>
+      <section
+        className="bg-grey-100 rounded-[5px] p-6 flex flex-col gap-5"
+        aria-label="Roadmap 루틴"
+      >
+        {/* Header */}
+        <div className="flex justify-between items-center">
+          <div className="flex items-end gap-1">
+            <Icon
+              icon="icon-park:road-sign-both"
+              className="size-6 icon-dark-invert"
+            />
+            <h2 className="brand-h3 text-grey-900">Roadmap</h2>
+          </div>
+          <button
+            type="button"
+            aria-label="메뉴"
+            onClick={() => setIsMenuBottomSheetOpen(true)}
+          >
+            <Icon
+              icon="icon-park:more-one"
+              className="size-6 icon-dark-invert"
+            />
+          </button>
+        </div>
+
+        {/* Timeline */}
+        {isLoading ? (
+          <div className="flex flex-col gap-2 animate-pulse">
+            <div className="h-8 bg-grey-200 rounded-[5px]" />
+            <div className="h-8 bg-grey-200 rounded-[5px]" />
+          </div>
+        ) : (
+          <DndContext
+            id="roadmap-routine-dnd"
+            sensors={sensors}
+            onDragEnd={handleDragEnd}
+          >
+            <div className="flex flex-col gap-2">
+              <RoutineTimeline
+                period="AM"
+                items={routines.am}
+                onAddClick={handleAddClick}
+                mode={mode}
+                onItemClick={handleItemClick}
+              />
+              <RoutineTimeline
+                period="PM"
+                items={routines.pm}
+                onAddClick={handleAddClick}
+                mode={mode}
+                onItemClick={handleItemClick}
+              />
+            </div>
+          </DndContext>
+        )}
+
+        {/* Action Button */}
+        <button
+          type="button"
+          className="w-full px-20 py-2 bg-white rounded-[5px] flex items-center justify-center"
+          onClick={() => {
+            const firstRoutine = routines.am[0] ?? routines.pm[0];
+            setStartFrom(
+              firstRoutine
+                ? {
+                    period: firstRoutine.period,
+                    title: firstRoutine.title,
+                    url: firstRoutine.url,
+                    pomodoro_count: firstRoutine.pomodoro_count,
+                  }
+                : null
+            );
+            setIsStartBottomSheetOpen(true);
+          }}
+        >
+          <span className="text-fixed-grey-900 text-14 font-semibold">
+            루틴 시작하기
+          </span>
+        </button>
+      </section>
+
+      {/* 메뉴 BottomSheet */}
+      <BottomSheet
+        open={isMenuBottomSheetOpen}
+        onClose={() => setIsMenuBottomSheetOpen(false)}
+        title="설정"
+      >
+        <div className="flex flex-col gap-2">
+          <button
+            type="button"
+            className="w-full px-4 py-3 text-left text-14 font-medium text-grey-900"
+            onClick={() => {
+              setMode('edit');
+              setIsMenuBottomSheetOpen(false);
+            }}
+          >
+            루틴 수정
+          </button>
+          <button
+            type="button"
+            className="w-full px-4 py-3 text-left text-14 font-medium text-grey-900"
+            onClick={() => {
+              setMode('reorder');
+              setIsMenuBottomSheetOpen(false);
+            }}
+          >
+            순서 변경
+          </button>
+        </div>
+      </BottomSheet>
+
+      {/* Add BottomSheet */}
+      <BottomSheet
+        open={isAddBottomSheetOpen}
+        onClose={() => setIsAddBottomSheetOpen(false)}
+        title="루틴 관리"
+      >
+        <RoutineAddContent
+          key={selectedPeriod}
+          defaultPeriod={selectedPeriod}
+          onSave={handleAddRoutine}
+          onClose={() => setIsAddBottomSheetOpen(false)}
+        />
+      </BottomSheet>
+
+      {/* Edit BottomSheet */}
+      <BottomSheet
+        open={isEditBottomSheetOpen}
+        onClose={() => setIsEditBottomSheetOpen(false)}
+        title="루틴 관리"
+      >
+        {editingItem && (
+          <RoutineEditContent
+            key={editingItem.id}
+            initialTitle={editingItem.title}
+            initialUrl={editingItem.url}
+            initialPeriod={editingItem.period}
+            initialPomodoroCount={editingItem.pomodoro_count ?? 1}
+            initialCategory={editingItem.category}
+            onSave={handleSaveRoutine}
+            onDelete={handleDeleteRoutine}
+            onClose={() => setIsEditBottomSheetOpen(false)}
+          />
+        )}
+      </BottomSheet>
+
+      {/* Start BottomSheet */}
+      <BottomSheet
+        open={isStartBottomSheetOpen}
+        onClose={() => setIsStartBottomSheetOpen(false)}
+        title="루틴 시작"
+      >
+        <div className="w-full flex flex-col gap-6">
+          <div className="w-full flex flex-col gap-2">
+            <p className="body-md font-medium text-dark leading-6">
+              {startFrom
+                ? `'${startFrom.title}' 시간을 시작할까요?`
+                : '루틴 타이머를 시작할까요?'}
+            </p>
+            {!startFrom && (
+              <p className="body-xs text-grey-500 leading-5">
+                시작할 루틴을 선택하면 해당 지점부터 타이머가 시작됩니다.
+              </p>
+            )}
+          </div>
+
+          <div className="w-full inline-flex items-center gap-4">
+            <button
+              type="button"
+              className="flex-1 px-6 py-3 bg-primary-500 rounded-[5px] inline-flex justify-center items-center gap-2 leading-none disabled:opacity-40"
+              onClick={handleStartViaLink}
+              disabled={!startFrom?.url}
+            >
+              <Icon
+                icon="mingcute:link-fill"
+                className="w-4 h-4 shrink-0 leading-none text-fixed-white [filter:drop-shadow(1px_0_0_var(--color-fixed-grey-900))_drop-shadow(-1px_0_0_var(--color-fixed-grey-900))_drop-shadow(0_1px_0_var(--color-fixed-grey-900))_drop-shadow(0_-1px_0_var(--color-fixed-grey-900))]"
+                aria-hidden="true"
+              />
+              <span className="text-14 font-semibold leading-none text-fixed-white translate-y-px">
+                링크로 이동하기
+              </span>
+            </button>
+            <button
+              type="button"
+              className="flex-1 px-6 py-3 bg-dark border border-dark rounded-[5px] inline-flex justify-center items-center gap-2 leading-none hover:bg-grey-200 transition-colors"
+              onClick={handleStartRoutine}
+            >
+              <span
+                className="relative inline-flex w-4 h-4 shrink-0 items-center justify-center leading-none"
+                aria-hidden="true"
+              >
+                <Icon
+                  icon="mingcute:play-fill"
+                  className="absolute inset-0 w-4 h-4 text-fixed-grey-900 scale-125"
+                />
+                <Icon
+                  icon="mingcute:play-fill"
+                  className="absolute inset-0 w-4 h-4 text-fixed-white"
+                />
+              </span>
+              <span className="text-14 font-semibold leading-none text-dark translate-y-px">
+                타이머 시작하기
+              </span>
+            </button>
+          </div>
+        </div>
+      </BottomSheet>
+    </>
   );
 }
