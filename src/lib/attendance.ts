@@ -204,6 +204,7 @@ export function createAttendanceSummary(
     record => record.status === 'vacation'
   ).length;
   const attendedDays = presentDays + lateDays + earlyLeaveDays;
+  // TODO: absent 레코드 자동 생성 플로우 구현 후 totalDays를 기간 일수 기준으로 변경
   const totalDays = records.length;
   const totalWorkMinutes = records.reduce(
     (sum, record) => sum + record.workMinutes,

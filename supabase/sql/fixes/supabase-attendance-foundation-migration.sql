@@ -98,6 +98,11 @@ BEGIN
     RAISE EXCEPTION 'Already clocked in today';
   END IF;
 
+  IF v_existing_log.id IS NOT NULL
+     AND v_existing_log.status IN ('vacation', 'absent') THEN
+    RAISE EXCEPTION 'Attendance already finalized for today';
+  END IF;
+
   v_status := CASE
     WHEN (timezone('Asia/Seoul', NOW()))::time > TIME '09:00' THEN 'late'
     ELSE 'present'
@@ -129,6 +134,7 @@ BEGIN
     work_minutes = 0,
     status = v_status,
     updated_at = NOW()
+  WHERE attendance_logs.status NOT IN ('vacation', 'absent')
   RETURNING * INTO v_result;
 
   RETURN row_to_json(v_result);

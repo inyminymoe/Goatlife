@@ -198,7 +198,11 @@ export function useAttendance(
   }, [attendance, liveMinutes]);
 
   const attendanceRate = summaryQuery.summary?.attendanceRate ?? 0;
-  const error = todayQuery.error ?? summaryQuery.error ?? null;
+  // UNAUTHENTICATED는 auth guard가 리다이렉트 처리하므로 소비자에게 노출하지 않음
+  const error =
+    (todayQuery.error !== 'UNAUTHENTICATED' ? todayQuery.error : null) ??
+    (summaryQuery.error !== 'UNAUTHENTICATED' ? summaryQuery.error : null) ??
+    null;
 
   const refresh = useCallback(async () => {
     await Promise.all([todayQuery.refetch(), summaryQuery.refetch()]);

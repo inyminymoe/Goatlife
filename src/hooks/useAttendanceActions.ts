@@ -22,28 +22,22 @@ export function useAttendanceActions() {
 
   const checkIn = useMutation({
     mutationFn: requestCheckIn,
-    onSuccess: async result => {
-      if (result.ok) {
-        await invalidateAttendanceQueries(queryClient);
-      }
+    onSettled: async () => {
+      await invalidateAttendanceQueries(queryClient);
     },
   });
 
   const earlyLeave = useMutation({
     mutationFn: requestEarlyLeave,
-    onSuccess: async result => {
-      if (result.ok) {
-        await invalidateAttendanceQueries(queryClient);
-      }
+    onSettled: async () => {
+      await invalidateAttendanceQueries(queryClient);
     },
   });
 
   const checkOut = useMutation({
     mutationFn: requestCheckOut,
-    onSuccess: async result => {
-      if (result.ok) {
-        await invalidateAttendanceQueries(queryClient);
-      }
+    onSettled: async () => {
+      await invalidateAttendanceQueries(queryClient);
     },
   });
 

@@ -86,7 +86,7 @@ export async function fetchAttendanceRate(): Promise<AttendanceRateResult> {
 
 export async function requestCheckIn() {
   try {
-    return await withTimeout(serverCheckIn());
+    return await serverCheckIn();
   } catch (error) {
     console.error('[services/attendance] requestCheckIn failed', error);
     return { ok: false as const, error: 'UNKNOWN' };
@@ -95,7 +95,7 @@ export async function requestCheckIn() {
 
 export async function requestEarlyLeave() {
   try {
-    return await withTimeout(serverEarlyLeave());
+    return await serverEarlyLeave();
   } catch (error) {
     console.error('[services/attendance] requestEarlyLeave failed', error);
     return { ok: false as const, error: 'UNKNOWN' };
@@ -104,7 +104,7 @@ export async function requestEarlyLeave() {
 
 export async function requestCheckOut() {
   try {
-    return await withTimeout(serverCheckOut());
+    return await serverCheckOut();
   } catch (error) {
     console.error('[services/attendance] requestCheckOut failed', error);
     return { ok: false as const, error: 'UNKNOWN' };
