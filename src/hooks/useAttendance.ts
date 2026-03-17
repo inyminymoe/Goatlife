@@ -3,6 +3,7 @@
 import {
   ATTENDANCE_ERROR_MESSAGES,
   calculateWorkMinutes,
+  calculateWorkSeconds,
 } from '@/lib/attendance';
 import { useAttendanceActions } from '@/hooks/useAttendanceActions';
 import { useAttendanceSummary } from '@/hooks/useAttendanceSummary';
@@ -32,7 +33,7 @@ export interface UseAttendanceResult {
   lifecycle: AttendanceLifecycle;
   attendance: AttendanceViewState;
   attendanceRate: number;
-  todayMinutes: number;
+  todaySeconds: number;
   isLoading: boolean;
   isMutating: boolean;
   toast: ToastState;
@@ -120,7 +121,7 @@ export function useAttendance(
 ): UseAttendanceResult {
   const { mode = 'compact' } = options;
   const [toast, setToast] = useState<ToastState>(null);
-  const [liveMinutes, setLiveMinutes] = useState(0);
+  const [liveSeconds, setLiveSeconds] = useState(0);
 
   const todayQuery = useAttendanceToday();
   const summaryQuery = useAttendanceSummary({ period: 'month' });
@@ -142,18 +143,18 @@ export function useAttendance(
 
   useEffect(() => {
     if (attendance.status !== 'in' || !attendance.clockInAt) {
-      setLiveMinutes(0);
+      setLiveSeconds(0);
       return;
     }
 
-    const updateMinutes = () => {
-      setLiveMinutes(
-        calculateWorkMinutes(attendance.clockInAt, new Date().toISOString())
+    const updateSeconds = () => {
+      setLiveSeconds(
+        calculateWorkSeconds(attendance.clockInAt, new Date().toISOString())
       );
     };
 
-    updateMinutes();
-    const timer = setInterval(updateMinutes, 10_000);
+    updateSeconds();
+    const timer = setInterval(updateSeconds, 1_000);
 
     return () => clearInterval(timer);
   }, [attendance.clockInAt, attendance.status]);
@@ -178,24 +179,24 @@ export function useAttendance(
     todayQuery.isLoading,
   ]);
 
-  const todayMinutes = useMemo(() => {
+  const todaySeconds = useMemo(() => {
     switch (attendance.status) {
       case 'in':
-        return liveMinutes;
+        return liveSeconds;
       case 'early':
         return (
-          attendance.workMinutes ||
-          calculateWorkMinutes(attendance.clockInAt, attendance.earlyLeaveAt)
+          calculateWorkSeconds(attendance.clockInAt, attendance.earlyLeaveAt) ||
+          attendance.workMinutes * 60
         );
       case 'out':
         return (
-          attendance.workMinutes ||
-          calculateWorkMinutes(attendance.clockInAt, attendance.clockOutAt)
+          calculateWorkSeconds(attendance.clockInAt, attendance.clockOutAt) ||
+          attendance.workMinutes * 60
         );
       default:
         return 0;
     }
-  }, [attendance, liveMinutes]);
+  }, [attendance, liveSeconds]);
 
   const attendanceRate = summaryQuery.summary?.attendanceRate ?? 0;
   // UNAUTHENTICATED는 auth guard가 리다이렉트 처리하므로 소비자에게 노출하지 않음
@@ -251,7 +252,7 @@ export function useAttendance(
     lifecycle,
     attendance,
     attendanceRate,
-    todayMinutes,
+    todaySeconds,
     isLoading: lifecycle === 'loading',
     isMutating: attendanceActions.isMutating,
     toast,

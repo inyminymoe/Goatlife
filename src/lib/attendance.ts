@@ -8,6 +8,7 @@ import type {
 } from '@/types/attendance';
 
 const KST_TIME_ZONE = 'Asia/Seoul';
+const MS_IN_SECOND = 1_000;
 const MS_IN_MINUTE = 60_000;
 
 type AttendanceRowStatus = AttendanceStatus | 'none' | 'in' | 'early' | 'out';
@@ -115,6 +116,21 @@ export function calculateWorkMinutes(
   }
 
   return Math.round(diff / MS_IN_MINUTE);
+}
+
+export function calculateWorkSeconds(
+  checkInAt: string | null,
+  checkOutAt: string | null
+) {
+  if (!checkInAt || !checkOutAt) return 0;
+
+  const diff = new Date(checkOutAt).getTime() - new Date(checkInAt).getTime();
+
+  if (Number.isNaN(diff) || diff <= 0) {
+    return 0;
+  }
+
+  return Math.floor(diff / MS_IN_SECOND);
 }
 
 export function isLateCheckIn(checkInAt: string | null) {
