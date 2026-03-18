@@ -1,11 +1,11 @@
 import {
   checkIn as serverCheckIn,
   checkOut as serverCheckOut,
-  earlyLeave as serverEarlyLeave,
   getAttendanceLogs as serverGetAttendanceLogs,
   getAttendanceRate as serverGetAttendanceRate,
   getAttendanceSummary as serverGetAttendanceSummary,
   getAttendanceToday as serverGetAttendanceToday,
+  undoClockOut as serverUndoClockOut,
 } from '@/app/_actions/attendance';
 import type {
   AttendanceErrorCode,
@@ -93,20 +93,20 @@ export async function requestCheckIn() {
   }
 }
 
-export async function requestEarlyLeave() {
+export async function requestCheckOut(workDate?: string) {
   try {
-    return await serverEarlyLeave();
+    return await serverCheckOut(workDate);
   } catch (error) {
-    console.error('[services/attendance] requestEarlyLeave failed', error);
+    console.error('[services/attendance] requestCheckOut failed', error);
     return { ok: false as const, error: 'UNKNOWN' };
   }
 }
 
-export async function requestCheckOut() {
+export async function requestUndoClockOut(workDate?: string) {
   try {
-    return await serverCheckOut();
+    return await serverUndoClockOut(workDate);
   } catch (error) {
-    console.error('[services/attendance] requestCheckOut failed', error);
+    console.error('[services/attendance] requestUndoClockOut failed', error);
     return { ok: false as const, error: 'UNKNOWN' };
   }
 }

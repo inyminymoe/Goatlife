@@ -26,8 +26,8 @@ interface AttendanceViewProps {
   onDismissToast: () => void;
   actions: {
     clockIn: () => void;
-    earlyLeave: () => void;
     clockOut: () => void;
+    undoClockOut?: () => void;
   };
   mode?: AttendanceViewMode;
 }
@@ -82,16 +82,18 @@ export default function AttendanceView({
   mode = 'compact',
 }: AttendanceViewProps) {
   const [isClockOutSheetOpen, setIsClockOutSheetOpen] = useState(false);
+  const isClockInLocked =
+    attendance.resultStatus === 'vacation' ||
+    attendance.resultStatus === 'absent';
 
   const operationStatus = useMemo(() => {
-    switch (attendance.status) {
-      case 'in':
+    switch (attendance.operationStatus) {
+      case 'working':
         return {
           label: '근무 중',
           badgeClassName: 'attendance-status-badge-live',
         };
-      case 'out':
-      case 'early':
+      case 'completed':
         return {
           label: '퇴근',
           badgeClassName: 'attendance-status-badge-complete',
@@ -102,7 +104,7 @@ export default function AttendanceView({
           badgeClassName: 'attendance-status-badge-idle',
         };
     }
-  }, [attendance.status]);
+  }, [attendance.operationStatus]);
 
   const formattedToday = useMemo(
     () => formatDuration(todaySeconds),
@@ -116,57 +118,77 @@ export default function AttendanceView({
   );
 
   const todaySecondaryLabel = useMemo(() => {
-    switch (attendance.status) {
-      case 'in':
-        return '동안 근무중';
-      case 'out':
-      case 'early':
+    switch (attendance.operationStatus) {
+      case 'working':
+        return '동안 근무 중';
+      case 'completed':
         return '동안 근무함';
       default:
         return '근무 전';
     }
-  }, [attendance.status]);
+  }, [attendance.operationStatus]);
 
   const primaryButton = useMemo(() => {
-    switch (attendance.status) {
-      case 'out':
-      case 'early':
+    switch (attendance.operationStatus) {
+      case 'before_work':
         return {
           label: '출근하기',
+          variant: 'primary' as const,
+          onClick: actions.clockIn,
+          disabled: isClockInLocked || isMutating,
+        };
+      case 'working':
+        return {
+          label: '출근 완료',
           variant: 'primary' as const,
           onClick: actions.clockIn,
           disabled: true,
         };
       default:
         return {
-          label: '출근하기',
+          label: '퇴근 완료',
           variant: 'primary' as const,
           onClick: actions.clockIn,
-          disabled: attendance.status === 'in' || isMutating,
+          disabled: true,
         };
     }
-  }, [actions.clockIn, attendance.status, isMutating]);
+  }, [
+    actions.clockIn,
+    attendance.operationStatus,
+    isClockInLocked,
+    isMutating,
+  ]);
 
   const secondaryButton = useMemo(() => {
-    switch (attendance.status) {
-      case 'none':
-      case 'out':
-      case 'early':
-        return {
-          label: '퇴근하기',
-          variant: 'text' as const,
-          onClick: actions.clockOut,
-          disabled: true,
-        };
-      default:
+    switch (attendance.operationStatus) {
+      case 'working':
         return {
           label: '퇴근하기',
           variant: 'text' as const,
           onClick: actions.clockOut,
           disabled: isMutating,
         };
+      case 'completed':
+        return {
+          label: '퇴근취소',
+          variant: 'text' as const,
+          onClick: actions.undoClockOut ?? (() => {}),
+          disabled: isMutating,
+        };
+      default:
+        return {
+          label: '퇴근하기',
+          variant: 'text' as const,
+          onClick: actions.clockOut,
+          disabled: true,
+        };
     }
-  }, [actions.clockOut, attendance.status, isMutating]);
+  }, [
+    actions.clockOut,
+    actions.undoClockOut,
+    attendance.operationStatus,
+    isMutating,
+  ]);
 
   const openClockOutSheet = useCallback(() => {
     if (secondaryButton.disabled) return;
@@ -270,7 +292,11 @@ export default function AttendanceView({
             variant={secondaryButton.variant}
             fullWidth
             disabled={secondaryButton.disabled}
-            onClick={openClockOutSheet}
+            onClick={
+              attendance.operationStatus === 'working'
+                ? openClockOutSheet
+                : secondaryButton.onClick
+            }
             className="px-4 py-3 font-semibold"
           >
             {secondaryButton.label}
@@ -294,9 +320,6 @@ export default function AttendanceView({
               {isUnderDailyTarget
                 ? `아직 목표 근무 시간 ${targetDurationLabel}을 채우지 않았어요. 지금 퇴근하면 오늘 근무가 이 시점 기준으로 종료됩니다.`
                 : '지금 퇴근하면 오늘 근무가 종료됩니다.'}
-            </p>
-            <p className="body-xs text-grey-500">
-              실수로 눌렀다면 계속 근무하기를 눌러 돌아갈 수 있어요.
             </p>
           </div>
 

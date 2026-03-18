@@ -13,11 +13,14 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 export type AttendanceMode = 'compact' | 'full';
 export type AttendanceLifecycle = 'idle' | 'loading' | 'ready' | 'error';
+export type AttendanceOperationStatus = 'before_work' | 'working' | 'completed';
 
 export type ToastState = { message: string; type: 'success' | 'error' } | null;
 
 export type AttendanceViewState = {
-  status: 'none' | 'in' | 'early' | 'out';
+  date: string | null;
+  operationStatus: AttendanceOperationStatus;
+  resultStatus: AttendanceRecord['status'] | null;
   clockInAt: string | null;
   earlyLeaveAt: string | null;
   clockOutAt: string | null;
@@ -33,6 +36,10 @@ export interface UseAttendanceResult {
   lifecycle: AttendanceLifecycle;
   attendance: AttendanceViewState;
   attendanceRate: number;
+  operationStatus: AttendanceOperationStatus;
+  canClockIn: boolean;
+  canClockOut: boolean;
+  canUndoClockOut: boolean;
   todaySeconds: number;
   isLoading: boolean;
   isMutating: boolean;
@@ -41,15 +48,17 @@ export interface UseAttendanceResult {
   refresh: () => Promise<void>;
   actions: {
     clockIn: () => void;
-    earlyLeave: () => void;
     clockOut: () => void;
+    undoClockOut: () => void;
   };
   mode: AttendanceMode;
   error: string | null;
 }
 
 const initialAttendanceState: AttendanceViewState = {
-  status: 'none',
+  date: null,
+  operationStatus: 'before_work',
+  resultStatus: null,
   clockInAt: null,
   earlyLeaveAt: null,
   clockOutAt: null,
@@ -75,45 +84,22 @@ function deriveAttendanceState(
     return initialAttendanceState;
   }
 
-  if (record.status === 'vacation' || record.status === 'absent') {
-    return initialAttendanceState;
-  }
+  const completedAt = record.checkOutAt ?? record.earlyLeaveAt;
 
-  if (record.status === 'early_leave') {
-    return {
-      status: 'early',
-      clockInAt: record.checkInAt,
-      earlyLeaveAt: record.earlyLeaveAt,
-      clockOutAt: record.checkOutAt,
-      workMinutes:
-        record.workMinutes ||
-        calculateWorkMinutes(record.checkInAt, record.earlyLeaveAt),
-    };
-  }
-
-  if (record.checkOutAt) {
-    return {
-      status: 'out',
-      clockInAt: record.checkInAt,
-      earlyLeaveAt: record.earlyLeaveAt,
-      clockOutAt: record.checkOutAt,
-      workMinutes:
-        record.workMinutes ||
-        calculateWorkMinutes(record.checkInAt, record.checkOutAt),
-    };
-  }
-
-  if (record.checkInAt) {
-    return {
-      status: 'in',
-      clockInAt: record.checkInAt,
-      earlyLeaveAt: record.earlyLeaveAt,
-      clockOutAt: record.checkOutAt,
-      workMinutes: record.workMinutes,
-    };
-  }
-
-  return initialAttendanceState;
+  return {
+    date: record.date,
+    operationStatus: completedAt
+      ? 'completed'
+      : record.checkInAt
+        ? 'working'
+        : 'before_work',
+    resultStatus: record.status,
+    clockInAt: record.checkInAt,
+    earlyLeaveAt: record.earlyLeaveAt,
+    clockOutAt: record.checkOutAt,
+    workMinutes:
+      record.workMinutes || calculateWorkMinutes(record.checkInAt, completedAt),
+  };
 }
 
 export function useAttendance(
@@ -142,7 +128,7 @@ export function useAttendance(
   );
 
   useEffect(() => {
-    if (attendance.status !== 'in' || !attendance.clockInAt) {
+    if (attendance.operationStatus !== 'working' || !attendance.clockInAt) {
       setLiveSeconds(0);
       return;
     }
@@ -157,7 +143,7 @@ export function useAttendance(
     const timer = setInterval(updateSeconds, 1_000);
 
     return () => clearInterval(timer);
-  }, [attendance.clockInAt, attendance.status]);
+  }, [attendance.clockInAt, attendance.operationStatus]);
 
   const lifecycle = useMemo<AttendanceLifecycle>(() => {
     if (todayQuery.isLoading || summaryQuery.isLoading) {
@@ -180,23 +166,28 @@ export function useAttendance(
   ]);
 
   const todaySeconds = useMemo(() => {
-    switch (attendance.status) {
-      case 'in':
+    switch (attendance.operationStatus) {
+      case 'working':
         return liveSeconds;
-      case 'early':
+      case 'completed':
         return (
-          calculateWorkSeconds(attendance.clockInAt, attendance.earlyLeaveAt) ||
-          attendance.workMinutes * 60
-        );
-      case 'out':
-        return (
-          calculateWorkSeconds(attendance.clockInAt, attendance.clockOutAt) ||
-          attendance.workMinutes * 60
+          calculateWorkSeconds(
+            attendance.clockInAt,
+            attendance.clockOutAt ?? attendance.earlyLeaveAt
+          ) || attendance.workMinutes * 60
         );
       default:
         return 0;
     }
   }, [attendance, liveSeconds]);
+
+  const operationStatus = attendance.operationStatus;
+  const canClockIn =
+    operationStatus === 'before_work' &&
+    attendance.resultStatus !== 'vacation' &&
+    attendance.resultStatus !== 'absent';
+  const canClockOut = operationStatus === 'working';
+  const canUndoClockOut = operationStatus === 'completed';
 
   const attendanceRate = summaryQuery.summary?.attendanceRate ?? 0;
   // UNAUTHENTICATED는 auth guard가 리다이렉트 처리하므로 소비자에게 노출하지 않음
@@ -222,36 +213,49 @@ export function useAttendance(
     showToast('출근 완료! 활기찬 갓생 보내세요.', 'success');
   }, [attendanceActions, showToast]);
 
-  const handleEarlyLeave = useCallback(async () => {
-    if (attendanceActions.isMutating) return;
-
-    const result = await attendanceActions.earlyLeave.mutateAsync();
-
-    if (!result.ok) {
-      showToast(resolveAttendanceErrorMessage(result.error), 'error');
-      return;
-    }
-
-    showToast('조퇴가 기록되었어요.', 'success');
-  }, [attendanceActions, showToast]);
-
   const handleClockOut = useCallback(async () => {
     if (attendanceActions.isMutating) return;
 
-    const result = await attendanceActions.checkOut.mutateAsync();
+    const result = await attendanceActions.checkOut.mutateAsync(
+      attendance.date ?? undefined
+    );
 
     if (!result.ok) {
       showToast(resolveAttendanceErrorMessage(result.error), 'error');
       return;
     }
 
-    showToast('퇴근 완료! 수고하셨습니다.', 'success');
-  }, [attendanceActions, showToast]);
+    showToast('퇴근 완료! 필요하면 언제든 퇴근취소할 수 있어요.', 'success');
+  }, [attendance.date, attendanceActions, showToast]);
+
+  const handleUndoClockOut = useCallback(async () => {
+    if (attendanceActions.isMutating) return;
+
+    const result = await attendanceActions.undoClockOut.mutateAsync(
+      attendance.date ?? undefined
+    );
+
+    if (!result.ok) {
+      showToast(
+        result.error === 'UNKNOWN'
+          ? '퇴근취소 처리 중 문제가 발생했어요. Supabase SQL이 최신 상태인지 확인해 주세요.'
+          : resolveAttendanceErrorMessage(result.error),
+        'error'
+      );
+      return;
+    }
+
+    showToast('퇴근이 취소되었어요. 계속 근무할 수 있어요.', 'success');
+  }, [attendance.date, attendanceActions, showToast]);
 
   return {
     lifecycle,
     attendance,
     attendanceRate,
+    operationStatus,
+    canClockIn,
+    canClockOut,
+    canUndoClockOut,
     todaySeconds,
     isLoading: lifecycle === 'loading',
     isMutating: attendanceActions.isMutating,
@@ -260,8 +264,8 @@ export function useAttendance(
     refresh,
     actions: {
       clockIn: () => void handleClockIn(),
-      earlyLeave: () => void handleEarlyLeave(),
       clockOut: () => void handleClockOut(),
+      undoClockOut: () => void handleUndoClockOut(),
     },
     mode,
     error,
