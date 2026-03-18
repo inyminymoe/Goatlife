@@ -30,20 +30,16 @@ interface PomodoroTimerResult {
   skipToFocus: () => void;
   resetTimer: () => void;
   endSession: () => void;
-  //  외부(orchestrator)에서 복원할 때 쓰는 함수
   restoreSession: (params: RestoreSessionParams) => void;
 }
 
-// 복원에 필요한 파라미터 타입
 export interface RestoreSessionParams {
   mode: PomodoroMode;
-  startedAt: Date; // 세션이 시작된 실제 시각
-  durationSeconds: number; // 원래 설정된 총 시간
-  pausedSecondsElapsed?: number; // 일시정지된 동안 흐른 시간 (있으면 차감)
+  startedAt: Date;
+  durationSeconds: number;
+  pausedSecondsElapsed?: number;
   totalFocusSeconds?: number;
 }
-
-const MIN_ELAPSED_FOR_STAMP = 1;
 
 export function usePomodoroTimer(
   options: PomodoroTimerOptions = {}
@@ -59,13 +55,11 @@ export function usePomodoroTimer(
     onBreakRecorded,
   } = options;
 
-  // ✅ 콜백을 ref로 관리 → 항상 최신 함수 참조, stale closure 방지
   const onFocusCompleteRef = useRef(onFocusComplete);
   const onBreakCompleteRef = useRef(onBreakComplete);
   const onFocusFailRef = useRef(onFocusFail);
   const onBreakRecordedRef = useRef(onBreakRecorded);
 
-  // 매 렌더마다 최신 콜백으로 업데이트
   useEffect(() => {
     onFocusCompleteRef.current = onFocusComplete;
     onBreakCompleteRef.current = onBreakComplete;
@@ -86,101 +80,105 @@ export function usePomodoroTimer(
 
   const completionNotifiedRef = useRef(false);
   const breakElapsedSecondsRef = useRef(0);
-
-  // setInterval 대신 "언제 시작했는지"를 기준으로 남은 시간을 계산하기 위해
-  // null = 현재 실행 중이 아님
   const startedAtRef = useRef<number | null>(null);
-
-  // 마지막으로 계산된 remainingSeconds를 ref로도 보관
-  // setInterval 콜백에서 최신 값을 클로저 없이 참조하기 위해
   const remainingSecondsRef = useRef(initialFocusMinutes * 60);
 
-  const getElapsedFocusSeconds = useCallback(() => {
-    return focusPresetMinutes * 60 - remainingSeconds;
-  }, [focusPresetMinutes, remainingSeconds]);
+  // ─── timestamp 기반 총 집중시간 추적용 ref ──────────────
+  // focus 모드가 시작된 시각 (pause/모드전환 시 null로 초기화)
+  const focusStartedAtRef = useRef<number | null>(null);
+  // pause 또는 모드 전환 전까지 누적된 집중 시간
+  const accumulatedFocusRef = useRef(0);
+
+  // ─── focus 누적 flush 헬퍼 ──────────────────────────────
+  // pause / 모드전환 / 세션종료 시점에 현재까지 집중 시간을 누적에 반영
+  const flushFocusElapsed = useCallback(() => {
+    if (focusStartedAtRef.current === null) return;
+    const elapsed = (Date.now() - focusStartedAtRef.current) / 1000;
+    accumulatedFocusRef.current += elapsed;
+    focusStartedAtRef.current = null;
+  }, []);
 
   const flushBreakRecord = useCallback(() => {
     if (breakElapsedSecondsRef.current <= 0) return;
-    // ✅ ref로 호출
     onBreakRecordedRef.current?.(breakElapsedSecondsRef.current);
     breakElapsedSecondsRef.current = 0;
-  }, []); // 의존성 없음
+  }, []);
 
+  // ─── 메인 interval ──────────────────────────────────────
   useEffect(() => {
     if (!isRunning) {
-      // 멈출 때 startedAt 초기화
+      // pause 시점: focus 누적 flush
+      if (mode === 'focus') {
+        flushFocusElapsed();
+      }
       startedAtRef.current = null;
       return;
     }
 
-    // 시작 시점 기록
-    // 이미 실행 중이던 타이머가 재시작되는 경우:
-    // remainingSecondsRef에 남은 시간이 있으므로
-    // "지금 시각 - 남은시간만큼 앞"을 startedAt으로 설정해서
-    // 계산 기준점을 맞춰줌
     const now = Date.now();
-
-    // 더 명확하게: 현재 남은 시간이 x초라면,
-    // "x초 전에 시작한 것처럼" 기준점을 잡음
-    // 예) 남은 시간 20:00 → startedAt = 지금 (방금 시작)
-    // 예) 남은 시간 15:00 → startedAt = 5분 전 (이미 5분 경과된 것으로 취급)
     const totalDuration =
       mode === 'focus' ? focusPresetMinutes * 60 : breakPresetMinutes * 60;
     const alreadyElapsed = totalDuration - remainingSecondsRef.current;
     startedAtRef.current = now - alreadyElapsed * 1000;
 
+    // focus 모드 시작 시각 기록 (재개 포함)
+    if (mode === 'focus') {
+      focusStartedAtRef.current = now;
+    }
+
     const interval = window.setInterval(() => {
-      if (startedAtRef.current === null) {
-        return;
-      }
+      if (startedAtRef.current === null) return;
 
       const elapsed = (Date.now() - startedAtRef.current) / 1000;
       const next = Math.max(0, Math.round(totalDuration - elapsed));
 
-      // 이전 값과 같으면 업데이트 안 함 (불필요한 리렌더 방지)
       const prev = remainingSecondsRef.current;
-      if (next === prev) return; // 변화 없으면 스킵
+      if (next === prev) return;
 
-      const delta = prev - next; // 줄어든 초
+      const delta = prev - next;
 
-      // focus 모드일 때 집중 시간 누적
-      // 이전 값 - 현재 값 = 이번 틱에서 줄어든 초
-      if (delta > 0) {
-        if (mode === 'focus') {
-          setTotalFocusSeconds(total => total + delta);
-        } else {
-          breakElapsedSecondsRef.current += delta;
-        }
+      // break 경과 시간은 기존 방식 유지
+      if (delta > 0 && mode === 'break') {
+        breakElapsedSecondsRef.current += delta;
       }
 
-      // ✅ delta 계산 완료 후에 ref 업데이트
       remainingSecondsRef.current = next;
       setRemainingSeconds(next);
+
+      // totalFocusSeconds: timestamp 기반으로 계산
+      if (mode === 'focus' && focusStartedAtRef.current !== null) {
+        const focusElapsed = (Date.now() - focusStartedAtRef.current) / 1000;
+        setTotalFocusSeconds(
+          Math.round(accumulatedFocusRef.current + focusElapsed)
+        );
+      }
     }, 500);
 
     return () => window.clearInterval(interval);
-  }, [isRunning, mode, focusPresetMinutes, breakPresetMinutes]);
-  // 의존성에 remainingSeconds를 넣지 않는 이유:
-  // remainingSeconds가 바뀔 때마다 interval이 재시작되면
-  // startedAt이 계속 리셋돼서 시간이 제대로 안 줄어들기 때문
+  }, [
+    isRunning,
+    mode,
+    focusPresetMinutes,
+    breakPresetMinutes,
+    flushFocusElapsed,
+  ]);
 
-  // 완료 감지
+  // ─── 완료 감지 ──────────────────────────────────────────
   useEffect(() => {
     if (remainingSeconds !== 0 || completionNotifiedRef.current) return;
-
-    console.log('[완료 감지]', mode, '| remainingSeconds:', remainingSeconds);
 
     completionNotifiedRef.current = true;
     setIsRunning(false);
 
     if (mode === 'focus') {
-      // ✅ ref로 호출
+      // 완료 시점 flush → totalFocusSeconds 정확하게 확정
+      flushFocusElapsed();
+      setTotalFocusSeconds(Math.round(accumulatedFocusRef.current));
       onFocusCompleteRef.current?.();
       return;
     }
 
     flushBreakRecord();
-    // ✅ ref로 호출
     onBreakCompleteRef.current?.();
 
     if (autoReturnToFocus) {
@@ -192,11 +190,11 @@ export function usePomodoroTimer(
   }, [
     autoReturnToFocus,
     flushBreakRecord,
+    flushFocusElapsed,
     focusPresetMinutes,
     mode,
     remainingSeconds,
   ]);
-  // ✅ onFocusComplete, onBreakComplete 의존성 제거 (ref로 관리하니까)
 
   useEffect(() => {
     if (remainingSeconds > 0) {
@@ -204,8 +202,7 @@ export function usePomodoroTimer(
     }
   }, [remainingSeconds]);
 
-  // 외부에서 세션 상태를 복원할 때 쓰는 함수
-  // Supabase에서 active_session을 읽어온 뒤 orchestrator가 호출함
+  // ─── restoreSession ─────────────────────────────────────
   const restoreSession = useCallback(
     ({
       mode: restoredMode,
@@ -214,18 +211,23 @@ export function usePomodoroTimer(
       pausedSecondsElapsed = 0,
       totalFocusSeconds: restoredTotal = 0,
     }: RestoreSessionParams) => {
-      // 경과 시간 = 지금 - 시작 시각 - 일시정지로 멈춰있던 시간
       const elapsed =
         (Date.now() - startedAt.getTime()) / 1000 - pausedSecondsElapsed;
       const remaining = Math.max(0, Math.round(durationSeconds - elapsed));
 
+      // focus 모드라면 복원 시점까지 경과한 시간을 누적에 반영
+      const focusElapsedSinceStart =
+        restoredMode === 'focus' ? Math.max(0, elapsed) : 0;
+      accumulatedFocusRef.current = restoredTotal + focusElapsedSinceStart;
+
+      focusStartedAtRef.current = null; // interval 재시작 시 세팅됨
+
       setMode(restoredMode);
       remainingSecondsRef.current = remaining;
       setRemainingSeconds(remaining);
-      setTotalFocusSeconds(restoredTotal);
+      setTotalFocusSeconds(Math.round(accumulatedFocusRef.current));
       completionNotifiedRef.current = false;
 
-      // 남은 시간이 있으면 자동으로 다시 실행
       if (remaining > 0) {
         setIsRunning(true);
       }
@@ -233,6 +235,7 @@ export function usePomodoroTimer(
     []
   );
 
+  // ─── preset 변경 ────────────────────────────────────────
   const setFocusPresetMinutes = useCallback(
     (minutes: number) => {
       setFocusPresetMinutesState(minutes);
@@ -255,6 +258,7 @@ export function usePomodoroTimer(
     [mode]
   );
 
+  // ─── 제어 액션 ──────────────────────────────────────────
   const toggleRunning = useCallback(() => {
     if (!isRunning && remainingSeconds === 0) {
       const newRemaining =
@@ -274,7 +278,10 @@ export function usePomodoroTimer(
   const startBreak = useCallback(() => {
     if (mode === 'break') return;
 
-    // ✅ onFocusFail 호출 제거 - orchestrator가 직접 처리
+    // focus → break 전환 시 집중 시간 flush
+    flushFocusElapsed();
+    setTotalFocusSeconds(Math.round(accumulatedFocusRef.current));
+
     breakElapsedSecondsRef.current = 0;
     completionNotifiedRef.current = false;
     setMode('break');
@@ -282,8 +289,7 @@ export function usePomodoroTimer(
     remainingSecondsRef.current = newRemaining;
     setRemainingSeconds(newRemaining);
     setIsRunning(true);
-  }, [breakPresetMinutes, mode]);
-  // ✅ onFocusFail 의존성 제거
+  }, [breakPresetMinutes, flushFocusElapsed, mode]);
 
   const skipToFocus = useCallback(() => {
     if (mode !== 'break') return;
@@ -297,15 +303,25 @@ export function usePomodoroTimer(
   }, [focusPresetMinutes, mode]);
 
   const resetTimer = useCallback(() => {
+    // focus 모드 reset 시 현재 구간 flush 후 다시 시작 대비 초기화
+    if (mode === 'focus') {
+      flushFocusElapsed();
+      // reset은 현재 타이머만 초기화, 누적 집중시간은 유지
+    }
     setIsRunning(false);
     completionNotifiedRef.current = false;
     const newRemaining =
       mode === 'focus' ? focusPresetMinutes * 60 : breakPresetMinutes * 60;
     remainingSecondsRef.current = newRemaining;
     setRemainingSeconds(newRemaining);
-  }, [breakPresetMinutes, focusPresetMinutes, mode]);
+  }, [breakPresetMinutes, flushFocusElapsed, focusPresetMinutes, mode]);
 
   const endSession = useCallback(() => {
+    // 세션 종료 시 모든 누적 초기화
+    flushFocusElapsed();
+    accumulatedFocusRef.current = 0;
+    focusStartedAtRef.current = null;
+
     setIsRunning(false);
     completionNotifiedRef.current = false;
     breakElapsedSecondsRef.current = 0;
@@ -314,20 +330,25 @@ export function usePomodoroTimer(
     remainingSecondsRef.current = newRemaining;
     setRemainingSeconds(newRemaining);
     setTotalFocusSeconds(0);
-  }, [focusPresetMinutes]);
+  }, [flushFocusElapsed, focusPresetMinutes]);
 
   const startFocus = useCallback(() => {
     if (mode === 'break') {
       flushBreakRecord();
       breakElapsedSecondsRef.current = 0;
     }
+    // focus 새로 시작 시 누적 초기화
+    flushFocusElapsed();
+    accumulatedFocusRef.current = 0;
+    focusStartedAtRef.current = null;
+
     completionNotifiedRef.current = false;
     setMode('focus');
     const newRemaining = focusPresetMinutes * 60;
     remainingSecondsRef.current = newRemaining;
     setRemainingSeconds(newRemaining);
     setIsRunning(true);
-  }, [flushBreakRecord, focusPresetMinutes, mode]);
+  }, [flushBreakRecord, flushFocusElapsed, focusPresetMinutes, mode]);
 
   return {
     mode,
