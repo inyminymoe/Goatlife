@@ -58,7 +58,9 @@ export default function RoadmapCard() {
   const [selectedRoutineId, setSelectedRoutineId] = useState<string | null>(
     null
   );
+
   const [startFrom, setStartFrom] = useState<{
+    id: string;
     period: RoutinePeriod;
     title: string;
     url?: string;
@@ -73,7 +75,6 @@ export default function RoadmapCard() {
     })
   );
 
-  // Supabase 로드
   useEffect(() => {
     const loadRoutines = async () => {
       try {
@@ -128,7 +129,9 @@ export default function RoadmapCard() {
         const items = period === 'AM' ? routines.am : routines.pm;
         const target = items.find(item => item.id === itemId);
         if (!target) return;
+
         setStartFrom({
+          id: target.id,
           period,
           title: target.title,
           url: target.url,
@@ -147,8 +150,12 @@ export default function RoadmapCard() {
     [mode, routines]
   );
 
+  // 개별 루틴 시작 → routines 배열에 단일 항목으로 dispatch
   const handleStartRoutine = useCallback(() => {
-    const detail: RoutineTimerStartDetail = { title: startFrom?.title };
+    if (!startFrom) return;
+    const detail: RoutineTimerStartDetail = {
+      routines: [{ id: startFrom.id, title: startFrom.title }],
+    };
     window.dispatchEvent(
       new CustomEvent<RoutineTimerStartDetail>(ROUTINE_TIMER_START_EVENT, {
         detail,
@@ -218,9 +225,7 @@ export default function RoadmapCard() {
             order_index: (idx + 1) * 1000,
           }))
         );
-        if (!result.ok) {
-          throw new Error(result.error);
-        }
+        if (!result.ok) throw new Error(result.error);
       } catch {
         setRoutines(prev => ({ ...prev, [key]: items }));
         toast.error('순서 변경에 실패했습니다. 다시 시도해주세요.');
@@ -520,23 +525,22 @@ export default function RoadmapCard() {
           </DndContext>
         )}
 
-        {/* Action Button */}
+        {/* 전체 루틴 시작 → AM + PM 전체 배열 dispatch */}
         <button
           type="button"
           className="w-full px-20 py-2 bg-white rounded-[5px] flex items-center justify-center"
           onClick={() => {
-            const firstRoutine = routines.am[0] ?? routines.pm[0];
-            setStartFrom(
-              firstRoutine
-                ? {
-                    period: firstRoutine.period,
-                    title: firstRoutine.title,
-                    url: firstRoutine.url,
-                    pomodoro_count: firstRoutine.pomodoro_count,
-                  }
-                : null
+            const allRoutines = [...routines.am, ...routines.pm];
+            if (allRoutines.length === 0) return;
+            const detail: RoutineTimerStartDetail = {
+              routines: allRoutines.map(r => ({ id: r.id, title: r.title })),
+            };
+            window.dispatchEvent(
+              new CustomEvent<RoutineTimerStartDetail>(
+                ROUTINE_TIMER_START_EVENT,
+                { detail }
+              )
             );
-            setIsStartBottomSheetOpen(true);
           }}
         >
           <span className="text-fixed-grey-900 text-14 font-semibold">

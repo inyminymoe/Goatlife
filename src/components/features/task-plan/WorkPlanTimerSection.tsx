@@ -1,10 +1,14 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import TimerCard from './TimerCard';
 import TimelineCard from './TimelineCard';
 import Toast from '@/components/ui/Toast';
 import { useSessionOrchestrator } from './hooks/useSessionOrchestrator';
+import {
+  ROUTINE_TIMER_START_EVENT,
+  RoutineTimerStartDetail,
+} from './routineStartEvent';
 
 interface ToastState {
   message: string;
@@ -30,6 +34,8 @@ export default function WorkPlanTimerSection() {
     breakPresetMinutes,
     activeRoutine,
     records,
+    startManual,
+    startRoutine,
     handleToggleRunning,
     handleSkip,
     handleReset,
@@ -41,6 +47,26 @@ export default function WorkPlanTimerSection() {
     onToast: showToast,
   });
 
+  //  RoadmapCard dispatch 이벤트 수신 → 타이머 시작
+  useEffect(() => {
+    const handleRoutineStart = (e: Event) => {
+      const { routines } = (e as CustomEvent<RoutineTimerStartDetail>).detail;
+      if (!routines || routines.length === 0) return;
+
+      if (routines.length === 1) {
+        // 개별 루틴 → Manual Mode
+        startManual({ id: routines[0].id, title: routines[0].title });
+      } else {
+        // 전체 루틴 → Routine Mode
+        startRoutine(routines.map(r => ({ id: r.id, title: r.title })));
+      }
+    };
+
+    window.addEventListener(ROUTINE_TIMER_START_EVENT, handleRoutineStart);
+    return () =>
+      window.removeEventListener(ROUTINE_TIMER_START_EVENT, handleRoutineStart);
+  }, [startManual, startRoutine]);
+
   return (
     <>
       <section className="grid grid-cols-1 items-stretch gap-6 lg:grid-cols-2">
@@ -51,7 +77,7 @@ export default function WorkPlanTimerSection() {
           totalFocusSeconds={totalFocusSeconds}
           focusPresetMinutes={focusPresetMinutes}
           breakPresetMinutes={breakPresetMinutes}
-          routineName={activeRoutine?.title} // ← 현재 루틴 이름 표시
+          routineName={activeRoutine?.title}
           onToggleRunning={handleToggleRunning}
           onSkip={handleSkip}
           onReset={handleReset}
