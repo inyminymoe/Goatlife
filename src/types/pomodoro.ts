@@ -5,4 +5,6 @@ export interface PomodoroSession {
   status: SessionStatus;
   durationSeconds: number;
   startedAt: Date;
+  routineTitle?: string;
+  routineId?: string;
 }
