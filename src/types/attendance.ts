@@ -14,6 +14,7 @@ export type AttendanceErrorCode =
   | 'UNAUTHENTICATED'
   | 'ALREADY_CHECKED_IN'
   | 'NO_CHECK_IN_RECORD'
+  | 'NO_CLOCK_OUT_RECORD'
   | 'ALREADY_FINALIZED'
   | 'INVALID_RANGE'
   | 'UNKNOWN';

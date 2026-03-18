@@ -4,7 +4,7 @@
 -- 이 스크립트는 다음을 생성합니다:
 -- 1. attendance_logs 테이블 (출퇴근 로그)
 -- 2. v_attendance_summary 뷰 (출근율 계산)
--- 3. fn_clock_in, fn_early_leave, fn_clock_out RPC 함수들
+-- 3. fn_clock_in, fn_early_leave, fn_clock_out, fn_undo_clock_out RPC 함수들
 -- 4. RLS (Row Level Security) 정책
 -- ============================================================================
 
@@ -143,6 +143,11 @@ BEGIN
     RAISE EXCEPTION 'Already clocked in today';
   END IF;
 
+  IF v_existing_log.id IS NOT NULL
+     AND v_existing_log.status IN ('vacation', 'absent') THEN
+    RAISE EXCEPTION 'Attendance already finalized for today';
+  END IF;
+
   v_status := CASE
     WHEN (timezone('Asia/Seoul', NOW()))::time > TIME '09:00' THEN 'late'
     ELSE 'present'
@@ -174,6 +179,7 @@ BEGIN
     work_minutes = 0,
     status = v_status,
     updated_at = NOW()
+  WHERE attendance_logs.status NOT IN ('vacation', 'absent')
   RETURNING * INTO v_result;
 
   RETURN row_to_json(v_result);
@@ -218,6 +224,7 @@ BEGIN
   UPDATE public.attendance_logs
   SET
     early_leave_at = NOW(),
+    clock_out_at = NOW(),
     work_minutes = v_work_minutes,
     status = 'early_leave',
     updated_at = NOW()
@@ -245,6 +252,7 @@ DECLARE
   v_result public.attendance_logs;
   v_work_minutes INTEGER;
   v_next_status TEXT;
+  v_finalized_at TIMESTAMPTZ := NOW();
 BEGIN
   IF auth.uid() != p_user_id THEN
     RAISE EXCEPTION 'Unauthorized: You can only clock out for yourself';
@@ -263,13 +271,18 @@ BEGIN
   END IF;
 
   IF v_existing_log.status = 'early_leave' AND v_existing_log.early_leave_at IS NOT NULL THEN
-    v_work_minutes := EXTRACT(
-      EPOCH FROM (v_existing_log.early_leave_at - v_existing_log.clock_in_at)
-    ) / 60;
+    v_work_minutes := FLOOR(
+      EXTRACT(
+        EPOCH FROM (v_existing_log.early_leave_at - v_existing_log.clock_in_at)
+      ) / 60.0
+    )::INT;
     v_next_status := 'early_leave';
   ELSE
-    v_work_minutes := EXTRACT(EPOCH FROM (NOW() - v_existing_log.clock_in_at)) / 60;
+    v_work_minutes := FLOOR(
+      EXTRACT(EPOCH FROM (v_finalized_at - v_existing_log.clock_in_at)) / 60.0
+    )::INT;
     v_next_status := CASE
+      WHEN (v_finalized_at - v_existing_log.clock_in_at) < INTERVAL '8 hours' THEN 'early_leave'
       WHEN v_existing_log.status = 'late' THEN 'late'
       ELSE 'present'
     END;
@@ -277,7 +290,12 @@ BEGIN
 
   UPDATE public.attendance_logs
   SET
-    clock_out_at = NOW(),
+    clock_out_at = v_finalized_at,
+    early_leave_at = CASE
+      WHEN v_next_status = 'early_leave' THEN
+        COALESCE(v_existing_log.early_leave_at, v_finalized_at)
+      ELSE NULL
+    END,
     work_minutes = v_work_minutes,
     status = v_next_status,
     updated_at = NOW()
@@ -289,8 +307,58 @@ END;
 $$;
 
 -- ============================================================================
--- 7. RPC 함수에 대한 권한 부여
+-- 7. fn_undo_clock_out 함수 생성 (퇴근 취소)
+-- ============================================================================
+CREATE OR REPLACE FUNCTION public.fn_undo_clock_out(
+  p_user_id UUID,
+  p_work_date DATE
+)
+RETURNS JSON
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_existing_log public.attendance_logs;
+  v_result public.attendance_logs;
+  v_next_status TEXT;
+BEGIN
+  IF auth.uid() != p_user_id THEN
+    RAISE EXCEPTION 'Unauthorized: You can only undo clock out for yourself';
+  END IF;
+
+  SELECT * INTO v_existing_log
+  FROM public.attendance_logs
+  WHERE user_id = p_user_id AND work_date = p_work_date;
+
+  IF v_existing_log.id IS NULL OR v_existing_log.clock_out_at IS NULL THEN
+    RAISE EXCEPTION 'No clock-out record found for today';
+  END IF;
+
+  v_next_status := CASE
+    WHEN (timezone('Asia/Seoul', v_existing_log.clock_in_at))::time > TIME '09:00'
+      THEN 'late'
+    ELSE 'present'
+  END;
+
+  UPDATE public.attendance_logs
+  SET
+    clock_out_at = NULL,
+    early_leave_at = NULL,
+    work_minutes = 0,
+    status = v_next_status,
+    updated_at = NOW()
+  WHERE id = v_existing_log.id
+  RETURNING * INTO v_result;
+
+  RETURN row_to_json(v_result);
+END;
+$$;
+
+-- ============================================================================
+-- 8. RPC 함수에 대한 권한 부여
 -- ============================================================================
 GRANT EXECUTE ON FUNCTION public.fn_clock_in TO authenticated;
 GRANT EXECUTE ON FUNCTION public.fn_early_leave TO authenticated;
 GRANT EXECUTE ON FUNCTION public.fn_clock_out TO authenticated;
+GRANT EXECUTE ON FUNCTION public.fn_undo_clock_out TO authenticated;

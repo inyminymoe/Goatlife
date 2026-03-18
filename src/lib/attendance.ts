@@ -8,6 +8,7 @@ import type {
 } from '@/types/attendance';
 
 const KST_TIME_ZONE = 'Asia/Seoul';
+const MS_IN_SECOND = 1_000;
 const MS_IN_MINUTE = 60_000;
 
 type AttendanceRowStatus = AttendanceStatus | 'none' | 'in' | 'early' | 'out';
@@ -54,6 +55,15 @@ export function getKstDateString(value: Date | string = new Date()) {
   return getFormatter().format(
     typeof value === 'string' ? new Date(value) : value
   );
+}
+
+export function getKstDateOffsetString(
+  offsetDays: number,
+  anchor: Date | string = new Date()
+) {
+  const anchorDate = toUtcDate(getKstDateString(anchor));
+  anchorDate.setUTCDate(anchorDate.getUTCDate() + offsetDays);
+  return fromUtcDate(anchorDate);
 }
 
 function parseDateString(dateString: string) {
@@ -114,7 +124,22 @@ export function calculateWorkMinutes(
     return 0;
   }
 
-  return Math.round(diff / MS_IN_MINUTE);
+  return Math.floor(diff / MS_IN_MINUTE);
+}
+
+export function calculateWorkSeconds(
+  checkInAt: string | null,
+  checkOutAt: string | null
+) {
+  if (!checkInAt || !checkOutAt) return 0;
+
+  const diff = new Date(checkOutAt).getTime() - new Date(checkInAt).getTime();
+
+  if (Number.isNaN(diff) || diff <= 0) {
+    return 0;
+  }
+
+  return Math.floor(diff / MS_IN_SECOND);
 }
 
 export function isLateCheckIn(checkInAt: string | null) {
@@ -239,9 +264,14 @@ export function mapAttendanceError(message: string | null | undefined) {
     return 'NO_CHECK_IN_RECORD' satisfies AttendanceErrorCode;
   }
 
+  if (normalized.includes('no clock-out record')) {
+    return 'NO_CLOCK_OUT_RECORD' satisfies AttendanceErrorCode;
+  }
+
   if (
     normalized.includes('clocked out') ||
-    normalized.includes('already processed early leave')
+    normalized.includes('already processed early leave') ||
+    normalized.includes('attendance already finalized')
   ) {
     return 'ALREADY_FINALIZED' satisfies AttendanceErrorCode;
   }
@@ -253,6 +283,7 @@ export const ATTENDANCE_ERROR_MESSAGES: Record<AttendanceErrorCode, string> = {
   UNAUTHENTICATED: '로그인이 필요해요.',
   ALREADY_CHECKED_IN: '이미 출근 처리되었어요.',
   NO_CHECK_IN_RECORD: '오늘 출근 기록이 없습니다.',
+  NO_CLOCK_OUT_RECORD: '되돌릴 퇴근 기록이 없습니다.',
   ALREADY_FINALIZED: '이미 처리 완료된 근태입니다.',
   INVALID_RANGE: '조회 기간이 올바르지 않습니다.',
   UNKNOWN: '근태 처리 중 문제가 발생했어요.',

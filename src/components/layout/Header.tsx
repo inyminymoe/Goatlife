@@ -109,7 +109,7 @@ export default function Header({
         <div className="flex items-center gap-3">
           <button
             onClick={onMenuToggle}
-            className="lg:hidden p-2 rounded-lg text-dark transition-colors"
+            className="xl:hidden p-2 rounded-lg text-dark transition-colors"
             aria-label="메뉴 열기"
           >
             <Icon icon="lucide:menu" className="w-6 h-6" />

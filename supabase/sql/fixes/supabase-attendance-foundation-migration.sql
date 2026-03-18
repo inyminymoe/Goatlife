@@ -6,6 +6,9 @@
 ALTER TABLE public.attendance_logs
   ADD COLUMN IF NOT EXISTS note TEXT;
 
+ALTER TABLE public.attendance_logs
+  DROP CONSTRAINT IF EXISTS attendance_logs_status_check;
+
 UPDATE public.attendance_logs
 SET status = CASE
   WHEN status = 'early' THEN 'early_leave'
@@ -31,9 +34,6 @@ WHERE status IS NULL OR status IN ('none', 'in', 'early', 'out');
 
 ALTER TABLE public.attendance_logs
   ALTER COLUMN status SET DEFAULT 'absent';
-
-ALTER TABLE public.attendance_logs
-  DROP CONSTRAINT IF EXISTS attendance_logs_status_check;
 
 ALTER TABLE public.attendance_logs
   ADD CONSTRAINT attendance_logs_status_check
@@ -176,6 +176,7 @@ BEGIN
   UPDATE public.attendance_logs
   SET
     early_leave_at = NOW(),
+    clock_out_at = NOW(),
     work_minutes = v_work_minutes,
     status = 'early_leave',
     updated_at = NOW()
@@ -200,6 +201,7 @@ DECLARE
   v_result public.attendance_logs;
   v_work_minutes INTEGER;
   v_next_status TEXT;
+  v_finalized_at TIMESTAMPTZ := NOW();
 BEGIN
   IF auth.uid() != p_user_id THEN
     RAISE EXCEPTION 'Unauthorized: You can only clock out for yourself';
@@ -218,13 +220,18 @@ BEGIN
   END IF;
 
   IF v_existing_log.status = 'early_leave' AND v_existing_log.early_leave_at IS NOT NULL THEN
-    v_work_minutes := EXTRACT(
-      EPOCH FROM (v_existing_log.early_leave_at - v_existing_log.clock_in_at)
-    ) / 60;
+    v_work_minutes := FLOOR(
+      EXTRACT(
+        EPOCH FROM (v_existing_log.early_leave_at - v_existing_log.clock_in_at)
+      ) / 60.0
+    )::INT;
     v_next_status := 'early_leave';
   ELSE
-    v_work_minutes := EXTRACT(EPOCH FROM (NOW() - v_existing_log.clock_in_at)) / 60;
+    v_work_minutes := FLOOR(
+      EXTRACT(EPOCH FROM (v_finalized_at - v_existing_log.clock_in_at)) / 60.0
+    )::INT;
     v_next_status := CASE
+      WHEN (v_finalized_at - v_existing_log.clock_in_at) < INTERVAL '8 hours' THEN 'early_leave'
       WHEN v_existing_log.status = 'late' THEN 'late'
       ELSE 'present'
     END;
@@ -232,8 +239,59 @@ BEGIN
 
   UPDATE public.attendance_logs
   SET
-    clock_out_at = NOW(),
+    clock_out_at = v_finalized_at,
+    early_leave_at = CASE
+      WHEN v_next_status = 'early_leave' THEN
+        COALESCE(v_existing_log.early_leave_at, v_finalized_at)
+      ELSE NULL
+    END,
     work_minutes = v_work_minutes,
+    status = v_next_status,
+    updated_at = NOW()
+  WHERE id = v_existing_log.id
+  RETURNING * INTO v_result;
+
+  RETURN row_to_json(v_result);
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.fn_undo_clock_out(
+  p_user_id UUID,
+  p_work_date DATE
+)
+RETURNS JSON
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_existing_log public.attendance_logs;
+  v_result public.attendance_logs;
+  v_next_status TEXT;
+BEGIN
+  IF auth.uid() != p_user_id THEN
+    RAISE EXCEPTION 'Unauthorized: You can only undo clock out for yourself';
+  END IF;
+
+  SELECT * INTO v_existing_log
+  FROM public.attendance_logs
+  WHERE user_id = p_user_id AND work_date = p_work_date;
+
+  IF v_existing_log.id IS NULL OR v_existing_log.clock_out_at IS NULL THEN
+    RAISE EXCEPTION 'No clock-out record found for today';
+  END IF;
+
+  v_next_status := CASE
+    WHEN (timezone('Asia/Seoul', v_existing_log.clock_in_at))::time > TIME '09:00'
+      THEN 'late'
+    ELSE 'present'
+  END;
+
+  UPDATE public.attendance_logs
+  SET
+    clock_out_at = NULL,
+    early_leave_at = NULL,
+    work_minutes = 0,
     status = v_next_status,
     updated_at = NOW()
   WHERE id = v_existing_log.id
@@ -246,3 +304,4 @@ $$;
 GRANT EXECUTE ON FUNCTION public.fn_clock_in TO authenticated;
 GRANT EXECUTE ON FUNCTION public.fn_early_leave TO authenticated;
 GRANT EXECUTE ON FUNCTION public.fn_clock_out TO authenticated;
+GRANT EXECUTE ON FUNCTION public.fn_undo_clock_out TO authenticated;

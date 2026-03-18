@@ -3,6 +3,7 @@
 import { createServerSupabase } from '@/lib/supabase/server';
 import {
   createAttendanceSummary,
+  getKstDateOffsetString,
   getKstDateRange,
   getKstDateString,
   mapAttendanceError,
@@ -73,22 +74,40 @@ export async function getAttendanceToday(): Promise<
   if (!client.ok) return client;
 
   const today = getKstDateString();
+  const yesterday = getKstDateOffsetString(-1, today);
 
   const { data, error } = await client.supabase
     .from('attendance_logs')
     .select('*')
     .eq('user_id', client.user.id)
-    .eq('work_date', today)
-    .maybeSingle();
+    .in('work_date', [today, yesterday])
+    .order('work_date', { ascending: false });
 
   if (error) {
     console.error('[attendance] getAttendanceToday failed', error);
     return { ok: false, error: 'UNKNOWN' };
   }
 
+  const rows = (data as AttendanceRow[] | null) ?? [];
+  const todayRow = rows.find(row => row.work_date === today);
+
+  const activeCarryOverRow = rows.find(row => {
+    if (row.work_date !== yesterday || !row.clock_in_at) {
+      return false;
+    }
+
+    return (
+      row.clock_out_at === null || getKstDateString(row.clock_out_at) === today
+    );
+  });
+
   return {
     ok: true,
-    data: data ? mapAttendanceRow(data as AttendanceRow) : null,
+    data: todayRow
+      ? mapAttendanceRow(todayRow)
+      : activeCarryOverRow
+        ? mapAttendanceRow(activeCarryOverRow)
+        : null,
   };
 }
 
@@ -125,14 +144,19 @@ export async function getAttendanceSummary(
 }
 
 async function runAttendanceRpc(
-  rpcName: 'fn_clock_in' | 'fn_clock_out' | 'fn_early_leave'
+  rpcName:
+    | 'fn_clock_in'
+    | 'fn_clock_out'
+    | 'fn_early_leave'
+    | 'fn_undo_clock_out',
+  workDate = getKstDateString()
 ): Promise<AttendanceResult<AttendanceRecord | null>> {
   const client = await getUserScopedSupabase();
   if (!client.ok) return client;
 
   const { data, error } = await client.supabase.rpc(rpcName, {
     p_user_id: client.user.id,
-    p_work_date: getKstDateString(),
+    p_work_date: workDate,
   });
 
   if (error) {
@@ -154,8 +178,12 @@ export async function earlyLeave() {
   return runAttendanceRpc('fn_early_leave');
 }
 
-export async function checkOut() {
-  return runAttendanceRpc('fn_clock_out');
+export async function checkOut(workDate?: string) {
+  return runAttendanceRpc('fn_clock_out', workDate);
+}
+
+export async function undoClockOut(workDate?: string) {
+  return runAttendanceRpc('fn_undo_clock_out', workDate);
 }
 
 export async function getAttendanceRate(): Promise<AttendanceRateResult> {

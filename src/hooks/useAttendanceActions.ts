@@ -5,7 +5,7 @@ import { attendanceKeys } from '@/hooks/attendanceKeys';
 import {
   requestCheckIn,
   requestCheckOut,
-  requestEarlyLeave,
+  requestUndoClockOut,
 } from '@/services/attendance';
 
 async function invalidateAttendanceQueries(
@@ -27,13 +27,6 @@ export function useAttendanceActions() {
     },
   });
 
-  const earlyLeave = useMutation({
-    mutationFn: requestEarlyLeave,
-    onSettled: async () => {
-      await invalidateAttendanceQueries(queryClient);
-    },
-  });
-
   const checkOut = useMutation({
     mutationFn: requestCheckOut,
     onSettled: async () => {
@@ -41,10 +34,18 @@ export function useAttendanceActions() {
     },
   });
 
+  const undoClockOut = useMutation({
+    mutationFn: requestUndoClockOut,
+    onSettled: async () => {
+      await invalidateAttendanceQueries(queryClient);
+    },
+  });
+
   return {
     checkIn,
-    earlyLeave,
     checkOut,
-    isMutating: checkIn.isPending || earlyLeave.isPending || checkOut.isPending,
+    undoClockOut,
+    isMutating:
+      checkIn.isPending || checkOut.isPending || undoClockOut.isPending,
   };
 }
