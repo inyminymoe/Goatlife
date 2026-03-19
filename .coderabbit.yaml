@@ -1,4 +1,4 @@
-# yaml-language-server: $schema=https://storage.googleapis.com/coderabbit_public_assets/schema.v2.json
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
 
 language: "ko-KR"
 reviews:
@@ -12,6 +12,13 @@ reviews:
   poem: false
   review_status: true
   collapse_walkthrough: false
+  path_filters:
+    - "!**/*.md"
+    - "!**/*.json"
+    - "!pnpm-lock.yaml"
+    - "!.next/**"
+    - "!node_modules/**"
+    - "!public/**"
 
   # 리뷰 포커스 영역
   focus_areas:
@@ -62,13 +69,3 @@ reviews:
 
   # 자동 리뷰 설정
   auto_reply: true
-
-# 제외할 파일
-path_filters:
-  excluded:
-    - "**/*.md"
-    - "**/*.json"
-    - "pnpm-lock.yaml"
-    - ".next/**"
-    - "node_modules/**"
-    - "public/**"

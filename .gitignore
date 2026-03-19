@@ -44,3 +44,7 @@ docs/vibecoding/
 
 # local qa / dev scripts (may contain keys)
 scripts/
+
+# local editor / assistant settings
+.claude/
+.vscode/settings.json

@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import AttendanceDashboardCard from '@/components/features/attendance/AttendanceDashboardCard';
 import AttendanceCard from '@/components/features/attendance/AttendanceCard';
-import { Calendar } from '@/components/ui/Calendar';
+import { AttendanceCalendar } from '@/components/features/attendance/AttendanceCalendar';
 import { AttendanceHeatmap } from '@/components/features/attendance/AttendanceHeatmap';
 import { createServerSupabase } from '@/lib/supabase/server';
 
@@ -23,7 +23,7 @@ export default async function AttendancePage() {
           <AttendanceDashboardCard />
         </div>
 
-        <Calendar year={2025} month={10} />
+        <AttendanceCalendar />
         <AttendanceHeatmap />
       </div>
     </div>

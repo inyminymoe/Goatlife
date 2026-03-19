@@ -5,8 +5,9 @@ import { Icon } from '@iconify/react';
 
 export type CalendarStatus =
   | 'working'
+  | 'late'
+  | 'early_leave'
   | 'holiday'
-  | 'break'
   | 'absence'
   | 'none';
 
@@ -15,10 +16,10 @@ type CalendarDay = {
   inCurrentMonth: boolean;
   isToday?: boolean;
   isSelected?: boolean;
-  status?: CalendarStatus;
+  status?: CalendarStatus | CalendarStatus[];
 };
 
-type StatusMap = Record<number, CalendarStatus>;
+type StatusMap = Record<number, CalendarStatus | CalendarStatus[]>;
 
 export type CalendarProps = {
   year: number;
@@ -28,6 +29,7 @@ export type CalendarProps = {
   statusMap?: StatusMap;
   onPrev?: () => void;
   onNext?: () => void;
+  onDayClick?: (date: Date) => void;
   hideHeader?: boolean;
   compact?: boolean;
   className?: string;
@@ -36,12 +38,68 @@ export type CalendarProps = {
 const WEEK_LABELS = ['월', '화', '수', '목', '금', '토', '일'];
 
 const STATUS_COLOR_VAR: Record<CalendarStatus, string> = {
-  working: 'var(--color-status-working)',
-  holiday: 'var(--color-status-holiday)',
-  break: 'var(--color-status-break)',
-  absence: 'var(--color-status-absence)',
+  working: 'var(--color-status-working)', // primary-500 (blue)
+  late: 'var(--color-accent-orange-400)', // accent-orange-400
+  early_leave: 'var(--color-grey-500)', // grey-500
+  holiday: 'var(--color-status-holiday)', // accent-green-500
+  absence: 'var(--color-status-absence)', // accent-magenta-300
   none: 'transparent',
 };
+
+function StatusDots({
+  statuses,
+  sizePx,
+}: {
+  statuses: CalendarStatus[];
+  sizePx: number;
+}) {
+  const colors = statuses
+    .map(s => STATUS_COLOR_VAR[s])
+    .filter(c => c !== 'transparent');
+
+  if (colors.length === 0) {
+    return (
+      <span
+        style={{ width: sizePx, height: sizePx, display: 'inline-block' }}
+      />
+    );
+  }
+
+  if (colors.length === 1) {
+    return (
+      <span
+        className="rounded-full shrink-0"
+        style={{ width: sizePx, height: sizePx, backgroundColor: colors[0] }}
+        aria-hidden="true"
+      />
+    );
+  }
+
+  const overlap = Math.round(sizePx * 0.45);
+  const totalWidth = sizePx + (colors.length - 1) * overlap;
+
+  return (
+    <span
+      className="relative shrink-0 inline-block"
+      style={{ width: totalWidth, height: sizePx }}
+      aria-hidden="true"
+    >
+      {colors.map((color, i) => (
+        <span
+          key={i}
+          className="absolute rounded-full"
+          style={{
+            width: sizePx,
+            height: sizePx,
+            backgroundColor: color,
+            left: i * overlap,
+            zIndex: colors.length - i,
+          }}
+        />
+      ))}
+    </span>
+  );
+}
 
 function buildMonthDays(
   year: number,
@@ -100,6 +158,7 @@ export function Calendar({
   statusMap = {},
   onPrev,
   onNext,
+  onDayClick,
   hideHeader = false,
   compact = false,
   className = '',
@@ -149,7 +208,7 @@ export function Calendar({
     selectedSet
   );
   const paddingClass = compact ? 'p-3' : 'p-6';
-  const dotClass = compact ? 'w-[6px] h-[6px]' : 'w-2 h-2';
+  const dotSizePx = compact ? 6 : 8;
   const gapClass = compact ? 'gap-4' : 'gap-6';
   const dayGapClass = compact ? 'gap-y-3' : 'gap-y-4';
 
@@ -199,12 +258,18 @@ export function Calendar({
         {days.map(day => {
           const dayNum = day.date.getDate();
           const isInactive = !day.inCurrentMonth;
-          const statusColor = STATUS_COLOR_VAR[day.status ?? 'none'];
+          const rawStatus = day.status ?? 'none';
+          const statuses = Array.isArray(rawStatus) ? rawStatus : [rawStatus];
 
           return (
             <div
               key={day.date.toISOString()}
-              className="flex flex-col items-center gap-2"
+              className={`flex flex-col items-center gap-2 ${onDayClick && day.inCurrentMonth ? 'cursor-pointer' : ''}`}
+              onClick={
+                onDayClick && day.inCurrentMonth
+                  ? () => onDayClick(day.date)
+                  : undefined
+              }
             >
               <span
                 className={`text-xs font-medium px-1 py-0.5 ${
@@ -217,11 +282,7 @@ export function Calendar({
               >
                 {dayNum}
               </span>
-              <span
-                className={`${dotClass} rounded-full`}
-                style={{ backgroundColor: statusColor }}
-                aria-hidden="true"
-              />
+              <StatusDots statuses={statuses} sizePx={dotSizePx} />
             </div>
           );
         })}
