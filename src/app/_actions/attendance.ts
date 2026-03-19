@@ -74,7 +74,8 @@ export async function getAttendanceToday(): Promise<
   const client = await getUserScopedSupabase();
   if (!client.ok) return client;
 
-  const today = getKstDateString();
+  const now = new Date();
+  const today = getKstDateString(now);
   const yesterday = getKstDateOffsetString(-1, today);
 
   const { data, error } = await client.supabase
@@ -91,7 +92,7 @@ export async function getAttendanceToday(): Promise<
 
   const rows = (data as AttendanceRow[] | null) ?? [];
   const todayRow = rows.find(row => row.work_date === today);
-  const currentKstHour = getKstHour();
+  const currentKstHour = getKstHour(now);
 
   const activeCarryOverRow = rows.find(row => {
     if (row.work_date !== yesterday || !row.clock_in_at) {
