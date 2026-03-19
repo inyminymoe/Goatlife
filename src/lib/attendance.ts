@@ -57,6 +57,18 @@ export function getKstDateString(value: Date | string = new Date()) {
   );
 }
 
+export function getKstHour(value: Date | string = new Date()) {
+  const date = typeof value === 'string' ? new Date(value) : value;
+  return parseInt(
+    new Intl.DateTimeFormat('en-GB', {
+      timeZone: KST_TIME_ZONE,
+      hour: '2-digit',
+      hour12: false,
+    }).format(date),
+    10
+  );
+}
+
 export function getKstDateOffsetString(
   offsetDays: number,
   anchor: Date | string = new Date()
