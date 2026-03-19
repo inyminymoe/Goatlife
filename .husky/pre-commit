@@ -1,4 +1,5 @@
-staged=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '\.(ts|tsx|css)$')
+#!/bin/sh
+staged=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '\.(ts|tsx|css)$' || true)
 if [ -n "$staged" ]; then
   echo "$staged" | xargs prettier --check
 fi
