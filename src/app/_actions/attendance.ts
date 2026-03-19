@@ -6,6 +6,7 @@ import {
   getKstDateOffsetString,
   getKstDateRange,
   getKstDateString,
+  getKstHour,
   mapAttendanceError,
   mapAttendanceRow,
   type AttendanceRow,
@@ -73,7 +74,8 @@ export async function getAttendanceToday(): Promise<
   const client = await getUserScopedSupabase();
   if (!client.ok) return client;
 
-  const today = getKstDateString();
+  const now = new Date();
+  const today = getKstDateString(now);
   const yesterday = getKstDateOffsetString(-1, today);
 
   const { data, error } = await client.supabase
@@ -90,15 +92,21 @@ export async function getAttendanceToday(): Promise<
 
   const rows = (data as AttendanceRow[] | null) ?? [];
   const todayRow = rows.find(row => row.work_date === today);
+  const currentKstHour = getKstHour(now);
 
   const activeCarryOverRow = rows.find(row => {
     if (row.work_date !== yesterday || !row.clock_in_at) {
       return false;
     }
 
-    return (
-      row.clock_out_at === null || getKstDateString(row.clock_out_at) === today
-    );
+    // 자정 넘겨 퇴근한 경우: clock_out_at의 KST 날짜가 오늘
+    if (row.clock_out_at !== null) {
+      return getKstDateString(row.clock_out_at) === today;
+    }
+
+    // 퇴근 기록 없음: 현재 KST 시각이 오전 6시 이전일 때만 자정 넘김으로 인정
+    // (오전 6시 이후면 퇴근을 깜빡한 것으로 간주)
+    return currentKstHour < 6;
   });
 
   return {

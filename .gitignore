@@ -41,3 +41,6 @@ yarn-error.log*
 next-env.d.ts
 pnpm-lock.yaml
 docs/vibecoding/
+
+# local qa / dev scripts (may contain keys)
+scripts/
