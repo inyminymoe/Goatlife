@@ -209,7 +209,8 @@ BEGIN
 
   SELECT * INTO v_existing_log
   FROM public.attendance_logs
-  WHERE user_id = p_user_id AND work_date = p_work_date;
+  WHERE user_id = p_user_id AND work_date = p_work_date
+  FOR UPDATE;
 
   IF v_existing_log.id IS NULL OR v_existing_log.clock_in_at IS NULL THEN
     RAISE EXCEPTION 'No clock-in record found for today';
@@ -260,7 +261,8 @@ BEGIN
 
   SELECT * INTO v_existing_log
   FROM public.attendance_logs
-  WHERE user_id = p_user_id AND work_date = p_work_date;
+  WHERE user_id = p_user_id AND work_date = p_work_date
+  FOR UPDATE;
 
   IF v_existing_log.id IS NULL OR v_existing_log.clock_in_at IS NULL THEN
     RAISE EXCEPTION 'No clock-in record found for today';
@@ -329,7 +331,8 @@ BEGIN
 
   SELECT * INTO v_existing_log
   FROM public.attendance_logs
-  WHERE user_id = p_user_id AND work_date = p_work_date;
+  WHERE user_id = p_user_id AND work_date = p_work_date
+  FOR UPDATE;
 
   IF v_existing_log.id IS NULL OR v_existing_log.clock_out_at IS NULL THEN
     RAISE EXCEPTION 'No clock-out record found for today';

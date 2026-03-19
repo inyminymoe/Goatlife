@@ -134,7 +134,6 @@ BEGIN
     work_minutes = 0,
     status = v_status,
     updated_at = NOW()
-  WHERE attendance_logs.status NOT IN ('vacation', 'absent')
   RETURNING * INTO v_result;
 
   RETURN row_to_json(v_result);

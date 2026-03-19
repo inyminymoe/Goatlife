@@ -24,11 +24,7 @@ export default function AttendanceDashboardCard() {
               className="h-6 w-6 icon-dark-invert"
               aria-hidden="true"
             />
-            <h2
-              id="attendance-dashboard"
-              aria-labelledby="attendance-dashboard"
-              className="brand-h3 text-grey-900"
-            >
+            <h2 id="attendance-dashboard" className="brand-h3 text-grey-900">
               근태현황
             </h2>
           </div>

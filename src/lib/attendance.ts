@@ -247,22 +247,27 @@ export function createAttendanceSummary(
   period: AttendanceSummaryPeriod,
   range: { from: string; to: string }
 ): AttendanceSummary {
-  const presentDays = records.filter(
+  const today = getKstDateString();
+  const effectiveRecords = records.filter(record => record.date <= today);
+
+  const presentDays = effectiveRecords.filter(
     record => record.status === 'present'
   ).length;
-  const lateDays = records.filter(record => record.status === 'late').length;
-  const earlyLeaveDays = records.filter(
+  const lateDays = effectiveRecords.filter(
+    record => record.status === 'late'
+  ).length;
+  const earlyLeaveDays = effectiveRecords.filter(
     record => record.status === 'early_leave'
   ).length;
-  const absentDays = records.filter(
+  const absentDays = effectiveRecords.filter(
     record => record.status === 'absent'
   ).length;
-  const vacationDays = records.filter(
+  const vacationDays = effectiveRecords.filter(
     record => record.status === 'vacation'
   ).length;
   const attendedDays = presentDays + lateDays + earlyLeaveDays;
   const totalDays = countElapsedWeekdays(range.from, range.to);
-  const totalWorkMinutes = records.reduce(
+  const totalWorkMinutes = effectiveRecords.reduce(
     (sum, record) => sum + record.workMinutes,
     0
   );
