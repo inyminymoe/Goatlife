@@ -91,6 +91,7 @@ export async function getAttendanceToday(): Promise<
 
   const rows = (data as AttendanceRow[] | null) ?? [];
   const todayRow = rows.find(row => row.work_date === today);
+  const currentKstHour = getKstHour();
 
   const activeCarryOverRow = rows.find(row => {
     if (row.work_date !== yesterday || !row.clock_in_at) {
@@ -104,7 +105,7 @@ export async function getAttendanceToday(): Promise<
 
     // 퇴근 기록 없음: 현재 KST 시각이 오전 6시 이전일 때만 자정 넘김으로 인정
     // (오전 6시 이후면 퇴근을 깜빡한 것으로 간주)
-    return getKstHour() < 6;
+    return currentKstHour < 6;
   });
 
   return {
