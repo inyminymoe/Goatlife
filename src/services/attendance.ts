@@ -15,17 +15,6 @@ import type {
   AttendanceSummaryPeriod,
 } from '@/types/attendance';
 
-const DEFAULT_TIMEOUT = 6000;
-
-function withTimeout<T>(promise: Promise<T>, timeoutMs = DEFAULT_TIMEOUT) {
-  return Promise.race<T>([
-    promise,
-    new Promise<T>((_, reject) =>
-      setTimeout(() => reject(new Error('Request timeout')), timeoutMs)
-    ),
-  ]);
-}
-
 type AttendanceResult<T> =
   | { ok: true; data: T }
   | { ok: false; error: AttendanceErrorCode };
@@ -46,7 +35,7 @@ export async function fetchAttendanceToday(): Promise<
   AttendanceResult<AttendanceRecord | null>
 > {
   try {
-    return await withTimeout(serverGetAttendanceToday());
+    return await serverGetAttendanceToday();
   } catch (error) {
     console.error('[services/attendance] fetchAttendanceToday failed', error);
     return { ok: false, error: 'UNKNOWN' };
@@ -57,7 +46,7 @@ export async function fetchAttendanceLogs(
   params: AttendanceLogsParams
 ): Promise<AttendanceResult<AttendanceRecord[]>> {
   try {
-    return await withTimeout(serverGetAttendanceLogs(params));
+    return await serverGetAttendanceLogs(params);
   } catch (error) {
     console.error('[services/attendance] fetchAttendanceLogs failed', error);
     return { ok: false, error: 'UNKNOWN' };
@@ -68,7 +57,7 @@ export async function fetchAttendanceSummary(
   period: AttendanceSummaryPeriod
 ): Promise<AttendanceResult<AttendanceSummary>> {
   try {
-    return await withTimeout(serverGetAttendanceSummary(period));
+    return await serverGetAttendanceSummary(period);
   } catch (error) {
     console.error('[services/attendance] fetchAttendanceSummary failed', error);
     return { ok: false, error: 'UNKNOWN' };
@@ -77,7 +66,7 @@ export async function fetchAttendanceSummary(
 
 export async function fetchAttendanceRate(): Promise<AttendanceRateResult> {
   try {
-    return await withTimeout(serverGetAttendanceRate());
+    return await serverGetAttendanceRate();
   } catch (error) {
     console.error('[services/attendance] fetchAttendanceRate failed', error);
     return { ok: false, error: 'UNKNOWN' };
