@@ -63,7 +63,7 @@ export default function LayoutWrapper({
       {/* Grid 컨테이너 */}
       <div className="flex-1 min-h-0">
         {/* Desktop Grid Layout */}
-        <div className="hidden lg:block app-container pt-2 pb-4">
+        <div className="hidden xl:block app-container pt-2 pb-4">
           <div className="grid grid-cols-[276px_1fr] gap-6">
             <Sidebar variant="desktop" isLoggedIn={isLoggedIn} />
             <main className="grid grid-cols-2 gap-5 auto-rows-min">
@@ -73,16 +73,14 @@ export default function LayoutWrapper({
         </div>
 
         {/* Mobile/Tablet Layout */}
-        <div className="lg:hidden min-h-full">
+        <div className="xl:hidden min-h-full">
           <Sidebar
             variant="mobile"
             isOpen={isMobileSidebarOpen}
             onClose={() => setIsMobileSidebarOpen(false)}
             isLoggedIn={isLoggedIn}
           />
-          <main className="flex-1 p-4 grid grid-cols-1 md:grid-cols-2 gap-5">
-            {children}
-          </main>
+          <main className="flex-1 grid grid-cols-1 gap-5 p-4">{children}</main>
         </div>
       </div>
 

@@ -1,86 +1,44 @@
 -- ============================================================================
--- 갓생상사 근태관리 시스템 설정 스크립트
--- ============================================================================
--- 이 스크립트는 다음을 생성합니다:
--- 1. attendance_logs 테이블 (출퇴근 로그)
--- 2. v_attendance_summary 뷰 (출근율 계산)
--- 3. fn_clock_in, fn_early_leave, fn_clock_out, fn_undo_clock_out RPC 함수들
--- 4. RLS (Row Level Security) 정책
+-- attendance foundation migration
+-- 131번 foundation 이슈 기준으로 상태 체계와 note 컬럼, summary view, RPC를 갱신한다.
 -- ============================================================================
 
--- ============================================================================
--- 1. attendance_logs 테이블 생성
--- ============================================================================
-CREATE TABLE IF NOT EXISTS public.attendance_logs (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  work_date DATE NOT NULL,
-  clock_in_at TIMESTAMPTZ,
-  early_leave_at TIMESTAMPTZ,
-  clock_out_at TIMESTAMPTZ,
-  work_minutes INTEGER DEFAULT 0,
-  note TEXT,
-  status TEXT NOT NULL DEFAULT 'absent'
-    CHECK (status IN ('present', 'late', 'early_leave', 'absent', 'vacation')),
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW(),
+ALTER TABLE public.attendance_logs
+  ADD COLUMN IF NOT EXISTS note TEXT;
 
-  UNIQUE(user_id, work_date)
-);
+ALTER TABLE public.attendance_logs
+  DROP CONSTRAINT IF EXISTS attendance_logs_status_check;
 
-CREATE INDEX IF NOT EXISTS idx_attendance_logs_user_id
-  ON public.attendance_logs(user_id);
-CREATE INDEX IF NOT EXISTS idx_attendance_logs_work_date
-  ON public.attendance_logs(work_date);
-CREATE INDEX IF NOT EXISTS idx_attendance_logs_user_date
-  ON public.attendance_logs(user_id, work_date);
+UPDATE public.attendance_logs
+SET status = CASE
+  WHEN status = 'early' THEN 'early_leave'
+  WHEN status = 'in' THEN
+    CASE
+      WHEN clock_in_at IS NOT NULL
+        AND (clock_in_at AT TIME ZONE 'Asia/Seoul')::time > TIME '09:00'
+        THEN 'late'
+      ELSE 'present'
+    END
+  WHEN status = 'out' THEN
+    CASE
+      WHEN early_leave_at IS NOT NULL THEN 'early_leave'
+      WHEN clock_in_at IS NOT NULL
+        AND (clock_in_at AT TIME ZONE 'Asia/Seoul')::time > TIME '09:00'
+        THEN 'late'
+      ELSE 'present'
+    END
+  WHEN status = 'none' OR status IS NULL THEN 'absent'
+  ELSE status
+END
+WHERE status IS NULL OR status IN ('none', 'in', 'early', 'out');
 
-CREATE OR REPLACE FUNCTION public.update_attendance_logs_updated_at()
-RETURNS TRIGGER AS $$
-BEGIN
-  NEW.updated_at = NOW();
-  RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
+ALTER TABLE public.attendance_logs
+  ALTER COLUMN status SET DEFAULT 'absent';
 
-DROP TRIGGER IF EXISTS trigger_update_attendance_logs_updated_at
-  ON public.attendance_logs;
-CREATE TRIGGER trigger_update_attendance_logs_updated_at
-  BEFORE UPDATE ON public.attendance_logs
-  FOR EACH ROW
-  EXECUTE FUNCTION public.update_attendance_logs_updated_at();
+ALTER TABLE public.attendance_logs
+  ADD CONSTRAINT attendance_logs_status_check
+  CHECK (status IN ('present', 'late', 'early_leave', 'absent', 'vacation'));
 
--- ============================================================================
--- 2. RLS (Row Level Security) 정책 설정
--- ============================================================================
-ALTER TABLE public.attendance_logs ENABLE ROW LEVEL SECURITY;
-
-DROP POLICY IF EXISTS "Users can view own attendance logs"
-  ON public.attendance_logs;
-DROP POLICY IF EXISTS "Users can insert own attendance logs"
-  ON public.attendance_logs;
-DROP POLICY IF EXISTS "Users can update own attendance logs"
-  ON public.attendance_logs;
-
-CREATE POLICY "Users can view own attendance logs"
-  ON public.attendance_logs
-  FOR SELECT
-  USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can insert own attendance logs"
-  ON public.attendance_logs
-  FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "Users can update own attendance logs"
-  ON public.attendance_logs
-  FOR UPDATE
-  USING (auth.uid() = user_id)
-  WITH CHECK (auth.uid() = user_id);
-
--- ============================================================================
--- 3. v_attendance_summary 뷰 생성 (출근율 계산)
--- ============================================================================
 DROP VIEW IF EXISTS public.v_attendance_summary;
 
 CREATE VIEW public.v_attendance_summary AS
@@ -114,9 +72,6 @@ GROUP BY user_id;
 
 ALTER VIEW public.v_attendance_summary SET (security_invoker = on);
 
--- ============================================================================
--- 4. fn_clock_in 함수 생성 (출근 처리)
--- ============================================================================
 CREATE OR REPLACE FUNCTION public.fn_clock_in(
   p_user_id UUID,
   p_work_date DATE
@@ -179,16 +134,12 @@ BEGIN
     work_minutes = 0,
     status = v_status,
     updated_at = NOW()
-  WHERE attendance_logs.status NOT IN ('vacation', 'absent')
   RETURNING * INTO v_result;
 
   RETURN row_to_json(v_result);
 END;
 $$;
 
--- ============================================================================
--- 5. fn_early_leave 함수 생성 (조퇴 처리)
--- ============================================================================
 CREATE OR REPLACE FUNCTION public.fn_early_leave(
   p_user_id UUID,
   p_work_date DATE
@@ -209,8 +160,7 @@ BEGIN
 
   SELECT * INTO v_existing_log
   FROM public.attendance_logs
-  WHERE user_id = p_user_id AND work_date = p_work_date
-  FOR UPDATE;
+  WHERE user_id = p_user_id AND work_date = p_work_date;
 
   IF v_existing_log.id IS NULL OR v_existing_log.clock_in_at IS NULL THEN
     RAISE EXCEPTION 'No clock-in record found for today';
@@ -236,9 +186,6 @@ BEGIN
 END;
 $$;
 
--- ============================================================================
--- 6. fn_clock_out 함수 생성 (퇴근 처리)
--- ============================================================================
 CREATE OR REPLACE FUNCTION public.fn_clock_out(
   p_user_id UUID,
   p_work_date DATE
@@ -261,8 +208,7 @@ BEGIN
 
   SELECT * INTO v_existing_log
   FROM public.attendance_logs
-  WHERE user_id = p_user_id AND work_date = p_work_date
-  FOR UPDATE;
+  WHERE user_id = p_user_id AND work_date = p_work_date;
 
   IF v_existing_log.id IS NULL OR v_existing_log.clock_in_at IS NULL THEN
     RAISE EXCEPTION 'No clock-in record found for today';
@@ -308,9 +254,6 @@ BEGIN
 END;
 $$;
 
--- ============================================================================
--- 7. fn_undo_clock_out 함수 생성 (퇴근 취소)
--- ============================================================================
 CREATE OR REPLACE FUNCTION public.fn_undo_clock_out(
   p_user_id UUID,
   p_work_date DATE
@@ -331,8 +274,7 @@ BEGIN
 
   SELECT * INTO v_existing_log
   FROM public.attendance_logs
-  WHERE user_id = p_user_id AND work_date = p_work_date
-  FOR UPDATE;
+  WHERE user_id = p_user_id AND work_date = p_work_date;
 
   IF v_existing_log.id IS NULL OR v_existing_log.clock_out_at IS NULL THEN
     RAISE EXCEPTION 'No clock-out record found for today';
@@ -358,9 +300,6 @@ BEGIN
 END;
 $$;
 
--- ============================================================================
--- 8. RPC 함수에 대한 권한 부여
--- ============================================================================
 GRANT EXECUTE ON FUNCTION public.fn_clock_in TO authenticated;
 GRANT EXECUTE ON FUNCTION public.fn_early_leave TO authenticated;
 GRANT EXECUTE ON FUNCTION public.fn_clock_out TO authenticated;

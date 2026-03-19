@@ -1,44 +1,34 @@
 'use server';
 
 import { createServerSupabase } from '@/lib/supabase/server';
+import {
+  createAttendanceSummary,
+  getKstDateOffsetString,
+  getKstDateRange,
+  getKstDateString,
+  getKstHour,
+  mapAttendanceError,
+  mapAttendanceRow,
+  type AttendanceRow,
+  isValidAttendanceRange,
+} from '@/lib/attendance';
+import type {
+  AttendanceErrorCode,
+  AttendanceLogsParams,
+  AttendanceRecord,
+  AttendanceSummary,
+  AttendanceSummaryPeriod,
+} from '@/types/attendance';
 
-const KST_OFFSET_MS = 9 * 60 * 60 * 1000;
+type AttendanceResult<T> =
+  | { ok: true; data: T }
+  | { ok: false; error: AttendanceErrorCode };
 
-export type AttendanceStatus = 'none' | 'in' | 'early' | 'out';
-
-export type AttendanceLog = {
-  id: string;
-  user_id: string;
-  work_date: string;
-  clock_in_at: string | null;
-  early_leave_at: string | null;
-  clock_out_at: string | null;
-  work_minutes: number;
-  status: AttendanceStatus;
-  created_at: string;
-  updated_at: string;
-};
-
-type AttendanceResponse =
-  | { ok: true; data: AttendanceLog }
-  | { ok: true; data: null }
-  | { ok: false; error: string };
-
-type MutationResponse =
-  | { ok: true; data: AttendanceLog | null }
-  | { ok: false; error: string };
-
-type AttendanceRateResponse =
+type AttendanceRateResult =
   | { ok: true; rate: number }
-  | { ok: false; error: string };
+  | { ok: false; error: AttendanceErrorCode };
 
-function todayKstDate() {
-  const now = new Date();
-  const kst = new Date(now.getTime() + KST_OFFSET_MS);
-  return kst.toISOString().slice(0, 10);
-}
-
-async function getUserSupabaseClient() {
+async function getUserScopedSupabase() {
   const supabase = await createServerSupabase();
   const {
     data: { user },
@@ -46,80 +36,166 @@ async function getUserSupabaseClient() {
   } = await supabase.auth.getUser();
 
   if (error || !user) {
-    return { ok: false as const, error: 'UNAUTHENTICATED' };
+    return { ok: false as const, error: 'UNAUTHENTICATED' as const };
   }
 
   return { ok: true as const, supabase, user };
 }
 
-export async function getTodayStatus(): Promise<AttendanceResponse> {
-  const client = await getUserSupabaseClient();
-  if (!client.ok) return client;
+async function listAttendanceRows(
+  filters: AttendanceLogsParams
+): Promise<AttendanceResult<AttendanceRow[]>> {
+  if (!isValidAttendanceRange(filters)) {
+    return { ok: false, error: 'INVALID_RANGE' };
+  }
 
-  const workDate = todayKstDate();
+  const client = await getUserScopedSupabase();
+  if (!client.ok) return client;
 
   const { data, error } = await client.supabase
     .from('attendance_logs')
     .select('*')
     .eq('user_id', client.user.id)
-    .eq('work_date', workDate)
-    .maybeSingle();
+    .gte('work_date', filters.from)
+    .lte('work_date', filters.to)
+    .order('work_date', { ascending: false });
 
-  if (error) return { ok: false, error: error.message };
+  if (error) {
+    console.error('[attendance] listAttendanceRows failed', error);
+    return { ok: false, error: 'UNKNOWN' };
+  }
 
-  return { ok: true, data: (data as AttendanceLog | null) ?? null };
+  return { ok: true, data: (data as AttendanceRow[] | null) ?? [] };
 }
 
-export async function clockIn(): Promise<MutationResponse> {
-  const client = await getUserSupabaseClient();
+export async function getAttendanceToday(): Promise<
+  AttendanceResult<AttendanceRecord | null>
+> {
+  const client = await getUserScopedSupabase();
   if (!client.ok) return client;
 
-  const workDate = todayKstDate();
+  const now = new Date();
+  const today = getKstDateString(now);
+  const yesterday = getKstDateOffsetString(-1, today);
 
-  const { data, error } = await client.supabase.rpc('fn_clock_in', {
+  const { data, error } = await client.supabase
+    .from('attendance_logs')
+    .select('*')
+    .eq('user_id', client.user.id)
+    .in('work_date', [today, yesterday])
+    .order('work_date', { ascending: false });
+
+  if (error) {
+    console.error('[attendance] getAttendanceToday failed', error);
+    return { ok: false, error: 'UNKNOWN' };
+  }
+
+  const rows = (data as AttendanceRow[] | null) ?? [];
+  const todayRow = rows.find(row => row.work_date === today);
+  const currentKstHour = getKstHour(now);
+
+  const activeCarryOverRow = rows.find(row => {
+    if (row.work_date !== yesterday || !row.clock_in_at) {
+      return false;
+    }
+
+    // 자정 넘겨 퇴근한 경우: clock_out_at의 KST 날짜가 오늘
+    if (row.clock_out_at !== null) {
+      return getKstDateString(row.clock_out_at) === today;
+    }
+
+    // 퇴근 기록 없음: 현재 KST 시각이 오전 6시 이전일 때만 자정 넘김으로 인정
+    // (오전 6시 이후면 퇴근을 깜빡한 것으로 간주)
+    return currentKstHour < 6;
+  });
+
+  return {
+    ok: true,
+    data: todayRow
+      ? mapAttendanceRow(todayRow)
+      : activeCarryOverRow
+        ? mapAttendanceRow(activeCarryOverRow)
+        : null,
+  };
+}
+
+export async function getAttendanceLogs(
+  params: AttendanceLogsParams
+): Promise<AttendanceResult<AttendanceRecord[]>> {
+  const rowsResult = await listAttendanceRows(params);
+  if (!rowsResult.ok) return rowsResult;
+
+  const records = rowsResult.data.map(mapAttendanceRow);
+
+  return {
+    ok: true,
+    data: params.status
+      ? records.filter(record => record.status === params.status)
+      : records,
+  };
+}
+
+export async function getAttendanceSummary(
+  period: AttendanceSummaryPeriod
+): Promise<AttendanceResult<AttendanceSummary>> {
+  const range = getKstDateRange(period);
+  const logsResult = await getAttendanceLogs(range);
+
+  if (!logsResult.ok) {
+    return logsResult;
+  }
+
+  return {
+    ok: true,
+    data: createAttendanceSummary(logsResult.data, period, range),
+  };
+}
+
+async function runAttendanceRpc(
+  rpcName:
+    | 'fn_clock_in'
+    | 'fn_clock_out'
+    | 'fn_early_leave'
+    | 'fn_undo_clock_out',
+  workDate = getKstDateString()
+): Promise<AttendanceResult<AttendanceRecord | null>> {
+  const client = await getUserScopedSupabase();
+  if (!client.ok) return client;
+
+  const { data, error } = await client.supabase.rpc(rpcName, {
     p_user_id: client.user.id,
     p_work_date: workDate,
   });
 
-  return error
-    ? { ok: false, error: error.message }
-    : { ok: true, data: (data as AttendanceLog | null) ?? null };
+  if (error) {
+    console.error(`[attendance] ${rpcName} failed`, error);
+    return { ok: false, error: mapAttendanceError(error.message) };
+  }
+
+  return {
+    ok: true,
+    data: data ? mapAttendanceRow(data as AttendanceRow) : null,
+  };
 }
 
-export async function earlyLeave(): Promise<MutationResponse> {
-  const client = await getUserSupabaseClient();
-  if (!client.ok) return client;
-
-  const workDate = todayKstDate();
-
-  const { data, error } = await client.supabase.rpc('fn_early_leave', {
-    p_user_id: client.user.id,
-    p_work_date: workDate,
-  });
-
-  return error
-    ? { ok: false, error: error.message }
-    : { ok: true, data: (data as AttendanceLog | null) ?? null };
+export async function checkIn() {
+  return runAttendanceRpc('fn_clock_in');
 }
 
-export async function clockOut(): Promise<MutationResponse> {
-  const client = await getUserSupabaseClient();
-  if (!client.ok) return client;
-
-  const workDate = todayKstDate();
-
-  const { data, error } = await client.supabase.rpc('fn_clock_out', {
-    p_user_id: client.user.id,
-    p_work_date: workDate,
-  });
-
-  return error
-    ? { ok: false, error: error.message }
-    : { ok: true, data: (data as AttendanceLog | null) ?? null };
+export async function earlyLeave() {
+  return runAttendanceRpc('fn_early_leave');
 }
 
-export async function getAttendanceRate(): Promise<AttendanceRateResponse> {
-  const client = await getUserSupabaseClient();
+export async function checkOut(workDate?: string) {
+  return runAttendanceRpc('fn_clock_out', workDate);
+}
+
+export async function undoClockOut(workDate?: string) {
+  return runAttendanceRpc('fn_undo_clock_out', workDate);
+}
+
+export async function getAttendanceRate(): Promise<AttendanceRateResult> {
+  const client = await getUserScopedSupabase();
   if (!client.ok) return client;
 
   const { data, error } = await client.supabase
@@ -128,8 +204,14 @@ export async function getAttendanceRate(): Promise<AttendanceRateResponse> {
     .eq('user_id', client.user.id)
     .maybeSingle();
 
-  if (error) return { ok: false, error: error.message };
+  if (error) {
+    console.error('[attendance] getAttendanceRate failed', error);
+    return { ok: false, error: 'UNKNOWN' };
+  }
 
-  const rateRow = data as { attendance_rate: number | null } | null;
-  return { ok: true, rate: rateRow?.attendance_rate ?? 0 };
+  return {
+    ok: true,
+    rate: ((data as { attendance_rate: number | null } | null)
+      ?.attendance_rate ?? 0) as number,
+  };
 }
