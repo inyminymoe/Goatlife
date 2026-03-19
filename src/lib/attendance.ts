@@ -222,6 +222,26 @@ export function isValidAttendanceRange(params: AttendanceLogsParams) {
   return params.from <= params.to;
 }
 
+// 기간 내 오늘까지 경과한 평일(월~금) 수를 반환
+// - 미래 날짜는 포함하지 않음 (이번 달 남은 날을 분모에 넣지 않기 위해)
+// - 주말은 제외 (다양한 근무 형태를 위해 추후 사용자별 근무 요일 설정으로 대체 가능)
+function countElapsedWeekdays(from: string, to: string): number {
+  const today = getKstDateString();
+  const effectiveTo = to < today ? to : today;
+
+  const start = toUtcDate(from);
+  const end = toUtcDate(effectiveTo);
+
+  let count = 0;
+  const cursor = new Date(start);
+  while (cursor <= end) {
+    const day = cursor.getUTCDay();
+    if (day !== 0 && day !== 6) count++; // 일(0), 토(6) 제외
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+  return count;
+}
+
 export function createAttendanceSummary(
   records: AttendanceRecord[],
   period: AttendanceSummaryPeriod,
@@ -241,8 +261,7 @@ export function createAttendanceSummary(
     record => record.status === 'vacation'
   ).length;
   const attendedDays = presentDays + lateDays + earlyLeaveDays;
-  // TODO: absent 레코드 자동 생성 플로우 구현 후 totalDays를 기간 일수 기준으로 변경
-  const totalDays = records.length;
+  const totalDays = countElapsedWeekdays(range.from, range.to);
   const totalWorkMinutes = records.reduce(
     (sum, record) => sum + record.workMinutes,
     0

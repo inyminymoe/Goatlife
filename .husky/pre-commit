@@ -1,1 +1,5 @@
-pnpm run format:check && pnpm run lint
+staged=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '\.(ts|tsx|css)$')
+if [ -n "$staged" ]; then
+  echo "$staged" | xargs prettier --check
+fi
+pnpm run lint
