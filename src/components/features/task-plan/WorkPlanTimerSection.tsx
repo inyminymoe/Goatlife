@@ -33,6 +33,7 @@ export default function WorkPlanTimerSection() {
     focusPresetMinutes,
     breakPresetMinutes,
     activeRoutine,
+    nextRoutineName,
     records,
     startManual,
     startRoutine,
@@ -78,6 +79,7 @@ export default function WorkPlanTimerSection() {
           focusPresetMinutes={focusPresetMinutes}
           breakPresetMinutes={breakPresetMinutes}
           routineName={activeRoutine?.title}
+          nextRoutineName={nextRoutineName}
           onToggleRunning={handleToggleRunning}
           onSkip={handleSkip}
           onReset={handleReset}

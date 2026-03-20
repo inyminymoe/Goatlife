@@ -2,6 +2,12 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+// ─── 모듈 레벨 중복 완료 방지 ───────────────────────────────
+// React StrictMode / concurrent mode에서 컴포넌트가 언마운트/리마운트될 때
+// useRef는 초기값으로 재생성되어 가드가 무력화된다.
+// 모듈 레벨 변수는 리마운트와 무관하게 살아남으므로 안전하게 dedup할 수 있다.
+let _lastFocusCompletionAt = 0;
+
 export type PomodoroMode = 'focus' | 'break';
 
 interface PomodoroTimerOptions {
@@ -27,6 +33,7 @@ interface PomodoroTimerResult {
   toggleRunning: () => void;
   startBreak: () => void;
   startFocus: () => void;
+  continueToNextFocus: () => void;
   skipToFocus: () => void;
   resetTimer: () => void;
   endSession: () => void;
@@ -185,6 +192,11 @@ export function usePomodoroTimer(
   // completionNotifiedRef로 동일 완료 이벤트가 중복 발화되는 것을 막는다.
   useEffect(() => {
     if (remainingSeconds !== 0 || completionNotifiedRef.current) return;
+    // React 18 StrictMode/concurrent mode 이중 실행 방지:
+    // ref는 리마운트 시 초기화되므로 모듈 레벨 변수로 가드한다.
+    const now = Date.now();
+    if (now - _lastFocusCompletionAt < 2000) return;
+    _lastFocusCompletionAt = now;
 
     completionNotifiedRef.current = true;
     setIsRunning(false);
@@ -389,6 +401,42 @@ export function usePomodoroTimer(
     setIsRunning(true);
   }, [flushBreakRecord, flushFocusElapsed, focusPresetMinutes, mode]);
 
+  // 루틴 모드에서 다음 루틴으로 이동할 때 사용한다.
+  // startFocus와 동일하지만 accumulatedFocusRef를 초기화하지 않아
+  // 이전 루틴까지의 집중 시간이 총 집중 시간에 누적된다.
+  //
+  // ⚠️ startedAtRef / focusStartedAtRef를 직접 갱신하는 이유:
+  // onFocusComplete 콜백은 completion detection useEffect 내부에서 실행되므로
+  // setIsRunning(false → true)이 같은 React 배치로 처리된다.
+  // 이때 isRunning의 최종값이 true → true (변화 없음)으로 감지되어
+  // main interval effect가 재실행되지 않는다.
+  // 재실행되지 않으면 기존 interval이 완료된 세션의 startedAtRef를 그대로 사용해
+  // remainingSeconds가 즉시 0으로 계산되고 무한 체이닝이 발생한다.
+  // startedAtRef를 현재 시각으로 직접 갱신하면
+  // 기존 interval이 새 세션 기준으로 올바르게 카운트다운한다.
+  const continueToNextFocus = useCallback(() => {
+    flushFocusElapsed();
+    // accumulatedFocusRef.current는 유지 (총 집중 시간 누적)
+    //
+    // ⚠️ 여기서 completionNotifiedRef.current = false 리셋 금지:
+    // 이 함수는 onFocusComplete 콜백 내부에서 동기 호출된다.
+    // 그 전에 advanceToNextRoutineRef가 currentFocusSessionKeyRef를 새 UUID로 교체하므로,
+    // 여기서 리셋하면 완료 감지 effect가 remainingSeconds=0 상태에서 재실행될 때
+    // dedup 가드를 뚫고 focus-done이 중복 저장된다.
+    // 리셋은 "remainingSeconds > 0" effect에서 처리한다.
+    setMode('focus');
+    const newRemaining = focusPresetMinutes * 60;
+    remainingSecondsRef.current = newRemaining;
+    setRemainingSeconds(newRemaining);
+
+    // interval 기준점을 현재 시각으로 직접 갱신
+    const now = Date.now();
+    startedAtRef.current = now;
+    focusStartedAtRef.current = now;
+
+    setIsRunning(true);
+  }, [flushFocusElapsed, focusPresetMinutes]);
+
   return {
     mode,
     isRunning,
@@ -401,6 +449,7 @@ export function usePomodoroTimer(
     toggleRunning,
     startBreak,
     startFocus,
+    continueToNextFocus,
     skipToFocus,
     resetTimer,
     endSession,

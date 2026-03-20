@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePomodoroTimer } from '@/hooks/usePomodoroTimer';
 import {
   useActiveSessionQuery,
@@ -18,81 +18,90 @@ interface UseSessionOrchestratorOptions {
   onToast?: (message: string, type: 'success' | 'info' | 'warning') => void;
 }
 
-// usePomodoroTimer(순수 타이머 로직)와 DB 연동(active session, 기록 저장)을
-// 조합해 실제 세션 흐름을 조율하는 오케스트레이터 훅.
 export function useSessionOrchestrator({
   initialFocusMinutes = 30,
   initialBreakMinutes = 15,
   onToast,
 }: UseSessionOrchestratorOptions = {}) {
-  // sessionMode: 현재 세션의 종류 ('idle' | 'manual' | 'routine')
   const [sessionMode, setSessionMode] = useState<SessionMode>('idle');
-  // activeRoutine: 현재 진행 중인 루틴 정보 (루틴 세션이 아니면 null)
   const [activeRoutine, setActiveRoutine] = useState<ActiveRoutine | null>(
     null
   );
 
-  // sessionStartedAtRef: 세션이 시작된 시각. 기록(PomodoroSession)의 startedAt으로 사용된다.
   const sessionStartedAtRef = useRef<Date | null>(null);
-  // focusPresetRef: 콜백 클로저에서 최신 focusPresetMinutes를 읽기 위한 ref.
   const focusPresetRef = useRef(initialFocusMinutes);
-  // 중복 기록 저장 방지 플래그 (focus / break 각각 관리)
-  const isFocusRecordingRef = useRef(false);
-  const isBreakRecordingRef = useRef(false);
+
+  // 전체 루틴 배열 — routine 모드에서 다음 루틴 이동에 사용
+  const routineQueueRef = useRef<Pick<ActiveRoutine, 'id' | 'title'>[]>([]);
+
+  // 콜백 클로저에서 항상 최신값을 읽기 위한 ref (렌더 중 직접 할당)
+  const sessionModeRef = useRef<SessionMode>('idle');
+  const activeRoutineRef = useRef<ActiveRoutine | null>(null);
+  sessionModeRef.current = sessionMode;
+  activeRoutineRef.current = activeRoutine;
+
+  // focus-done 중복 저장 방지: 세션 키가 바뀔 때만 저장 허용
+  // setTimeout(0) 방식은 렌더 사이클과 경쟁하므로 세션-키 기반으로 대체한다.
+  const currentFocusSessionKeyRef = useRef('');
+  const focusDoneRecordedKeyRef = useRef('');
 
   // ─── TanStack Query 훅 ──────────────────────────────────
-  // activeSessionData: DB에 저장된 현재 진행 중인 세션 (새로고침 복원에 사용)
   const { data: activeSessionData, isLoading: isSessionLoading } =
     useActiveSessionQuery();
-  // todayHistory: 오늘 완료된 세션 기록 목록
   const { data: todayHistory = [] } = useTodayHistoryQuery();
   const { mutate: upsertSession } = useUpsertActiveSession();
   const { mutate: deleteSession } = useDeleteActiveSession();
   const { mutate: saveHistory } = useCreateSessionHistory();
 
-  // saveHistory를 ref로 관리해 콜백 클로저에서 항상 최신 mutate 함수를 참조한다.
+  // mutate 함수를 ref로 관리해 콜백 클로저에서 항상 최신을 참조한다.
   const saveHistoryRef = useRef(saveHistory);
+  const upsertSessionRef = useRef(upsertSession);
+  const deleteSessionRef = useRef(deleteSession);
   useEffect(() => {
     saveHistoryRef.current = saveHistory;
   });
+  useEffect(() => {
+    upsertSessionRef.current = upsertSession;
+  });
+  useEffect(() => {
+    deleteSessionRef.current = deleteSession;
+  });
 
   // ─── 기록 저장 ──────────────────────────────────────────
-  // 집중/휴식 완료·중단 시 호출해 DB에 세션 기록을 저장한다.
-  // isFocusRecordingRef / isBreakRecordingRef로 동일 이벤트의 중복 저장을 막는다.
   const addRecord = useCallback(
-    (status: PomodoroSession['status'], durationSeconds: number) => {
-      if (status === 'focus-done' || status === 'focus-incomplete') {
-        if (isFocusRecordingRef.current) return;
-        isFocusRecordingRef.current = true;
-        setTimeout(() => {
-          isFocusRecordingRef.current = false;
-        }, 0);
-      } else {
-        if (isBreakRecordingRef.current) return;
-        isBreakRecordingRef.current = true;
-        setTimeout(() => {
-          isBreakRecordingRef.current = false;
-        }, 0);
+    (
+      status: PomodoroSession['status'],
+      durationSeconds: number,
+      routineOverride?: Pick<ActiveRoutine, 'id' | 'title'> | null
+    ) => {
+      // focus-done 중복 방지: 동일 세션 키에 대해 두 번 저장하지 않는다.
+      if (status === 'focus-done') {
+        if (
+          focusDoneRecordedKeyRef.current === currentFocusSessionKeyRef.current
+        )
+          return;
+        focusDoneRecordedKeyRef.current = currentFocusSessionKeyRef.current;
       }
 
+      const routine =
+        routineOverride !== undefined
+          ? routineOverride
+          : activeRoutineRef.current;
       const record: PomodoroSession = {
         id: crypto.randomUUID(),
         status,
         durationSeconds,
         startedAt: sessionStartedAtRef.current ?? new Date(),
-        routineId: activeRoutine?.id,
-        routineTitle: activeRoutine?.title,
+        routineId: routine?.id,
+        routineTitle: routine?.title,
       };
 
       saveHistoryRef.current(record);
-      return record;
     },
-    [activeRoutine]
+    [] // activeRoutineRef를 렌더 중 직접 갱신하므로 deps 불필요
   );
 
   // ─── active session DB 동기화 ───────────────────────────
-  // 타이머 상태가 바뀔 때마다 DB의 active_session 레코드를 최신 상태로 갱신한다.
-  // 새로고침 후 복원의 원천 데이터가 된다.
   const syncActiveSession = useCallback(
     (overrides?: {
       sessionMode?: SessionMode;
@@ -119,38 +128,88 @@ export function useSessionOrchestrator({
     [upsertSession, sessionMode, activeRoutine]
   );
 
+  // ─── 다음 루틴으로 전환 ──────────────────────────────────
+  // onFocusComplete 콜백 안에서 호출된다. ref 패턴으로 stale closure 방지.
+  const advanceToNextRoutineRef = useRef<() => void>(() => {});
+
   // ─── usePomodoroTimer ───────────────────────────────────
-  // 순수 타이머 로직 훅. 완료/실패/기록 콜백에서 addRecord와 DB 작업을 수행한다.
   const timer = usePomodoroTimer({
     initialFocusMinutes,
     initialBreakMinutes,
     autoStart: false,
 
-    // focus 타이머가 0이 되었을 때: 기록 저장 후 active session 삭제
     onFocusComplete: () => {
-      addRecord('focus-done', focusPresetRef.current * 60);
-      deleteSession();
-      onToast?.('집중이 완료됐어요. 다음 흐름을 이어가세요.', 'success');
+      const completedRoutine = activeRoutineRef.current;
+      // 중복 저장 방지: 세션 키로 이미 저장된 경우 건너뜀
+      addRecord('focus-done', focusPresetRef.current * 60, completedRoutine);
+
+      if (sessionModeRef.current === 'routine') {
+        advanceToNextRoutineRef.current();
+      } else {
+        deleteSessionRef.current();
+        onToast?.('집중이 완료됐어요. 다음 흐름을 이어가세요.', 'success');
+      }
     },
     onBreakComplete: () => {
       onToast?.('휴식이 끝났어요. 다시 집중을 시작할 수 있어요.', 'info');
     },
-    // focus 타이머가 중간에 중단되었을 때 (skip / end 등)
     onFocusFail: elapsed => {
       addRecord('focus-incomplete', elapsed);
     },
-    // break 타이머가 완료되거나 skip되었을 때
     onBreakRecorded: elapsed => {
       addRecord('break', elapsed);
     },
   });
 
-  // focusPresetRef를 항상 최신 preset으로 유지 (onFocusComplete 클로저에서 사용)
+  // 렌더마다 최신 preset / timer 액션을 ref에 반영
   focusPresetRef.current = timer.focusPresetMinutes;
 
+  // advanceToNextRoutineRef를 렌더마다 갱신 (timer / upsertSession 등 stale 방지)
+  advanceToNextRoutineRef.current = () => {
+    const current = activeRoutineRef.current;
+    if (!current) return;
+
+    const nextIndex = current.index + 1;
+    const nextRoutine = routineQueueRef.current[nextIndex];
+
+    if (!nextRoutine) {
+      // 마지막 루틴 완료 → 전체 세션 종료
+      setSessionMode('idle');
+      setActiveRoutine(null);
+      sessionStartedAtRef.current = null;
+      routineQueueRef.current = [];
+      deleteSessionRef.current();
+      onToast?.('모든 루틴을 완료했어요! 🎉', 'success');
+      return;
+    }
+
+    // 다음 루틴으로 전환: 누적 집중 시간 유지 (continueToNextFocus)
+    const newRoutine: ActiveRoutine = {
+      ...nextRoutine,
+      index: nextIndex,
+      totalCount: current.totalCount,
+    };
+    const startedAt = new Date();
+    sessionStartedAtRef.current = startedAt;
+    // 새 세션 키 발급 — 다음 루틴의 focus-done 저장 허용
+    currentFocusSessionKeyRef.current = crypto.randomUUID();
+
+    setActiveRoutine(newRoutine);
+    timer.continueToNextFocus();
+
+    upsertSessionRef.current({
+      timerMode: 'focus',
+      startedAt,
+      durationSeconds: timer.focusPresetMinutes * 60,
+      totalFocusSeconds: timer.totalFocusSeconds,
+      sessionMode: 'routine',
+      activeRoutine: newRoutine,
+    });
+
+    onToast?.(`'${nextRoutine.title}' 시작!`, 'success');
+  };
+
   // ─── 페이지 진입 시 active session 복원 ─────────────────
-  // DB에 저장된 active session이 있으면 타이머와 세션 상태를 복원한다.
-  // restoredRef로 한 번만 실행되도록 보호한다 (Strict Mode 이중 실행 등 방지).
   const restoredRef = useRef(false);
 
   useEffect(() => {
@@ -193,9 +252,8 @@ export function useSessionOrchestrator({
 
     const startedAt = new Date(started_at);
     sessionStartedAtRef.current = startedAt;
+    currentFocusSessionKeyRef.current = crypto.randomUUID();
 
-    // restoreSession 내부에서 "저장 시각 → 현재"까지 경과한 시간을
-    // totalFocusSeconds에 자동으로 반영하므로 새로고침 후에도 집중 시간이 정확하다.
     timer.restoreSession({
       mode: timer_mode,
       startedAt,
@@ -207,14 +265,11 @@ export function useSessionOrchestrator({
   }, [isSessionLoading, activeSessionData]);
 
   // ─── 탭 복귀 시 interval 기준점 재보정 ──────────────────
-  // 백그라운드 탭에서 setInterval이 throttle되어 타이머가 느려지는 문제를 보정한다.
-  // restoreSession과 달리 startedAtRef(interval 기준점)만 재설정하므로
-  // totalFocusSeconds가 중복 누적되지 않는다.
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState !== 'visible') return;
       if (!timer.isRunning) return;
-      timer.recalibrate(); //  startedAtRef만 재보정, 집중 시간 누적 건드리지 않음
+      timer.recalibrate();
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -224,13 +279,14 @@ export function useSessionOrchestrator({
 
   // ─── 세션 진입 액션 ─────────────────────────────────────
 
-  // 단일 태스크 수동 타이머 시작
   const startManual = useCallback(
     (routine: Pick<ActiveRoutine, 'id' | 'title'>) => {
       const startedAt = new Date();
       sessionStartedAtRef.current = startedAt;
+      currentFocusSessionKeyRef.current = crypto.randomUUID();
       const newRoutine = { ...routine, index: 0, totalCount: 1 };
 
+      routineQueueRef.current = [routine];
       setSessionMode('manual');
       setActiveRoutine(newRoutine);
       timer.startFocus();
@@ -249,15 +305,17 @@ export function useSessionOrchestrator({
     [timer, upsertSession, onToast]
   );
 
-  // 루틴(복수 태스크) 순서대로 시작. 첫 번째 태스크부터 집중 타이머를 돌린다.
   const startRoutine = useCallback(
     (routines: Pick<ActiveRoutine, 'id' | 'title'>[]) => {
       if (routines.length === 0) {
         onToast?.('시작할 루틴이 없어요.', 'warning');
         return;
       }
+
+      routineQueueRef.current = routines;
       const startedAt = new Date();
       sessionStartedAtRef.current = startedAt;
+      currentFocusSessionKeyRef.current = crypto.randomUUID();
       const newRoutine = {
         ...routines[0],
         index: 0,
@@ -284,10 +342,10 @@ export function useSessionOrchestrator({
 
   // ─── 세션 제어 액션 ─────────────────────────────────────
 
-  // 재생/일시정지. idle 상태에서 첫 재생 시 manual 세션으로 전환한다.
   const handleToggleRunning = useCallback(() => {
     if (sessionMode === 'idle') {
       sessionStartedAtRef.current = new Date();
+      currentFocusSessionKeyRef.current = crypto.randomUUID();
       setSessionMode('manual');
     }
     timer.toggleRunning();
@@ -300,8 +358,6 @@ export function useSessionOrchestrator({
     );
   }, [sessionMode, timer, syncActiveSession, onToast]);
 
-  // 현재 모드를 건너뜀. focus → break 또는 break → focus(일시정지)로 전환한다.
-  // 중단 기록(focus-incomplete / break)을 저장한 뒤 전환한다.
   const handleSkip = useCallback(() => {
     if (timer.mode === 'focus') {
       const elapsed = timer.focusPresetMinutes * 60 - timer.remainingSeconds;
@@ -314,19 +370,22 @@ export function useSessionOrchestrator({
 
     const breakElapsed = timer.breakPresetMinutes * 60 - timer.remainingSeconds;
     if (breakElapsed >= 1) addRecord('break', breakElapsed);
-    timer.skipToFocus();
-    syncActiveSession();
-    onToast?.("'다음 작업'을 시작하려면 재생버튼을 눌러주세요.", 'info');
-  }, [timer, addRecord, syncActiveSession, onToast]);
 
-  // 현재 모드의 타이머를 preset 시간으로 리셋한다. 누적 집중 시간은 유지된다.
+    if (sessionMode === 'routine') {
+      advanceToNextRoutineRef.current();
+    } else {
+      timer.skipToFocus();
+      syncActiveSession();
+      onToast?.("'다음 작업'을 시작하려면 재생버튼을 눌러주세요.", 'info');
+    }
+  }, [timer, addRecord, syncActiveSession, sessionMode, onToast]);
+
   const handleReset = useCallback(() => {
     timer.resetTimer();
     syncActiveSession();
     onToast?.('현재 타이머를 초기화했어요.', 'info');
   }, [timer, syncActiveSession, onToast]);
 
-  // 세션 전체 종료. 진행 중인 기록을 저장하고 모든 상태를 초기화한다.
   const handleEnd = useCallback(() => {
     if (timer.mode === 'focus') {
       const elapsed = timer.focusPresetMinutes * 60 - timer.remainingSeconds;
@@ -341,11 +400,11 @@ export function useSessionOrchestrator({
     setSessionMode('idle');
     setActiveRoutine(null);
     sessionStartedAtRef.current = null;
+    routineQueueRef.current = [];
     deleteSession();
     onToast?.('현재 세션을 종료했어요.', 'success');
   }, [timer, addRecord, deleteSession, onToast]);
 
-  // focus / break preset 시간 변경 후 DB에도 반영한다.
   const handleSaveSettings = useCallback(
     (settings: TimerSettings) => {
       timer.setFocusPresetMinutes(settings.focusPresetMinutes);
@@ -354,6 +413,12 @@ export function useSessionOrchestrator({
     },
     [timer, onToast]
   );
+
+  // 다음 루틴 이름 (TimerCard 표시용)
+  const nextRoutineName = useMemo(() => {
+    if (!activeRoutine || sessionMode !== 'routine') return undefined;
+    return routineQueueRef.current[activeRoutine.index + 1]?.title;
+  }, [activeRoutine, sessionMode]);
 
   return {
     timerMode: timer.mode,
@@ -365,6 +430,7 @@ export function useSessionOrchestrator({
 
     sessionMode,
     activeRoutine,
+    nextRoutineName,
     isSessionLoading,
 
     records: todayHistory,
