@@ -274,16 +274,30 @@ export function usePomodoroTimer(
 
   // ─── recalibrate ────────────────────────────────────────
   // 백그라운드 탭 복귀 시 호출한다.
-  // setInterval은 백그라운드에서 throttle되어 drift가 발생하므로,
-  // startedAtRef(interval 기준점)만 현재 remainingSeconds 기준으로 재설정한다.
-  // totalFocusSeconds / accumulatedFocusRef 등 집중 시간 누적값은 건드리지 않아
-  // restoreSession과 달리 중복 누적이 발생하지 않는다.
+  // setInterval은 백그라운드에서 throttle되어 remainingSecondsRef가 stale해질 수 있으므로
+  // startedAtRef와 focusStartedAtRef를 현재 remainingSeconds 기준으로 함께 재설정한다.
+  //
+  // focusStartedAtRef 재설정 공식:
+  //   focusStartedAtRef = startedAtRef + accumulatedFocusRef * 1000
+  // → totalFocusSeconds = accumulated + (now - focusStartedAtRef)
+  //                      = accumulated + (alreadyElapsed - accumulated)
+  //                      = alreadyElapsed (카운트다운과 일치)
+  // pause/resume 세션도 올바르게 처리됨:
+  //   accumulated = elapsed_before_pause, alreadyElapsed = elapsed_before_pause + time_since_resume
+  //   → totalFocusSeconds = elapsed_before_pause + time_since_resume ✓
   const recalibrate = useCallback(() => {
     if (!isRunning) return;
     const totalDuration =
       mode === 'focus' ? focusPresetMinutes * 60 : breakPresetMinutes * 60;
     const alreadyElapsed = totalDuration - remainingSecondsRef.current;
-    startedAtRef.current = Date.now() - alreadyElapsed * 1000;
+    const now = Date.now();
+    startedAtRef.current = now - alreadyElapsed * 1000;
+    // focusStartedAtRef도 동기화 — startedAtRef만 재설정하면 totalFocusSeconds가
+    // 카운트다운 대비 최대 수십 초 앞서가는 오차가 발생한다.
+    if (mode === 'focus' && focusStartedAtRef.current !== null) {
+      focusStartedAtRef.current =
+        startedAtRef.current + accumulatedFocusRef.current * 1000;
+    }
   }, [isRunning, mode, focusPresetMinutes, breakPresetMinutes]);
 
   // ─── preset 변경 ────────────────────────────────────────
