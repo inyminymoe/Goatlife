@@ -361,7 +361,10 @@ export function useSessionOrchestrator({
   const handleSkip = useCallback(() => {
     if (timer.mode === 'focus') {
       const elapsed = timer.focusPresetMinutes * 60 - timer.remainingSeconds;
-      if (elapsed >= 1) addRecord('focus-incomplete', elapsed);
+      // remainingSeconds > 0일 때만 미완료 기록
+      // (0이면 이미 자연 완료 → focus-done으로 기록됨)
+      if (elapsed >= 1 && timer.remainingSeconds > 0)
+        addRecord('focus-incomplete', elapsed);
 
       // routine 모드에서 focus 스킵 → break 없이 바로 다음 루틴으로
       if (sessionMode === 'routine') {
