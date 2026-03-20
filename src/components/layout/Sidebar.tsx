@@ -28,7 +28,7 @@ export default function Sidebar({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={onClose}
-              className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+              className="fixed inset-0 z-40 bg-black/50 xl:hidden"
             />
 
             <motion.aside
@@ -36,7 +36,7 @@ export default function Sidebar({
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className="fixed inset-0 w-[276px] h-full bg-grey-100 z-50 lg:hidden overflow-y-auto shadow-xl"
+              className="fixed inset-0 z-50 h-full w-[276px] overflow-y-auto bg-grey-100 shadow-xl xl:hidden"
             >
               <div className="p-6">
                 <button

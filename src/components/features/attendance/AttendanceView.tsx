@@ -1,57 +1,70 @@
 'use client';
 
+import { ATTENDANCE_POLICY } from '@/lib/attendance';
+import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
+import BottomSheet from '@/components/ui/BottomSheet';
 import Toast from '@/components/ui/Toast';
 import { Icon } from '@iconify/react';
 import type {
-  AttendanceViewState,
   AttendanceLifecycle,
+  AttendanceViewState,
   ToastState,
 } from '@/hooks/useAttendance';
-import { useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 export type AttendanceViewMode = 'compact' | 'full';
+const DAILY_TARGET_SECONDS = ATTENDANCE_POLICY.dailyTargetMinutes * 60;
 
 interface AttendanceViewProps {
   attendance: AttendanceViewState;
   attendanceRate: number;
-  todayMinutes: number;
+  todaySeconds: number;
   lifecycle: AttendanceLifecycle;
   isMutating: boolean;
   toast: ToastState;
   onDismissToast: () => void;
   actions: {
     clockIn: () => void;
-    earlyLeave: () => void;
     clockOut: () => void;
+    undoClockOut?: () => void;
   };
   mode?: AttendanceViewMode;
 }
 
-function formatHourClock(totalMinutes: number) {
-  const safeMinutes = Math.max(0, totalMinutes);
-  const hours = Math.floor(safeMinutes / 60);
-  const minutes = safeMinutes % 60;
-  return `${hours}:${String(minutes).padStart(2, '0')}`;
+function formatDuration(totalSeconds: number) {
+  const safeSeconds = Math.max(0, totalSeconds);
+  const hours = Math.floor(safeSeconds / 3600);
+  const minutes = Math.floor((safeSeconds % 3600) / 60);
+  const seconds = safeSeconds % 60;
+
+  return [
+    String(hours).padStart(2, '0'),
+    String(minutes).padStart(2, '0'),
+    String(seconds).padStart(2, '0'),
+  ].join(':');
 }
 
 function Skeleton() {
   return (
     <section
-      className="bg-grey-100 rounded-[5px] p-6"
+      className="flex h-full flex-col rounded-[5px] bg-grey-100 p-6"
       aria-labelledby="attendance-title"
     >
-      <div className="flex items-end gap-1 mb-4">
-        <div className="w-6 h-6 bg-grey-300 rounded animate-pulse" />
-        <div className="h-6 w-24 bg-grey-300 rounded animate-pulse" />
+      <div className="flex flex-col gap-5">
+        <div className="flex items-center gap-2">
+          <div className="h-6 w-6 rounded bg-grey-300 animate-pulse" />
+          <div className="h-6 w-24 rounded bg-grey-300 animate-pulse" />
+          <div className="h-6 w-16 rounded-full bg-grey-300 animate-pulse" />
+        </div>
+        <div className="grid grid-cols-2 gap-5">
+          <div className="h-20 rounded bg-grey-200 animate-pulse" />
+          <div className="h-20 rounded bg-grey-200 animate-pulse" />
+        </div>
       </div>
-      <div className="mt-4 grid grid-cols-2 gap-4">
-        <div className="h-20 bg-grey-200 rounded animate-pulse" />
-        <div className="h-20 bg-grey-200 rounded animate-pulse" />
-      </div>
-      <div className="mt-3 grid grid-cols-2 gap-3">
-        <div className="h-10 bg-grey-300 rounded animate-pulse" />
-        <div className="h-10 bg-grey-300 rounded animate-pulse" />
+      <div className="mt-auto grid grid-cols-1 gap-4 pt-6 lg:grid-cols-2">
+        <div className="h-11 rounded bg-grey-300 animate-pulse" />
+        <div className="h-11 rounded bg-grey-300 animate-pulse" />
       </div>
     </section>
   );
@@ -60,7 +73,7 @@ function Skeleton() {
 export default function AttendanceView({
   attendance,
   attendanceRate,
-  todayMinutes,
+  todaySeconds,
   lifecycle,
   isMutating,
   toast,
@@ -68,82 +81,128 @@ export default function AttendanceView({
   actions,
   mode = 'compact',
 }: AttendanceViewProps) {
+  const [isClockOutSheetOpen, setIsClockOutSheetOpen] = useState(false);
+  const isClockInLocked =
+    attendance.resultStatus === 'vacation' ||
+    attendance.resultStatus === 'absent';
+
+  const operationStatus = useMemo(() => {
+    switch (attendance.operationStatus) {
+      case 'working':
+        return {
+          label: '근무 중',
+          badgeClassName: 'attendance-status-badge-live',
+        };
+      case 'completed':
+        return {
+          label: '퇴근',
+          badgeClassName: 'attendance-status-badge-complete',
+        };
+      default:
+        return {
+          label: '근무 전',
+          badgeClassName: 'attendance-status-badge-idle',
+        };
+    }
+  }, [attendance.operationStatus]);
+
   const formattedToday = useMemo(
-    () => formatHourClock(todayMinutes),
-    [todayMinutes]
+    () => formatDuration(todaySeconds),
+    [todaySeconds]
+  );
+  const isUnderDailyTarget =
+    todaySeconds > 0 && todaySeconds < DAILY_TARGET_SECONDS;
+  const targetDurationLabel = useMemo(
+    () => formatDuration(DAILY_TARGET_SECONDS),
+    []
   );
 
   const todaySecondaryLabel = useMemo(() => {
-    switch (attendance.status) {
-      case 'in':
+    switch (attendance.operationStatus) {
+      case 'working':
         return '동안 근무 중';
-      case 'early':
-        return '동안 근무';
-      case 'out':
-        return '동안 근무';
+      case 'completed':
+        return '동안 근무함';
       default:
-        return '동안 근무 중';
+        return '근무 전';
     }
-  }, [attendance.status]);
+  }, [attendance.operationStatus]);
 
   const primaryButton = useMemo(() => {
-    switch (attendance.status) {
-      case 'in':
-        return {
-          label: '조퇴하기',
-          variant: 'secondary' as const,
-          onClick: actions.earlyLeave,
-          disabled: isMutating,
-        };
-      case 'early':
-        return {
-          label: '조퇴하기',
-          variant: 'secondary' as const,
-          onClick: actions.earlyLeave,
-          disabled: true,
-        };
-      case 'out':
+    switch (attendance.operationStatus) {
+      case 'before_work':
         return {
           label: '출근하기',
+          variant: 'primary' as const,
+          onClick: actions.clockIn,
+          disabled: isClockInLocked || isMutating,
+        };
+      case 'working':
+        return {
+          label: '출근 완료',
           variant: 'primary' as const,
           onClick: actions.clockIn,
           disabled: true,
         };
       default:
         return {
-          label: '출근하기',
+          label: '퇴근 완료',
           variant: 'primary' as const,
           onClick: actions.clockIn,
-          disabled: isMutating,
+          disabled: true,
         };
     }
-  }, [actions.clockIn, actions.earlyLeave, attendance.status, isMutating]);
+  }, [
+    actions.clockIn,
+    attendance.operationStatus,
+    isClockInLocked,
+    isMutating,
+  ]);
 
   const secondaryButton = useMemo(() => {
-    switch (attendance.status) {
-      case 'none':
-        return {
-          label: '퇴근하기',
-          variant: 'text' as const,
-          onClick: actions.clockOut,
-          disabled: true,
-        };
-      case 'out':
-        return {
-          label: '퇴근하기',
-          variant: 'text' as const,
-          onClick: actions.clockOut,
-          disabled: true,
-        };
-      default:
+    switch (attendance.operationStatus) {
+      case 'working':
         return {
           label: '퇴근하기',
           variant: 'text' as const,
           onClick: actions.clockOut,
           disabled: isMutating,
         };
+      case 'completed':
+        return {
+          label: '퇴근취소',
+          variant: 'text' as const,
+          onClick: actions.undoClockOut ?? (() => {}),
+          disabled: isMutating,
+        };
+      default:
+        return {
+          label: '퇴근하기',
+          variant: 'text' as const,
+          onClick: actions.clockOut,
+          disabled: true,
+        };
     }
-  }, [actions.clockOut, attendance.status, isMutating]);
+  }, [
+    actions.clockOut,
+    actions.undoClockOut,
+    attendance.operationStatus,
+    isMutating,
+  ]);
+
+  const openClockOutSheet = useCallback(() => {
+    if (secondaryButton.disabled) return;
+    setIsClockOutSheetOpen(true);
+  }, [secondaryButton.disabled]);
+
+  const closeClockOutSheet = useCallback(() => {
+    setIsClockOutSheetOpen(false);
+  }, []);
+
+  const handleConfirmClockOut = useCallback(() => {
+    setIsClockOutSheetOpen(false);
+    actions.clockOut();
+  }, [actions]);
 
   if (lifecycle === 'loading') {
     return <Skeleton />;
@@ -151,7 +210,7 @@ export default function AttendanceView({
 
   if (lifecycle === 'error') {
     return (
-      <section className="bg-grey-100 rounded-[5px] p-6 text-center text-grey-400">
+      <section className="flex h-full items-center justify-center rounded-[5px] bg-grey-100 p-6 text-center text-grey-400">
         데이터를 불러오지 못했습니다. 다시 시도해주세요.
       </section>
     );
@@ -160,55 +219,72 @@ export default function AttendanceView({
   return (
     <>
       <section
-        className="bg-grey-100 rounded-[5px] p-6 flex flex-col gap-5"
+        className="flex h-full flex-col rounded-[5px] bg-grey-100 p-6"
         aria-labelledby="attendance-title"
         data-mode={mode}
       >
-        <div className="flex items-end gap-1">
-          <Icon
-            icon="icon-park:briefcase"
-            className="w-6 h-6 icon-dark-invert"
-            aria-hidden="true"
-          />
-          <h2 id="attendance-title" className="brand-h3 text-grey-900">
-            근태관리
-          </h2>
-        </div>
-
-        <div className="grid grid-cols-2 gap-x-0 gap-y-4 items-start">
-          <div className="flex flex-col gap-1 items-start text-left min-w-0">
-            <div className="inline-flex items-center gap-2.5">
-              <span className="text-grey-500 body-sm font-semibold">Today</span>
-            </div>
-            <div className="inline-flex items-end gap-1">
-              <span className="brand-h1 text-primary-500 tabular-nums">
-                {formattedToday}
-              </span>
-              <span className="body-xs text-grey-500">
-                {todaySecondaryLabel}
-              </span>
-            </div>
+        <div className="flex flex-col gap-5">
+          <div className="flex items-center gap-2">
+            <Icon
+              icon="icon-park:briefcase"
+              className="h-6 w-6 icon-dark-invert"
+              aria-hidden="true"
+            />
+            <h2 id="attendance-title" className="brand-h3 text-grey-900">
+              근태관리
+            </h2>
+            <Badge
+              variant="calendar"
+              size="xs"
+              dot
+              className={`relative h-auto rounded-2xl !bg-transparent px-3 py-1.5 text-[10px] leading-none ${operationStatus.badgeClassName}`}
+              style={{ backgroundColor: 'transparent' }}
+              aria-label={`현재 상태 ${operationStatus.label}`}
+            >
+              {operationStatus.label}
+            </Badge>
           </div>
 
-          <div className="flex flex-col gap-1 items-start text-left min-w-0">
-            <div className="inline-flex items-center gap-2.5">
-              <span className="text-grey-500 body-sm font-semibold">Total</span>
+          <div className="grid grid-cols-2 gap-5 items-start">
+            <div className="flex min-w-0 flex-col gap-1 text-left">
+              <div className="inline-flex items-center gap-2.5">
+                <span className="body-sm font-semibold text-grey-300">
+                  Today
+                </span>
+              </div>
+              <div className="flex flex-wrap items-end gap-x-1 gap-y-0.5">
+                <span className="brand-h1 tabular-nums text-primary-500">
+                  {formattedToday}
+                </span>
+                <span className="body-xs text-grey-500">
+                  {todaySecondaryLabel}
+                </span>
+              </div>
             </div>
-            <div className="inline-flex items-baseline gap-1">
-              <span className="brand-h1 text-primary-500 tabular-nums">
-                {Number(attendanceRate.toFixed(0))}
-              </span>
-              <span className="body-xs text-grey-500">% 출근율</span>
+
+            <div className="flex min-w-0 flex-col gap-1 text-left">
+              <div className="inline-flex items-center gap-2.5">
+                <span className="body-sm font-semibold text-grey-300">
+                  이번 달
+                </span>
+              </div>
+              <div className="flex flex-wrap items-end gap-x-1 gap-y-0.5">
+                <span className="brand-h1 tabular-nums text-primary-500">
+                  {Number(attendanceRate.toFixed(0))}
+                </span>
+                <span className="body-xs text-grey-500">% 출근율</span>
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="mt-auto grid w-full grid-cols-1 gap-4 pt-6 lg:grid-cols-2">
           <Button
             variant={primaryButton.variant}
             fullWidth
             disabled={primaryButton.disabled}
             onClick={primaryButton.onClick}
+            className="px-4 py-3 font-semibold"
           >
             {primaryButton.label}
           </Button>
@@ -216,12 +292,57 @@ export default function AttendanceView({
             variant={secondaryButton.variant}
             fullWidth
             disabled={secondaryButton.disabled}
-            onClick={secondaryButton.onClick}
+            onClick={
+              attendance.operationStatus === 'working'
+                ? openClockOutSheet
+                : secondaryButton.onClick
+            }
+            className="px-4 py-3 font-semibold"
           >
             {secondaryButton.label}
           </Button>
         </div>
       </section>
+
+      <BottomSheet
+        open={isClockOutSheetOpen}
+        onClose={closeClockOutSheet}
+        title="퇴근 처리할까요?"
+      >
+        <div className="flex flex-col gap-4">
+          <div className="rounded-[10px] bg-grey-100 p-4">
+            <p className="body-xs font-medium text-grey-500">현재 누적 시간</p>
+            <p className="mt-1 brand-h2 text-primary-500">{formattedToday}</p>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <p className="body-sm text-grey-700">
+              {isUnderDailyTarget
+                ? `아직 목표 근무 시간 ${targetDurationLabel}을 채우지 않았어요. 지금 퇴근하면 오늘 근무가 이 시점 기준으로 종료됩니다.`
+                : '지금 퇴근하면 오늘 근무가 종료됩니다.'}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <Button
+              variant="outline"
+              fullWidth
+              onClick={closeClockOutSheet}
+              className="px-4 py-3 font-semibold"
+            >
+              계속 근무하기
+            </Button>
+            <Button
+              fullWidth
+              onClick={handleConfirmClockOut}
+              disabled={isMutating}
+              className="px-4 py-3 font-semibold"
+            >
+              퇴근 처리하기
+            </Button>
+          </div>
+        </div>
+      </BottomSheet>
 
       <Toast
         show={!!toast}

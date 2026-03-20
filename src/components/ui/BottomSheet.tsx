@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useId } from 'react';
+import { useEffect, useId, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Icon } from '@iconify/react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useScrollLock } from '@/hooks/useScrollLock';
@@ -45,32 +46,30 @@ export default function BottomSheet({
 }: BottomSheetProps) {
   const titleId = useId();
   const descId = useId();
+  const [mounted, setMounted] = useState(false);
 
-  // Scroll lock
   useScrollLock(open);
-
-  // Focus trap
   const sheetRef = useFocusTrap<HTMLDivElement>(open);
 
-  // ESC 키로 닫기
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   useEffect(() => {
     if (!open) return;
-
     const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose();
-      }
+      if (e.key === 'Escape') onClose();
     };
-
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
   }, [open, onClose]);
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <AnimatePresence>
       {open && (
         <>
-          {/* Overlay */}
           <motion.button
             type="button"
             initial={{ opacity: 0 }}
@@ -81,25 +80,22 @@ export default function BottomSheet({
             aria-label="설정 닫기"
           />
 
-          {/* Bottom Sheet */}
           <motion.div
             ref={sheetRef}
             initial={{ y: '100%' }}
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-            className="fixed bottom-0 left-0 right-0 z-50 bg-dark rounded-t-[20px] shadow-2xl max-h-[85vh] overflow-y-auto"
+            className="fixed bottom-0 left-0 right-0 z-50 bg-dark rounded-t-[20px] max-h-[85vh] overflow-y-auto"
             role="dialog"
             aria-modal="true"
             aria-labelledby={title ? titleId : undefined}
             aria-describedby={description ? descId : undefined}
           >
-            {/* Drag Handle */}
             <div className="sticky top-0 bg-dark pt-3 pb-2 flex justify-center rounded-t-[20px]">
               <div className="w-12 h-1 bg-grey-500 rounded-full" />
             </div>
 
-            {/* Header */}
             <div className="px-6 pb-4 flex items-center justify-between border-b border-grey-200">
               {title && (
                 <h3 id={titleId} className="brand-h3 text-grey-900">
@@ -124,14 +120,13 @@ export default function BottomSheet({
               </button>
             </div>
 
-            {/* Body */}
             <div className="p-6">{children}</div>
 
-            {/* Safe area for mobile */}
-            <div className="h-8" />
+            <div className="pb-safe h-2" />
           </motion.div>
         </>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }

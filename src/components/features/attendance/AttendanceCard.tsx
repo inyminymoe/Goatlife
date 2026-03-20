@@ -8,7 +8,7 @@ export default function AttendanceCard() {
     lifecycle,
     attendance,
     attendanceRate,
-    todayMinutes,
+    todaySeconds,
     isMutating,
     toast,
     dismissToast,
@@ -20,7 +20,7 @@ export default function AttendanceCard() {
     <AttendanceView
       attendance={attendance}
       attendanceRate={attendanceRate}
-      todayMinutes={todayMinutes}
+      todaySeconds={todaySeconds}
       lifecycle={lifecycle}
       isMutating={isMutating}
       toast={toast}

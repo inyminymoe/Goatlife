@@ -1,20 +1,29 @@
-'use client';
-
+import { redirect } from 'next/navigation';
 import AttendanceDashboardCard from '@/components/features/attendance/AttendanceDashboardCard';
 import AttendanceCard from '@/components/features/attendance/AttendanceCard';
-import { Calendar } from '@/components/ui/Calendar';
+import { AttendanceCalendar } from '@/components/features/attendance/AttendanceCalendar';
 import { AttendanceHeatmap } from '@/components/features/attendance/AttendanceHeatmap';
+import { createServerSupabase } from '@/lib/supabase/server';
 
-export default function AttendancePage() {
+export default async function AttendancePage() {
+  const supabase = await createServerSupabase();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect('/login');
+  }
+
   return (
     <div className="col-span-2">
       <div className="mx-auto max-w-[1440px] space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
+        <div className="grid grid-cols-1 gap-6 items-stretch md:grid-cols-2">
           <AttendanceCard />
           <AttendanceDashboardCard />
         </div>
 
-        <Calendar year={2025} month={10} />
+        <AttendanceCalendar />
         <AttendanceHeatmap />
       </div>
     </div>

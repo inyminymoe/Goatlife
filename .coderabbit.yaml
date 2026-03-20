@@ -1,3 +1,62 @@
-# yaml-language-server: $schema=https://storage.googleapis.com/coderabbit_public_assets/schema.v2.json
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
 
 language: "ko-KR"
+reviews:
+  auto_review:
+    enabled: true
+    base_branches:
+      - main
+      - develop
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  review_status: true
+  collapse_walkthrough: false
+  path_filters:
+    - "!**/*.md"
+    - "!**/*.json"
+    - "!pnpm-lock.yaml"
+    - "!.next/**"
+    - "!node_modules/**"
+    - "!public/**"
+
+  # 리뷰 포커스 영역
+  focus_areas:
+    - name: "타입 안전성"
+      instructions: |
+        - TypeScript strict mode 준수
+        - any 타입 사용 최소화
+        - 적절한 타입 정의 및 인터페이스 사용
+
+    - name: "React 패턴"
+      instructions: |
+        - React hooks 올바른 사용 (의존성 배열, useCallback, useMemo)
+        - 불필요한 리렌더링 방지
+        - 컴포넌트 분리 및 재사용성
+
+    - name: "접근성"
+      instructions: |
+        - ARIA 속성 적절한 사용
+        - 키보드 네비게이션 지원
+        - 스크린 리더 호환성
+
+    - name: "보안"
+      instructions: |
+        - XSS 취약점 점검
+        - 민감 정보 노출 방지
+        - 사용자 입력 검증
+
+    - name: "성능"
+      instructions: |
+        - 불필요한 재렌더링 방지
+        - 적절한 메모이제이션
+        - 비동기 처리 최적화
+
+    - name: "코드 품질"
+      instructions: |
+        - 코드 중복 최소화
+        - 적절한 에러 핸들링
+        - 명확한 네이밍
+
+chat:
+  auto_reply: true

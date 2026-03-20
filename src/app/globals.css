@@ -2,6 +2,13 @@
 @plugin "@tailwindcss/typography";
 @custom-variant dark (:root.dark &);
 
+.scrollbar-none {
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
 html,
 body {
   height: 100%;
@@ -410,6 +417,52 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .routine-jiggle {
+    animation: none;
+    will-change: auto;
+  }
+}
+
+@keyframes attendance-status-beacon {
+  0% {
+    transform: scale(0.65);
+    opacity: 0.7;
+  }
+  65% {
+    transform: scale(1.9);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.9);
+    opacity: 0;
+  }
+}
+
+.attendance-status-badge-idle > span:first-child {
+  background-color: var(--color-accent-magenta-300);
+}
+
+.attendance-status-badge-complete > span:first-child {
+  background-color: var(--color-accent-green-500);
+}
+
+.attendance-status-badge-live > span:first-child {
+  position: relative;
+  background-color: var(--color-primary-500);
+  box-shadow: 0 0 10px hsl(212 100% 60% / 0.45);
+}
+
+.attendance-status-badge-live > span:first-child::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 9999px;
+  background-color: hsl(212 100% 60% / 0.38);
+  animation: attendance-status-beacon 1.8s ease-out infinite;
+  will-change: transform, opacity;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .attendance-status-badge-live > span:first-child::after {
     animation: none;
     will-change: auto;
   }
