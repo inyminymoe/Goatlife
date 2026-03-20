@@ -362,6 +362,13 @@ export function useSessionOrchestrator({
     if (timer.mode === 'focus') {
       const elapsed = timer.focusPresetMinutes * 60 - timer.remainingSeconds;
       if (elapsed >= 1) addRecord('focus-incomplete', elapsed);
+
+      // routine 모드에서 focus 스킵 → break 없이 바로 다음 루틴으로
+      if (sessionMode === 'routine') {
+        advanceToNextRoutineRef.current();
+        return;
+      }
+
       timer.startBreak();
       syncActiveSession();
       onToast?.('휴식 시간으로 넘어갔어요.', 'info');
