@@ -7,6 +7,7 @@ import { useMemo } from 'react';
 import { userAtom } from '@/store/atoms';
 import { useAttendanceLogs } from '@/hooks/useAttendanceLogs';
 import { getKstDateRange, getKstDateString } from '@/lib/attendance';
+import type { AttendanceLogsParams } from '@/types/attendance';
 
 const DAY_LABELS = ['월', '화', '수', '목', '금', '토', '일'] as const;
 
@@ -18,26 +19,31 @@ function calculateJoinedDays(joinedAt?: string): number {
   return Math.max(1, Math.floor(diff / (1000 * 60 * 60 * 24)) + 1);
 }
 
-// 현재 월의 범위를 계산 (AttendanceCalendar와 동일한 방식으로 캐시 공유)
-function getCurrentMonthRange() {
+// 이번 주가 두 달에 걸치면 두 달 범위를 커버하는 쿼리 범위 반환
+// 같은 달이면 AttendanceCalendar와 동일한 monthly key → 캐시 공유
+function getQueryRange(): AttendanceLogsParams {
   const today = getKstDateString();
+  const { from: weekFrom, to: weekTo } = getKstDateRange('week');
   const [year, month] = today.split('-').map(Number);
   const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate();
-  return {
-    from: `${year}-${String(month).padStart(2, '0')}-01`,
-    to: `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`,
-  };
+  const monthFrom = `${year}-${String(month).padStart(2, '0')}-01`;
+  const monthTo = `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+
+  // 주 시작일이 이번 달 안에 있으면 monthly 범위 (캘린더와 캐시 공유)
+  if (weekFrom >= monthFrom) return { from: monthFrom, to: monthTo };
+
+  // 월초 주차: 이전 달까지 포함하도록 주간 범위로 확장
+  return { from: weekFrom, to: weekTo };
 }
 
 export default function AttendanceDashboardCard() {
   const user = useAtomValue(userAtom);
-  // 캘린더와 동일한 월별 범위 사용 → React Query 캐시 공유, 별도 fetch 없음
-  const monthRange = useMemo(() => getCurrentMonthRange(), []);
-  const { logs } = useAttendanceLogs(monthRange);
+  const queryRange = useMemo(() => getQueryRange(), []);
+  const { logs, uiState } = useAttendanceLogs(queryRange);
 
   const joinedDays = calculateJoinedDays(user?.joinedAt);
+  const isReady = uiState.state === 'ready' || uiState.state === 'empty';
 
-  // 이번 주 월~일 날짜 배열 생성 후 월별 logs에서 해당 날짜 레코드 검색
   const weekDays = useMemo(() => {
     const today = getKstDateString();
     const { from: weekFrom } = getKstDateRange('week');
@@ -49,10 +55,11 @@ export default function AttendanceDashboardCard() {
       const dateStr = d.toISOString().slice(0, 10);
       const isFuture = dateStr > today;
       const record = logMap.get(dateStr);
-      const attended = !isFuture && !!record && record.status !== 'absent';
+      const attended =
+        isReady && !isFuture && !!record && record.status !== 'absent';
       return { label, attended };
     });
-  }, [logs]);
+  }, [logs, isReady]);
 
   return (
     <section className="h-full rounded-[5px] bg-grey-100 p-6">
