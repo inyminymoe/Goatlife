@@ -2,6 +2,13 @@
 @plugin "@tailwindcss/typography";
 @custom-variant dark (:root.dark &);
 
+.scrollbar-none {
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+
 html,
 body {
   height: 100%;
