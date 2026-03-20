@@ -8,7 +8,8 @@ import {
   ChangeEvent,
 } from 'react';
 
-export interface TextAreaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
+export interface TextAreaProps
+  extends TextareaHTMLAttributes<HTMLTextAreaElement> {
   label?: string;
   error?: string;
   resize?: 'none' | 'vertical' | 'both';

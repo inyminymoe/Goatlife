@@ -185,7 +185,8 @@ export function DropdownMenuContent({
 // ─── DropdownMenuItem ─────────────────────────────────────────────────────────
 // 선택지가 필요할 때 쓰는 옵션 아이템 (optional)
 
-interface DropdownMenuItemProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+interface DropdownMenuItemProps
+  extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;
   /** true면 클릭 시 메뉴를 닫지 않습니다 */
   keepOpen?: boolean;
