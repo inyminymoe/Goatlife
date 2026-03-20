@@ -85,7 +85,7 @@ export default function PomodoroTimerCard({
     const handleRoutineTimerStart = (event: Event) => {
       const customEvent = event as CustomEvent<RoutineTimerStartDetail>;
       startFocus();
-      const title = customEvent.detail?.title?.trim();
+      const title = customEvent.detail?.routines?.[0]?.title?.trim();
       if (title) {
         toast.success(`'${title}' 타이머를 시작했어요.`);
       }
