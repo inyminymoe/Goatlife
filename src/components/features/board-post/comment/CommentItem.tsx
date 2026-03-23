@@ -69,7 +69,10 @@ export function CommentItem({
     >
       <div className="flex justify-between mb-3">
         <div className="flex flex-1 items-center gap-2">
-          <Avatar name={author_name ?? '익명'} size="sm" />
+          <Avatar size="sm" showName={false} />
+          <span className="text-sm font-medium text-grey-900">
+            {author_name ?? '익명'}
+          </span>
           <p className="text-xs text-grey-500">{formatDate(created_at)}</p>
         </div>
         <div className="flex items-center">
