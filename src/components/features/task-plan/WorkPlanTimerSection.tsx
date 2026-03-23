@@ -50,8 +50,8 @@ export default function WorkPlanTimerSection() {
     handleEnd,
     handleSaveSettings,
   } = useSessionOrchestrator({
-    initialFocusMinutes: 1,
-    initialBreakMinutes: 1,
+    initialFocusMinutes: 30,
+    initialBreakMinutes: 15,
     onToast: showToast,
   });
 
