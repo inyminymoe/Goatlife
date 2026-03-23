@@ -407,6 +407,7 @@ export function usePomodoroTimer(
     flushFocusElapsed();
     accumulatedFocusRef.current = 0;
     completionNotifiedRef.current = false;
+    setTotalFocusSeconds(0);
     setMode('focus');
     const newRemaining = focusPresetMinutes * 60;
     remainingSecondsRef.current = newRemaining;
