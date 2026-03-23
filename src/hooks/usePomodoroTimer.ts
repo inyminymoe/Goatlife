@@ -406,12 +406,17 @@ export function usePomodoroTimer(
     }
     flushFocusElapsed();
     accumulatedFocusRef.current = 0;
-    focusStartedAtRef.current = null;
     completionNotifiedRef.current = false;
     setMode('focus');
     const newRemaining = focusPresetMinutes * 60;
     remainingSecondsRef.current = newRemaining;
     setRemainingSeconds(newRemaining);
+    // isRunning이 이미 true인 경우 setIsRunning(true)는 변화 없음
+    // → interval effect 재실행 안 됨 → 기존 startedAtRef 유지 → 타이머 리셋 안 됨
+    // continueToNextFocus와 동일하게 ref를 직접 갱신해 interval 기준점을 교체한다.
+    const now = Date.now();
+    startedAtRef.current = now;
+    focusStartedAtRef.current = now;
     setIsRunning(true);
   }, [flushBreakRecord, flushFocusElapsed, focusPresetMinutes, mode]);
 
