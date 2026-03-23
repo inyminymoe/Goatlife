@@ -24,6 +24,7 @@ export type ActiveSessionRow = {
   routine_title: string | null;
   routine_index: number | null;
   routine_total_count: number | null;
+  routine_queue: { id: string; title: string }[] | null;
   updated_at: string;
 };
 
@@ -72,6 +73,7 @@ export async function upsertActiveSession(input: {
   isRunning: boolean;
   sessionMode: SessionMode;
   activeRoutine: ActiveRoutine | null;
+  routineQueue?: { id: string; title: string }[] | null;
 }): Promise<MutationResponse> {
   const client = await getUserSupabaseClient();
   if (!client.ok) return client;
@@ -90,6 +92,7 @@ export async function upsertActiveSession(input: {
       routine_title: input.activeRoutine?.title ?? null,
       routine_index: input.activeRoutine?.index ?? null,
       routine_total_count: input.activeRoutine?.totalCount ?? null,
+      routine_queue: input.routineQueue ?? null,
       updated_at: new Date().toISOString(),
     },
     { onConflict: 'user_id' } // user_id 충돌 시 update
