@@ -80,9 +80,13 @@ export default function WorkPlanTimerSection() {
     [startManual, startRoutine]
   );
 
-  // 최신 applyPendingStart를 ref로 유지 — 리스너 재등록 없이 항상 최신 참조
+  // 최신 applyPendingStart / wrappedHandleEnd를 ref로 유지
+  // — [] deps 리스너 클로저에서 항상 최신 함수를 참조하기 위함
   const applyPendingStartRef = useRef(applyPendingStart);
   applyPendingStartRef.current = applyPendingStart;
+
+  const wrappedHandleEndRef = useRef(wrappedHandleEnd);
+  wrappedHandleEndRef.current = wrappedHandleEnd;
 
   // RoadmapCard dispatch 이벤트 수신 → 타이머 시작
   // deps [] : 리스너를 마운트 시 1번만 등록, 재등록으로 인한 이중 리스너 원천 차단
@@ -154,6 +158,7 @@ export default function WorkPlanTimerSection() {
                 fullWidth
                 onClick={() => {
                   console.log('[WorkPlanTimerSection] 전환하기 clicked');
+                  wrappedHandleEndRef.current();
                   applyPendingStartRef.current(pending);
                   isConfirmOverlayOpenRef.current = false;
                   unmount();
