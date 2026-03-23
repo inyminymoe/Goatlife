@@ -7,6 +7,7 @@ import { parseTextWithLinks } from './ParserTextWithLinks';
 import { formatDate } from '@/lib/formatDate';
 import { Comment } from '@/types/board';
 import { CommentActionMenu } from './CommentActionMenu';
+import { canDeleteComment, canPinComment } from './domain/commentPermissions';
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchReplies } from './api/commentApi';
@@ -14,6 +15,8 @@ import { CommentInput } from './CommentInput';
 import IconButton from '@/components/ui/IconButton';
 import { overlay } from 'overlay-kit';
 import BottomSheet from '@/components/ui/BottomSheet';
+import { userAtom } from '@/store/atoms';
+import { useAtomValue } from 'jotai';
 
 type CommentItemProps = Comment & {
   postId: string;
@@ -42,6 +45,12 @@ export function CommentItem({
   isReply = false,
   onReplyClick,
 }: CommentItemProps) {
+  const currentUser = useAtomValue(userAtom);
+  const hasMenuAction =
+    !!currentUser &&
+    (canDeleteComment(currentUser.id, user_id) ||
+      canPinComment(currentUser.id, postAuthorId));
+
   const [showReplyInput, setShowReplyInput] = useState(false);
   const [showReplies, setShowReplies] = useState(false);
   const [localReplyCount, setLocalReplyCount] = useState(reply_count);
@@ -91,7 +100,7 @@ export function CommentItem({
           <IconButton
             icon="icon-park:more-one"
             variant="ghost"
-            className="icon-dark-invert"
+            className={cn('icon-dark-invert', !hasMenuAction && 'invisible')}
             onClick={() =>
               overlay.open(({ isOpen, close, unmount }) => (
                 <BottomSheet open={isOpen} onClose={unmount} title="댓글 설정">
