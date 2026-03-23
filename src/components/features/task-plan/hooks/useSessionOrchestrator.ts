@@ -249,6 +249,7 @@ export function useSessionOrchestrator({
       routine_title,
       routine_index,
       routine_total_count,
+      routine_queue,
     } = activeSessionData;
 
     setSessionMode(session_mode);
@@ -265,6 +266,10 @@ export function useSessionOrchestrator({
         index: routine_index,
         totalCount: routine_total_count,
       });
+    }
+
+    if (session_mode === 'routine' && routine_queue) {
+      routineQueueRef.current = routine_queue;
     }
 
     const startedAt = new Date(started_at);
@@ -357,6 +362,7 @@ export function useSessionOrchestrator({
         isRunning: true,
         sessionMode: 'routine',
         activeRoutine: newRoutine,
+        routineQueue: routines,
       });
 
       onToast?.(`'${routines[0].title}' 루틴을 시작했어요.`, 'success');
