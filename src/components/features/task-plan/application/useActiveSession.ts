@@ -58,6 +58,8 @@ export function useUpsertActiveSession() {
       startedAt: Date;
       durationSeconds: number;
       totalFocusSeconds: number;
+      remainingSeconds: number;
+      isRunning: boolean;
       sessionMode: SessionMode;
       activeRoutine: ActiveRoutine | null;
     }) => upsertActiveSession(input),

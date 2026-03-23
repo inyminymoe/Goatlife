@@ -43,9 +43,10 @@ interface PomodoroTimerResult {
 
 export interface RestoreSessionParams {
   mode: PomodoroMode;
-  startedAt: Date;
-  durationSeconds: number;
-  pausedSecondsElapsed?: number;
+  remainingSeconds: number;
+  isRunning: boolean;
+  /** DB updated_at — 실행 중이었을 때 이후 경과분을 차감하는 데 사용 */
+  savedAt: Date;
   totalFocusSeconds?: number;
 }
 
@@ -239,35 +240,34 @@ export function usePomodoroTimer(
   const restoreSession = useCallback(
     ({
       mode: restoredMode,
-      startedAt,
-      durationSeconds,
-      pausedSecondsElapsed = 0,
+      remainingSeconds: savedRemaining,
+      isRunning: wasRunning,
+      savedAt,
       totalFocusSeconds: restoredTotal = 0,
     }: RestoreSessionParams) => {
-      // DB 저장 시각(startedAt)부터 현재까지 실제로 경과한 시간을 계산한다.
-      // pausedSecondsElapsed만큼은 실제 집중/휴식이 아니므로 차감한다.
-      const elapsed =
-        (Date.now() - startedAt.getTime()) / 1000 - pausedSecondsElapsed;
-      const remaining = Math.max(0, Math.round(durationSeconds - elapsed));
+      const elapsedSinceSave = (Date.now() - savedAt.getTime()) / 1000;
 
-      // focus 모드라면 DB 저장 이후 경과 시간까지 누적에 반영한다.
-      // 이렇게 해야 새로고침 후에도 집중 시간이 0으로 초기화되지 않는다.
-      const focusElapsedSinceStart =
-        restoredMode === 'focus' ? Math.max(0, elapsed) : 0;
-      accumulatedFocusRef.current = restoredTotal + focusElapsedSinceStart;
+      // 실행 중이었다면 저장 이후 경과분 차감, 일시정지였다면 저장된 값 그대로
+      const remaining = wasRunning
+        ? Math.max(0, Math.round(savedRemaining - elapsedSinceSave))
+        : savedRemaining;
 
-      // focusStartedAtRef는 null로 두고, isRunning이 true로 바뀔 때
-      // 메인 interval effect에서 현재 시각으로 세팅되도록 한다.
+      // focus 실행 중이었다면 저장 이후 경과분도 집중 시간에 포함
+      const focusElapsedSinceSave =
+        wasRunning && restoredMode === 'focus'
+          ? Math.max(0, Math.min(elapsedSinceSave, savedRemaining))
+          : 0;
+      accumulatedFocusRef.current = restoredTotal + focusElapsedSinceSave;
+
       focusStartedAtRef.current = null;
 
       setMode(restoredMode);
       remainingSecondsRef.current = remaining;
       setRemainingSeconds(remaining);
-      // 복원 즉시 화면에도 정확한 총 집중시간을 표시한다.
       setTotalFocusSeconds(Math.round(accumulatedFocusRef.current));
       completionNotifiedRef.current = false;
 
-      if (remaining > 0) setIsRunning(true);
+      if (remaining > 0 && wasRunning) setIsRunning(true);
     },
     []
   );
@@ -292,11 +292,20 @@ export function usePomodoroTimer(
     const alreadyElapsed = totalDuration - remainingSecondsRef.current;
     const now = Date.now();
     startedAtRef.current = now - alreadyElapsed * 1000;
-    // focusStartedAtRef도 동기화 — startedAtRef만 재설정하면 totalFocusSeconds가
-    // 카운트다운 대비 최대 수십 초 앞서가는 오차가 발생한다.
+
     if (mode === 'focus' && focusStartedAtRef.current !== null) {
-      focusStartedAtRef.current =
-        startedAtRef.current + accumulatedFocusRef.current * 1000;
+      // accumulated <= alreadyElapsed: pause/resume 케이스.
+      //   accumulated = 이번 타이머 세션에서 일시정지 이전까지의 집중 시간
+      //   → focusStartedAtRef를 재보정해 카운트다운과 totalFocusSeconds를 동기화
+      //
+      // accumulated > alreadyElapsed: 루틴 전환 케이스.
+      //   accumulated에 이전 루틴들의 집중 시간이 포함되어 현재 타이머 경과보다 클 수 있음
+      //   → 재보정하면 focusStartedAtRef가 미래값이 되어 totalFocusSeconds가 0에 가깝게 리셋됨
+      //   → focusStartedAtRef를 건드리지 않아야 누적값이 보존됨
+      if (accumulatedFocusRef.current <= alreadyElapsed) {
+        focusStartedAtRef.current =
+          startedAtRef.current + accumulatedFocusRef.current * 1000;
+      }
     }
   }, [isRunning, mode, focusPresetMinutes, breakPresetMinutes]);
 

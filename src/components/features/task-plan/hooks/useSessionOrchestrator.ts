@@ -106,17 +106,24 @@ export function useSessionOrchestrator({
     (overrides?: {
       sessionMode?: SessionMode;
       activeRoutine?: ActiveRoutine | null;
+      // toggleRunning 직후엔 timer.isRunning이 아직 이전 값 → 명시적으로 넘겨야 함
+      isRunning?: boolean;
     }) => {
       if (!sessionStartedAtRef.current) return;
+      // timerRef.current를 통해 항상 최신 timer 값을 읽음
+      // (timer가 useCallback deps에 없어 stale closure가 되는 것을 방지)
+      const t = timerRef.current!;
 
       upsertSession({
-        timerMode: timer.mode,
+        timerMode: t.mode,
         startedAt: sessionStartedAtRef.current,
         durationSeconds:
-          timer.mode === 'focus'
-            ? timer.focusPresetMinutes * 60
-            : timer.breakPresetMinutes * 60,
-        totalFocusSeconds: timer.totalFocusSeconds,
+          t.mode === 'focus'
+            ? t.focusPresetMinutes * 60
+            : t.breakPresetMinutes * 60,
+        totalFocusSeconds: t.totalFocusSeconds,
+        remainingSeconds: t.remainingSeconds,
+        isRunning: overrides?.isRunning ?? t.isRunning,
         sessionMode: overrides?.sessionMode ?? sessionMode,
         activeRoutine:
           overrides?.activeRoutine !== undefined
@@ -133,6 +140,10 @@ export function useSessionOrchestrator({
   const advanceToNextRoutineRef = useRef<() => void>(() => {});
 
   // ─── usePomodoroTimer ───────────────────────────────────
+  // timerRef: syncActiveSession 등 useCallback 클로저에서 항상 최신 timer 값을
+  // 읽기 위한 ref. timer는 매 렌더마다 새 객체이므로 deps 없이 ref로 관리한다.
+  const timerRef = useRef<ReturnType<typeof usePomodoroTimer> | null>(null);
+
   const timer = usePomodoroTimer({
     initialFocusMinutes,
     initialBreakMinutes,
@@ -161,7 +172,8 @@ export function useSessionOrchestrator({
     },
   });
 
-  // 렌더마다 최신 preset / timer 액션을 ref에 반영
+  // 렌더마다 최신 timer / preset을 ref에 반영
+  timerRef.current = timer;
   focusPresetRef.current = timer.focusPresetMinutes;
 
   // advanceToNextRoutineRef를 렌더마다 갱신 (timer / upsertSession 등 stale 방지)
@@ -202,6 +214,8 @@ export function useSessionOrchestrator({
       startedAt,
       durationSeconds: timer.focusPresetMinutes * 60,
       totalFocusSeconds: timer.totalFocusSeconds,
+      remainingSeconds: timer.focusPresetMinutes * 60,
+      isRunning: true,
       sessionMode: 'routine',
       activeRoutine: newRoutine,
     });
@@ -227,6 +241,9 @@ export function useSessionOrchestrator({
       started_at,
       duration_seconds,
       total_focus_seconds,
+      remaining_seconds,
+      is_running,
+      updated_at,
       session_mode,
       routine_id,
       routine_title,
@@ -254,10 +271,13 @@ export function useSessionOrchestrator({
     sessionStartedAtRef.current = startedAt;
     currentFocusSessionKeyRef.current = crypto.randomUUID();
 
+    // remaining_seconds가 null이면 구버전 레코드 → duration_seconds로 fallback
+    const savedRemaining = remaining_seconds ?? duration_seconds;
     timer.restoreSession({
       mode: timer_mode,
-      startedAt,
-      durationSeconds: duration_seconds,
+      remainingSeconds: savedRemaining,
+      isRunning: is_running,
+      savedAt: new Date(updated_at),
       totalFocusSeconds: total_focus_seconds,
     });
 
@@ -296,6 +316,8 @@ export function useSessionOrchestrator({
         startedAt,
         durationSeconds: timer.focusPresetMinutes * 60,
         totalFocusSeconds: 0,
+        remainingSeconds: timer.focusPresetMinutes * 60,
+        isRunning: true,
         sessionMode: 'manual',
         activeRoutine: newRoutine,
       });
@@ -331,6 +353,8 @@ export function useSessionOrchestrator({
         startedAt,
         durationSeconds: timer.focusPresetMinutes * 60,
         totalFocusSeconds: 0,
+        remainingSeconds: timer.focusPresetMinutes * 60,
+        isRunning: true,
         sessionMode: 'routine',
         activeRoutine: newRoutine,
       });
@@ -348,13 +372,16 @@ export function useSessionOrchestrator({
       currentFocusSessionKeyRef.current = crypto.randomUUID();
       setSessionMode('manual');
     }
+    const nextIsRunning = !timer.isRunning;
     timer.toggleRunning();
-    syncActiveSession();
+    // toggleRunning은 상태 업데이트를 예약하므로 timer.isRunning은 아직 이전 값
+    // → nextIsRunning을 명시적으로 넘겨 올바른 값이 저장되도록 함
+    syncActiveSession({ isRunning: nextIsRunning });
     onToast?.(
-      timer.isRunning
-        ? '타이머가 멈췄어요🐢'
-        : '타이머 시작! 집중해서 끝내봐요🍀',
-      timer.isRunning ? 'info' : 'success'
+      nextIsRunning
+        ? '타이머 시작! 집중해서 끝내봐요🍀'
+        : '타이머가 멈췄어요🐢',
+      nextIsRunning ? 'success' : 'info'
     );
   }, [sessionMode, timer, syncActiveSession, onToast]);
 

@@ -533,7 +533,13 @@ export default function RoadmapCard() {
             const allRoutines = [...routines.am, ...routines.pm];
             if (allRoutines.length === 0) return;
             const detail: RoutineTimerStartDetail = {
-              routines: allRoutines.map(r => ({ id: r.id, title: r.title })),
+              // pomodoro_count만큼 반복 추가 (기본 1)
+              routines: allRoutines.flatMap(r =>
+                Array.from({ length: r.pomodoro_count ?? 1 }, () => ({
+                  id: r.id,
+                  title: r.title,
+                }))
+              ),
             };
             window.dispatchEvent(
               new CustomEvent<RoutineTimerStartDetail>(
