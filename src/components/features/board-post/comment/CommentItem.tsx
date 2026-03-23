@@ -45,6 +45,7 @@ export function CommentItem({
   const [showReplyInput, setShowReplyInput] = useState(false);
   const [showReplies, setShowReplies] = useState(false);
   const [localReplyCount, setLocalReplyCount] = useState(reply_count);
+  const [replyToName, setReplyToName] = useState(author_name);
 
   const { data: replies = [], isFetching } = useQuery({
     queryKey: ['replies', id],
@@ -53,10 +54,10 @@ export function CommentItem({
   });
 
   useEffect(() => {
-    if (replies.length > 0) {
+    if (showReplies) {
       setLocalReplyCount(replies.length);
     }
-  }, [replies.length]);
+  }, [replies.length, showReplies]);
 
   return (
     <div
@@ -121,23 +122,6 @@ export function CommentItem({
         {parseTextWithLinks(content)}
       </div>
 
-      {image_urls.length > 0 && (
-        <div className="flex flex-wrap gap-2 mt-2">
-          {image_urls.map((url, i) => (
-            <div
-              key={i}
-              className="size-20 overflow-hidden border border-dark rounded-lg"
-            >
-              <img
-                src={url}
-                alt={`comment-image-${i}`}
-                className="size-full object-contain"
-              />
-            </div>
-          ))}
-        </div>
-      )}
-
       {/* 답글 더보기 / 숨기기 */}
       {!isReply && localReplyCount > 0 && (
         <button
@@ -163,7 +147,10 @@ export function CommentItem({
                 onDelete={onDelete}
                 onPin={onPin}
                 isReply={true}
-                onReplyClick={() => setShowReplyInput(v => !v)}
+                onReplyClick={() => {
+                  setShowReplyInput(v => !v);
+                  setReplyToName(reply.author_name);
+                }}
               />
             ))
           )}
@@ -181,6 +168,7 @@ export function CommentItem({
               setShowReplies(true);
               setLocalReplyCount(c => c + 1);
             }}
+            replyToName={replyToName}
           />
         </div>
       )}

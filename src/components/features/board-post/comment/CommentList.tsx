@@ -4,6 +4,7 @@ import { sortComments } from './domain/comment';
 
 interface CommentListProps {
   comments: Comment[];
+  isLoading?: boolean;
   postId: string;
   postAuthorId: string;
   onDeleteComment?: (commentId: string, parentId?: string) => void;
@@ -12,11 +13,20 @@ interface CommentListProps {
 
 export function CommentList({
   comments,
+  isLoading,
   postId,
   postAuthorId,
   onDeleteComment,
   onPinComment,
 }: CommentListProps) {
+  if (isLoading) {
+    return (
+      <div className="py-8 text-center text-grey-500">
+        댓글을 불러오는 중...
+      </div>
+    );
+  }
+
   if (comments.length === 0) {
     return (
       <div className="py-8 text-center text-grey-500">

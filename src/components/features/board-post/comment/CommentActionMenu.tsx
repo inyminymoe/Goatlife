@@ -1,13 +1,5 @@
 'use client';
 
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/Dropdown';
-import IconButton from '@/components/ui/IconButton';
-import { useUserInfo } from '@/hooks/useUserInfo';
 import { userAtom } from '@/store/atoms';
 import { useAtomValue } from 'jotai';
 import { canDeleteComment, canPinComment } from './domain/commentPermissions';
