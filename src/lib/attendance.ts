@@ -241,7 +241,8 @@ function countElapsedWorkDays(
       (toUtcDate(effectiveTo).getTime() - toUtcDate(from).getTime()) /
         86_400_000
     ) + 1;
-  return Math.round((elapsed * daysPerWeek) / 7);
+  const raw = Math.round((elapsed * daysPerWeek) / 7);
+  return Math.max(1, Math.min(raw, elapsed));
 }
 
 export function createAttendanceSummary(
