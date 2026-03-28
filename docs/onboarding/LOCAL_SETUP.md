@@ -27,7 +27,9 @@ SUPABASE_SERVICE_ROLE_KEY=...
 ## Supabase Auth Setup
 1. Supabase Dashboard에서 Authentication > Providers > Email로 이동합니다.
 2. 개발 중에는 `Confirm email`을 `OFF`로 둡니다.
-3. 회원가입 트리거가 필요하면 `supabase/sql/schema/setup-auth-trigger.sql`을 SQL Editor에서 실행합니다.
+3. DB 스키마는 `supabase/migrations/`의 migration 파일들로 관리됩니다.
+   **SQL Editor에 수동 실행하지 않습니다.**
+   → 신규 스키마 변경은 [DB Migration 가이드](../database/MIGRATION_STRATEGY.md)를 참고하세요.
 
 테스트 계정을 수동 인증 처리해야 한다면 아래 쿼리를 사용합니다.
 
@@ -47,15 +49,18 @@ Kakao Client Secret을 쓰는 경우:
 - Supabase Dashboard > Authentication > Providers > Kakao에서 REST API 키와 함께 입력합니다.
 - Secret을 재발급하면 즉시 갱신합니다.
 
-## Recommended SQL
-- `supabase/sql/schema/setup-auth-trigger.sql`: 회원가입 시 `profiles` 자동 생성
-- `supabase/sql/policies/supabase-rls-policies.sql`: 기본 RLS 정책
-- `supabase/sql/fixes/supabase-backfill-oauth-profiles.sql`: 기존 OAuth 사용자 기본값 보정
+## DB Schema
+DB 스키마 변경 이력은 `supabase/migrations/`에서 관리합니다.
+
+- 현재 스키마 파악: `supabase/migrations/20260324000001_baseline.sql`
+- 변경 규칙 및 컨벤션: [docs/database/MIGRATION_STRATEGY.md](../database/MIGRATION_STRATEGY.md)
+- 레거시 참고용 SQL (수동 실행 금지): `supabase/sql/`
+
+> `supabase/sql/` 하위 파일들은 이전 방식의 참고 자료입니다. 새 스키마 변경은 반드시 `supabase/migrations/`에 작성하세요.
 
 ## Login/Signup Checklist
 - [ ] Email provider 활성화
 - [ ] 개발 환경에서 `Confirm email` 비활성화
-- [ ] `supabase/sql/schema/setup-auth-trigger.sql` 실행
 - [ ] 회원가입 후 `/login`에서 로그인 확인
 
 ## Legacy Guide

@@ -58,8 +58,11 @@ export function useUpsertActiveSession() {
       startedAt: Date;
       durationSeconds: number;
       totalFocusSeconds: number;
+      remainingSeconds: number;
+      isRunning: boolean;
       sessionMode: SessionMode;
       activeRoutine: ActiveRoutine | null;
+      routineQueue?: { id: string; title: string }[] | null;
     }) => upsertActiveSession(input),
     // 저장 실패해도 UI는 계속 동작해야 하므로 onError는 콘솔만
     onError: error => {
