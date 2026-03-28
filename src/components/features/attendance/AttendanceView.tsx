@@ -11,7 +11,7 @@ import type {
   AttendanceViewState,
   ToastState,
 } from '@/hooks/useAttendance';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState, useRef } from 'react';
 
 export type AttendanceViewMode = 'compact' | 'full';
 const DAILY_TARGET_SECONDS = ATTENDANCE_POLICY.dailyTargetMinutes * 60;
@@ -28,8 +28,20 @@ interface AttendanceViewProps {
     clockIn: () => void;
     clockOut: () => void;
     undoClockOut?: () => void;
+    closeStaleSession?: (clockOutAt: string) => void;
+    autoCloseStaleSession?: () => void;
   };
   mode?: AttendanceViewMode;
+}
+
+function toKstTimeString(isoString: string | null): string {
+  if (!isoString) return '';
+  return new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Seoul',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(new Date(isoString));
 }
 
 function formatDuration(totalSeconds: number) {
@@ -82,6 +94,9 @@ export default function AttendanceView({
   mode = 'compact',
 }: AttendanceViewProps) {
   const [isClockOutSheetOpen, setIsClockOutSheetOpen] = useState(false);
+  const [isStaleSessionSheetOpen, setIsStaleSessionSheetOpen] = useState(false);
+  const [manualClockOutTime, setManualClockOutTime] = useState('');
+  const manualInputRef = useRef<HTMLInputElement>(null);
   const isClockInLocked =
     attendance.resultStatus === 'vacation' ||
     attendance.resultStatus === 'absent';
@@ -97,6 +112,11 @@ export default function AttendanceView({
         return {
           label: '퇴근',
           badgeClassName: 'attendance-status-badge-complete',
+        };
+      case 'stale_session':
+        return {
+          label: '미처리',
+          badgeClassName: 'attendance-status-badge-stale',
         };
       default:
         return {
@@ -123,6 +143,8 @@ export default function AttendanceView({
         return '동안 근무 중';
       case 'completed':
         return '동안 근무함';
+      case 'stale_session':
+        return '어제 미처리';
       default:
         return '근무 전';
     }
@@ -140,6 +162,13 @@ export default function AttendanceView({
       case 'working':
         return {
           label: '출근 완료',
+          variant: 'primary' as const,
+          onClick: actions.clockIn,
+          disabled: true,
+        };
+      case 'stale_session':
+        return {
+          label: '출근하기',
           variant: 'primary' as const,
           onClick: actions.clockIn,
           disabled: true,
@@ -175,6 +204,13 @@ export default function AttendanceView({
           onClick: actions.undoClockOut ?? (() => {}),
           disabled: isMutating,
         };
+      case 'stale_session':
+        return {
+          label: '퇴근 처리하기',
+          variant: 'text' as const,
+          onClick: () => setIsStaleSessionSheetOpen(true),
+          disabled: isMutating,
+        };
       default:
         return {
           label: '퇴근하기',
@@ -203,6 +239,18 @@ export default function AttendanceView({
     setIsClockOutSheetOpen(false);
     actions.clockOut();
   }, [actions]);
+
+  const handleAutoCloseStale = useCallback(() => {
+    setIsStaleSessionSheetOpen(false);
+    actions.autoCloseStaleSession?.();
+  }, [actions]);
+
+  const handleManualCloseStale = useCallback(() => {
+    if (!manualClockOutTime || !attendance.date) return;
+    const clockOutAt = `${attendance.date}T${manualClockOutTime}:00+09:00`;
+    setIsStaleSessionSheetOpen(false);
+    actions.closeStaleSession?.(clockOutAt);
+  }, [actions, attendance.date, manualClockOutTime]);
 
   if (lifecycle === 'loading') {
     return <Skeleton />;
@@ -340,6 +388,53 @@ export default function AttendanceView({
             >
               퇴근 처리하기
             </Button>
+          </div>
+        </div>
+      </BottomSheet>
+
+      <BottomSheet
+        open={isStaleSessionSheetOpen}
+        onClose={() => setIsStaleSessionSheetOpen(false)}
+        title="어제 퇴근이 처리되지 않았어요"
+      >
+        <div className="flex flex-col gap-4">
+          <div className="rounded-[10px] bg-grey-100 p-4">
+            <p className="body-xs font-medium text-grey-500">어제 출근 시각</p>
+            <p className="mt-1 brand-h2 text-primary-500">
+              {toKstTimeString(attendance.clockInAt)}
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-3">
+            <Button
+              fullWidth
+              onClick={handleAutoCloseStale}
+              disabled={isMutating}
+              className="px-4 py-3 font-semibold"
+            >
+              자동 마감 (출근 후 8시간)
+            </Button>
+
+            <div className="flex flex-col gap-2">
+              <p className="body-sm text-grey-700">또는 퇴근 시간 직접 입력</p>
+              <div className="flex items-center gap-2">
+                <input
+                  ref={manualInputRef}
+                  type="time"
+                  value={manualClockOutTime}
+                  onChange={e => setManualClockOutTime(e.target.value)}
+                  className="flex-1 rounded-[5px] border border-grey-200 bg-dark px-3 py-2 body-sm text-dark focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+                <Button
+                  variant="outline"
+                  onClick={handleManualCloseStale}
+                  disabled={isMutating || !manualClockOutTime}
+                  className="w-16 h-10 shrink-0"
+                >
+                  적용
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
       </BottomSheet>
