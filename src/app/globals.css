@@ -455,6 +455,10 @@ body {
   box-shadow: 0 0 10px hsl(212 100% 60% / 0.45);
 }
 
+.attendance-status-badge-stale > span:first-child {
+  background-color: var(--color-accent-orange-400);
+}
+
 .attendance-status-badge-live > span:first-child::after {
   content: '';
   position: absolute;

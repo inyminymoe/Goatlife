@@ -23,6 +23,7 @@ export interface AttendanceRow {
   work_minutes: number | null;
   note?: string | null;
   status: AttendanceRowStatus | null;
+  is_manual_close?: boolean | null;
   created_at: string;
   updated_at: string;
 }
@@ -213,6 +214,7 @@ export function mapAttendanceRow(row: AttendanceRow): AttendanceRecord {
       calculateWorkMinutes(row.clock_in_at, row.clock_out_at),
     note: row.note ?? null,
     status: normalizeAttendanceStatus(row.status, row),
+    isManualClose: row.is_manual_close ?? false,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -306,6 +308,7 @@ export function mapAttendanceError(message: string | null | undefined) {
 
   if (
     normalized.includes('clocked out') ||
+    normalized.includes('session already closed') ||
     normalized.includes('already processed early leave') ||
     normalized.includes('attendance already finalized')
   ) {

@@ -4,6 +4,7 @@ import {
   ATTENDANCE_ERROR_MESSAGES,
   calculateWorkMinutes,
   calculateWorkSeconds,
+  getKstDateString,
 } from '@/lib/attendance';
 import { useAttendanceActions } from '@/hooks/useAttendanceActions';
 import { useAttendanceSummary } from '@/hooks/useAttendanceSummary';
@@ -13,7 +14,11 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 export type AttendanceMode = 'compact' | 'full';
 export type AttendanceLifecycle = 'idle' | 'loading' | 'ready' | 'error';
-export type AttendanceOperationStatus = 'before_work' | 'working' | 'completed';
+export type AttendanceOperationStatus =
+  | 'before_work'
+  | 'working'
+  | 'completed'
+  | 'stale_session';
 
 export type ToastState = { message: string; type: 'success' | 'error' } | null;
 
@@ -50,6 +55,8 @@ export interface UseAttendanceResult {
     clockIn: () => void;
     clockOut: () => void;
     undoClockOut: () => void;
+    closeStaleSession: (clockOutAt: string) => void;
+    autoCloseStaleSession: () => void;
   };
   mode: AttendanceMode;
   error: string | null;
@@ -82,6 +89,24 @@ function deriveAttendanceState(
 ): AttendanceViewState {
   if (!record) {
     return initialAttendanceState;
+  }
+
+  // 어제 출근 기록이 미처리된 stale 세션
+  const todayDate = getKstDateString();
+  if (
+    record.date < todayDate &&
+    record.checkInAt !== null &&
+    record.checkOutAt === null
+  ) {
+    return {
+      date: record.date,
+      operationStatus: 'stale_session',
+      resultStatus: record.status,
+      clockInAt: record.checkInAt,
+      earlyLeaveAt: null,
+      clockOutAt: null,
+      workMinutes: 0,
+    };
   }
 
   const completedAt = record.checkOutAt ?? record.earlyLeaveAt;
@@ -248,6 +273,41 @@ export function useAttendance(
     showToast('퇴근이 취소되었어요. 계속 근무할 수 있어요.', 'success');
   }, [attendance.date, attendanceActions, showToast]);
 
+  const handleAutoCloseStaleSession = useCallback(async () => {
+    if (attendanceActions.isMutating) return;
+
+    const result = await attendanceActions.autoCloseStaleSession.mutateAsync(
+      attendance.date ?? undefined
+    );
+
+    if (!result.ok) {
+      showToast(resolveAttendanceErrorMessage(result.error), 'error');
+      return;
+    }
+
+    showToast('어제 근무가 자동 마감되었어요.', 'success');
+  }, [attendance.date, attendanceActions, showToast]);
+
+  const handleCloseStaleSession = useCallback(
+    async (clockOutAt: string) => {
+      if (attendanceActions.isMutating) return;
+      if (!attendance.date) return;
+
+      const result = await attendanceActions.closeStaleSession.mutateAsync({
+        workDate: attendance.date,
+        clockOutAt,
+      });
+
+      if (!result.ok) {
+        showToast(resolveAttendanceErrorMessage(result.error), 'error');
+        return;
+      }
+
+      showToast('어제 퇴근이 처리되었어요.', 'success');
+    },
+    [attendance.date, attendanceActions, showToast]
+  );
+
   return {
     lifecycle,
     attendance,
@@ -266,6 +326,9 @@ export function useAttendance(
       clockIn: () => void handleClockIn(),
       clockOut: () => void handleClockOut(),
       undoClockOut: () => void handleUndoClockOut(),
+      closeStaleSession: (clockOutAt: string) =>
+        void handleCloseStaleSession(clockOutAt),
+      autoCloseStaleSession: () => void handleAutoCloseStaleSession(),
     },
     mode,
     error,
