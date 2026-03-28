@@ -16,7 +16,7 @@ export default async function UserInfoPage() {
   const { data: profile } = await supabase
     .from('profiles')
     .select(
-      'last_name, first_name, avatar_url, department, rank, user_id, work_hours, work_type, work_style, work_ethic, email'
+      'last_name, first_name, avatar_url, department, rank, user_id, work_hours, work_type, work_days_per_week, work_style, work_ethic, email'
     )
     .eq('id', user.id)
     .maybeSingle();
@@ -32,6 +32,7 @@ export default async function UserInfoPage() {
       '주간(09:00-18:00)',
     workType:
       (profile?.work_type as ProfileEditFormValues['workType']) ?? '풀타임',
+    workDaysPerWeek: profile?.work_days_per_week ?? 5,
     workStyle: profile?.work_style ?? '',
     workEthic: profile?.work_ethic ?? '',
   };

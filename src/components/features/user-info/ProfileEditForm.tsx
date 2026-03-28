@@ -198,6 +198,28 @@ export default function ProfileEditForm({
             ]}
           />
 
+          {/* 주당 근무일 */}
+          <div className="space-y-2">
+            <label className="body-sm font-medium text-dark">주당 근무일</label>
+            <div className="flex gap-2">
+              {[1, 2, 3, 4, 5, 6, 7].map(day => (
+                <button
+                  key={day}
+                  type="button"
+                  onClick={() => setValue('workDaysPerWeek', day)}
+                  className={[
+                    'flex-1 h-10 rounded-[5px] body-sm font-semibold transition-colors',
+                    watch('workDaysPerWeek') === day
+                      ? 'bg-accent-green-400 text-fixed-grey-900'
+                      : 'bg-grey-200 text-grey-500 hover:bg-grey-300',
+                  ].join(' ')}
+                >
+                  {day}일
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* 업무스타일 */}
           <Input
             label="나의 업무스타일"

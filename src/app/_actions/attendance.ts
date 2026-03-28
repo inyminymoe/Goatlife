@@ -151,6 +151,11 @@ export async function getAttendanceLogs(
 export async function getAttendanceSummary(
   period: AttendanceSummaryPeriod
 ): Promise<AttendanceResult<AttendanceSummary>> {
+  const supabase = await createServerSupabase();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
   const range = getKstDateRange(period);
   const logsResult = await getAttendanceLogs(range);
 
@@ -158,9 +163,21 @@ export async function getAttendanceSummary(
     return logsResult;
   }
 
+  let daysPerWeek = 5;
+  if (user) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('work_days_per_week')
+      .eq('id', user.id)
+      .maybeSingle();
+    if (profile?.work_days_per_week) {
+      daysPerWeek = profile.work_days_per_week;
+    }
+  }
+
   return {
     ok: true,
-    data: createAttendanceSummary(logsResult.data, period, range),
+    data: createAttendanceSummary(logsResult.data, period, range, daysPerWeek),
   };
 }
 
