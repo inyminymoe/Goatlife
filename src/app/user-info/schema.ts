@@ -29,6 +29,7 @@ export const profileEditSchema = z.object({
     '야간(22:00-06:00)',
   ]),
   workType: z.enum(['풀타임', '파트타임']),
+  workDaysPerWeek: z.number().int().min(1).max(7),
   workStyle: z.string().optional(),
   workEthic: z.string().max(100, '100자 이내로 입력하세요').optional(),
 });

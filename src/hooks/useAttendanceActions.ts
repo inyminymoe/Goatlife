@@ -3,8 +3,10 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { attendanceKeys } from '@/hooks/attendanceKeys';
 import {
+  requestAutoCloseStaleSession,
   requestCheckIn,
   requestCheckOut,
+  requestCloseStaleSession,
   requestUndoClockOut,
 } from '@/services/attendance';
 
@@ -41,11 +43,37 @@ export function useAttendanceActions() {
     },
   });
 
+  const autoCloseStaleSession = useMutation({
+    mutationFn: requestAutoCloseStaleSession,
+    onSettled: async () => {
+      await invalidateAttendanceQueries(queryClient);
+    },
+  });
+
+  const closeStaleSession = useMutation({
+    mutationFn: ({
+      workDate,
+      clockOutAt,
+    }: {
+      workDate: string;
+      clockOutAt: string;
+    }) => requestCloseStaleSession(workDate, clockOutAt),
+    onSettled: async () => {
+      await invalidateAttendanceQueries(queryClient);
+    },
+  });
+
   return {
     checkIn,
     checkOut,
     undoClockOut,
+    autoCloseStaleSession,
+    closeStaleSession,
     isMutating:
-      checkIn.isPending || checkOut.isPending || undoClockOut.isPending,
+      checkIn.isPending ||
+      checkOut.isPending ||
+      undoClockOut.isPending ||
+      autoCloseStaleSession.isPending ||
+      closeStaleSession.isPending,
   };
 }

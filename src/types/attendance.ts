@@ -47,6 +47,7 @@ export interface AttendanceRecord {
   workMinutes: number;
   note: string | null;
   status: AttendanceStatus;
+  isManualClose: boolean;
   createdAt: string;
   updatedAt: string;
 }

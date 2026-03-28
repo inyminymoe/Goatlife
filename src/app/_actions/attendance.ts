@@ -109,13 +109,26 @@ export async function getAttendanceToday(): Promise<
     return currentKstHour < 6;
   });
 
+  // 오전 6시 이후 어제 퇴근 기록 없음 → 미처리(stale) 세션
+  const staleRow =
+    !todayRow && !activeCarryOverRow && currentKstHour >= 6
+      ? rows.find(
+          row =>
+            row.work_date === yesterday &&
+            row.clock_in_at !== null &&
+            row.clock_out_at === null
+        )
+      : undefined;
+
   return {
     ok: true,
     data: todayRow
       ? mapAttendanceRow(todayRow)
       : activeCarryOverRow
         ? mapAttendanceRow(activeCarryOverRow)
-        : null,
+        : staleRow
+          ? mapAttendanceRow(staleRow)
+          : null,
   };
 }
 
@@ -138,6 +151,11 @@ export async function getAttendanceLogs(
 export async function getAttendanceSummary(
   period: AttendanceSummaryPeriod
 ): Promise<AttendanceResult<AttendanceSummary>> {
+  const supabase = await createServerSupabase();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
   const range = getKstDateRange(period);
   const logsResult = await getAttendanceLogs(range);
 
@@ -145,9 +163,21 @@ export async function getAttendanceSummary(
     return logsResult;
   }
 
+  let daysPerWeek = 5;
+  if (user) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('work_days_per_week')
+      .eq('id', user.id)
+      .maybeSingle();
+    if (profile?.work_days_per_week) {
+      daysPerWeek = profile.work_days_per_week;
+    }
+  }
+
   return {
     ok: true,
-    data: createAttendanceSummary(logsResult.data, period, range),
+    data: createAttendanceSummary(logsResult.data, period, range, daysPerWeek),
   };
 }
 
@@ -156,7 +186,8 @@ async function runAttendanceRpc(
     | 'fn_clock_in'
     | 'fn_clock_out'
     | 'fn_early_leave'
-    | 'fn_undo_clock_out',
+    | 'fn_undo_clock_out'
+    | 'fn_auto_close_stale_session',
   workDate = getKstDateString()
 ): Promise<AttendanceResult<AttendanceRecord | null>> {
   const client = await getUserScopedSupabase();
@@ -192,6 +223,34 @@ export async function checkOut(workDate?: string) {
 
 export async function undoClockOut(workDate?: string) {
   return runAttendanceRpc('fn_undo_clock_out', workDate);
+}
+
+export async function autoCloseStaleSession(workDate?: string) {
+  return runAttendanceRpc('fn_auto_close_stale_session', workDate);
+}
+
+export async function closeStaleSession(
+  workDate: string,
+  clockOutAt: string
+): Promise<AttendanceResult<AttendanceRecord | null>> {
+  const client = await getUserScopedSupabase();
+  if (!client.ok) return client;
+
+  const { data, error } = await client.supabase.rpc('fn_close_stale_session', {
+    p_user_id: client.user.id,
+    p_work_date: workDate,
+    p_clock_out_at: clockOutAt,
+  });
+
+  if (error) {
+    console.error('[attendance] fn_close_stale_session failed', error);
+    return { ok: false, error: mapAttendanceError(error.message) };
+  }
+
+  return {
+    ok: true,
+    data: data ? mapAttendanceRow(data as AttendanceRow) : null,
+  };
 }
 
 export async function getAttendanceRate(): Promise<AttendanceRateResult> {
