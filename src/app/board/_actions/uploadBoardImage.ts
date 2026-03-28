@@ -46,9 +46,9 @@ export async function uploadBoardImage(
     'image/gif': 'gif',
   };
   const ext = mimeToExt[file.type] ?? 'jpg';
-  const timestamp = Date.now();
-  const fileName = `${user.id}/${timestamp}.${ext}`;
-  const safeFile = new File([file], `${timestamp}.${ext}`, { type: file.type });
+  const unique = `${Date.now()}-${crypto.randomUUID()}`;
+  const fileName = `${user.id}/${unique}.${ext}`;
+  const safeFile = new File([file], `${unique}.${ext}`, { type: file.type });
 
   const { error: uploadError } = await supabase.storage
     .from('post-images')
