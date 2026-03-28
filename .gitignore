@@ -48,3 +48,9 @@ scripts/
 # local editor / assistant settings
 .claude/
 .vscode/settings.json
+
+# local-only docs (not for commit)
+docs/local/
+
+# supabase CLI temp files
+supabase/.temp/
