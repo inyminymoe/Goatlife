@@ -23,7 +23,7 @@ export interface AttendanceRow {
   work_minutes: number | null;
   note?: string | null;
   status: AttendanceRowStatus | null;
-  is_manual_close?: boolean | null;
+  is_manual_close: boolean | null;
   created_at: string;
   updated_at: string;
 }
@@ -288,7 +288,11 @@ export function createAttendanceSummary(
     absentDays,
     vacationDays,
     attendanceRate:
-      totalDays > 0 ? Number(((attendedDays / totalDays) * 100).toFixed(2)) : 0,
+      totalDays > 0
+        ? Number(
+            ((Math.min(attendedDays, totalDays) / totalDays) * 100).toFixed(2)
+          )
+        : 0,
     totalWorkMinutes,
   };
 }

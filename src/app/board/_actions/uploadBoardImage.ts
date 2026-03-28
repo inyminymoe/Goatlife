@@ -39,7 +39,13 @@ export async function uploadBoardImage(
     };
   }
 
-  const ext = file.name.split('.').pop() ?? 'jpg';
+  const mimeToExt: Record<string, string> = {
+    'image/jpeg': 'jpg',
+    'image/png': 'png',
+    'image/webp': 'webp',
+    'image/gif': 'gif',
+  };
+  const ext = mimeToExt[file.type] ?? 'jpg';
   const timestamp = Date.now();
   const fileName = `${user.id}/${timestamp}.${ext}`;
   const safeFile = new File([file], `${timestamp}.${ext}`, { type: file.type });
