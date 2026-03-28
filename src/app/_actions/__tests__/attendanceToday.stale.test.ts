@@ -4,7 +4,7 @@
  * Supabase 클라이언트를 모킹하여 getAttendanceToday 내 분기 로직을 검증한다.
  */
 
-import { describe, it, expect, vi, afterEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import type { AttendanceRow } from '@/lib/attendance';
 import { getKstDateString, getKstHour } from '@/lib/attendance';
 

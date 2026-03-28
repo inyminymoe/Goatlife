@@ -4,6 +4,11 @@
  * deriveAttendanceState는 useAttendance.ts 안에 private 함수이므로
  * 동일 로직을 여기에 재현해 테스트한다.
  * (실제 hook을 열어 export하지 않고 로직만 검증)
+ *
+ * TODO: 아래 재현 로직은 useAttendance.ts의 deriveAttendanceState와
+ * 반드시 동기화 상태를 유지해야 합니다. 해당 함수 변경 시 이 파일도 함께 갱신하세요.
+ * export를 통한 직접 import는 hook private 구현을 공개 API로 노출하는
+ * 부작용이 있어 의도적으로 로직 복제 방식을 선택했습니다.
  */
 
 import { describe, it, expect, vi, afterEach } from 'vitest';
