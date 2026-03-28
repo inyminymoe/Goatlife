@@ -1,12 +1,13 @@
 /**
  * getAttendanceToday — stale session 감지 경로 단위 테스트
  *
- * Supabase 클라이언트를 모킹하여 getAttendanceToday 내 분기 로직을 검증한다.
+ * getAttendanceToday 내부의 carry-over / stale 분기 로직을 순수 함수(resolveActiveRow)로
+ * 추출하여 Supabase 의존성 없이 경계값(KST 06:00)과 상태 전환을 검증한다.
  */
 
 import { describe, it, expect } from 'vitest';
 import type { AttendanceRow } from '@/lib/attendance';
-import { getKstDateString, getKstHour } from '@/lib/attendance';
+import { getKstDateString } from '@/lib/attendance';
 
 // ── stale 감지 로직 재현 ────────────────────────────────────────────────────
 // getAttendanceToday 내부의 carry-over / stale 분기를 순수 함수로 추출해 검증
