@@ -1,6 +1,8 @@
 import {
+  autoCloseStaleSession as serverAutoCloseStaleSession,
   checkIn as serverCheckIn,
   checkOut as serverCheckOut,
+  closeStaleSession as serverCloseStaleSession,
   getAttendanceLogs as serverGetAttendanceLogs,
   getAttendanceRate as serverGetAttendanceRate,
   getAttendanceSummary as serverGetAttendanceSummary,
@@ -96,6 +98,33 @@ export async function requestUndoClockOut(workDate?: string) {
     return await serverUndoClockOut(workDate);
   } catch (error) {
     console.error('[services/attendance] requestUndoClockOut failed', error);
+    return { ok: false as const, error: 'UNKNOWN' };
+  }
+}
+
+export async function requestAutoCloseStaleSession(workDate?: string) {
+  try {
+    return await serverAutoCloseStaleSession(workDate);
+  } catch (error) {
+    console.error(
+      '[services/attendance] requestAutoCloseStaleSession failed',
+      error
+    );
+    return { ok: false as const, error: 'UNKNOWN' };
+  }
+}
+
+export async function requestCloseStaleSession(
+  workDate: string,
+  clockOutAt: string
+) {
+  try {
+    return await serverCloseStaleSession(workDate, clockOutAt);
+  } catch (error) {
+    console.error(
+      '[services/attendance] requestCloseStaleSession failed',
+      error
+    );
     return { ok: false as const, error: 'UNKNOWN' };
   }
 }

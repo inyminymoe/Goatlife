@@ -80,11 +80,11 @@ function RecordCard({ record }: { record: AttendanceRecord }) {
   ];
 
   return (
-    <div className="h-20 px-6 rounded-[10px] bg-white shadow-[4px_0px_16px_0px_rgba(47,136,255,0.15)] flex items-center gap-10 overflow-x-auto">
+    <div className="h-20 px-6 rounded-[10px] bg-dark shadow-[4px_0px_16px_0px_rgba(47,136,255,0.15)] dark:shadow-[4px_0px_16px_0px_rgba(0,0,0,0.15)] flex items-center gap-10 overflow-x-auto">
       {fields.map(({ label, value }) => (
         <div key={label} className="inline-flex flex-col gap-2 shrink-0">
           <span className="body-xs font-medium text-grey-500">{label}</span>
-          <span className="body-xs font-extralight text-grey-900">{value}</span>
+          <span className="body-xs font-extralight text-dark">{value}</span>
         </div>
       ))}
     </div>

@@ -1,4 +1,4 @@
-import { uploadBoardImage } from '@/app/board/new/actions';
+import { uploadBoardImage } from '@/app/board/_actions/uploadBoardImage';
 import Button from '@/components/ui/Button';
 
 import {
@@ -175,12 +175,21 @@ const ImageButton = () => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file) return;
 
+      if (file.size > 1.5 * 1024 * 1024) {
+        window.alert(
+          '이미지 용량이 너무 큽니다. 1.5MB 이하의 이미지를 사용해주세요.'
+        );
+        return;
+      }
+
       const formData = new FormData();
       formData.append('file', file);
 
       const result = await uploadBoardImage(formData);
       if (result.ok && result.url) {
         onChange(result.url);
+      } else if (!result.ok) {
+        window.alert(`이미지 업로드에 실패했습니다. ${result.error}`);
       }
     };
 

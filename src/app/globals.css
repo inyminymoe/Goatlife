@@ -17,7 +17,7 @@ body {
 }
 
 body {
-  font-family: var(--font-body);
+  font-family: var(--gl-font-body);
   font-size: 1rem;
   line-height: 1.625rem;
 }
@@ -73,8 +73,12 @@ body {
   color-scheme: light;
 
   /* Font variables */
-  --gl-font-brand: var(--font-brand, 'DNF Bit Bit v2'), system-ui, sans-serif;
-  --gl-font-body: var(--font-body, 'S-Core Dream'), system-ui, sans-serif;
+  --gl-font-brand:
+    var(--font-brand, 'DNF Bit Bit v2'), 'Apple SD Gothic Neo', 'Malgun Gothic',
+    'Noto Sans KR', system-ui, sans-serif;
+  --gl-font-body:
+    var(--font-body, 'S-Core Dream'), 'Apple SD Gothic Neo', 'Malgun Gothic',
+    'Noto Sans KR', system-ui, sans-serif;
 
   /* Semantic tokens - Light mode */
   --color-dark-bg: hsl(0 0% 100%);
@@ -449,6 +453,10 @@ body {
   position: relative;
   background-color: var(--color-primary-500);
   box-shadow: 0 0 10px hsl(212 100% 60% / 0.45);
+}
+
+.attendance-status-badge-stale > span:first-child {
+  background-color: var(--color-accent-orange-400);
 }
 
 .attendance-status-badge-live > span:first-child::after {

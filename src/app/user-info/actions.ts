@@ -113,6 +113,7 @@ export async function updateUserProfile(
       department: form.department,
       work_hours: form.workHours,
       work_type: form.workType,
+      work_days_per_week: form.workDaysPerWeek,
       work_style: form.workStyle ?? null,
       work_ethic: form.workEthic ?? null,
     },

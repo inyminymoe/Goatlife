@@ -101,6 +101,7 @@ export default function BoardPostForm(props: BoardPostFormProps) {
       isEdit ? updateBoardPost(fd) : createBoardPost(fd),
     onSuccess: result => {
       if (!result.ok) {
+        if (result.error) window.alert(result.error);
         setErrors({
           title: result.fieldErrors?.title,
           content: result.fieldErrors?.content,
@@ -128,6 +129,9 @@ export default function BoardPostForm(props: BoardPostFormProps) {
     },
     onError: error => {
       console.error(`[BoardPostForm:${mode}] failed`, error);
+      window.alert(
+        '요청 처리 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.'
+      );
       setErrors({ form: '요청 처리 중 오류가 발생했습니다.' });
     },
   });

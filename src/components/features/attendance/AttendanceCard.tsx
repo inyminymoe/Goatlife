@@ -1,9 +1,13 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import AttendanceView from './AttendanceView';
 import { useAttendance } from '@/hooks/useAttendance';
 
 export default function AttendanceCard() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   const {
     lifecycle,
     attendance,
@@ -21,7 +25,7 @@ export default function AttendanceCard() {
       attendance={attendance}
       attendanceRate={attendanceRate}
       todaySeconds={todaySeconds}
-      lifecycle={lifecycle}
+      lifecycle={mounted ? lifecycle : 'loading'}
       isMutating={isMutating}
       toast={toast}
       onDismissToast={dismissToast}

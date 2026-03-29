@@ -198,6 +198,22 @@ export default function ProfileEditForm({
             ]}
           />
 
+          {/* 주당 근무일 */}
+          <Select
+            label="주당 근무일수"
+            value={String(watch('workDaysPerWeek'))}
+            onChange={(val: string) => setValue('workDaysPerWeek', Number(val))}
+            options={[
+              { value: '1', label: '주 1일' },
+              { value: '2', label: '주 2일' },
+              { value: '3', label: '주 3일' },
+              { value: '4', label: '주 4일' },
+              { value: '5', label: '주 5일 (평일)' },
+              { value: '6', label: '주 6일' },
+              { value: '7', label: '주 7일 (매일)' },
+            ]}
+          />
+
           {/* 업무스타일 */}
           <Input
             label="나의 업무스타일"
