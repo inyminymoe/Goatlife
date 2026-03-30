@@ -25,7 +25,6 @@ export function useCommentInput({
     mutationFn: async ({ content }: { content: string }) => {
       await createComment(postId, {
         content,
-        image_urls: [],
         parent_id: parentId ?? null,
       });
     },

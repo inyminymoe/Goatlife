@@ -64,7 +64,6 @@ export async function POST(
 
   const { data: body, error: parseError } = await parseJsonBody<{
     content?: string;
-    image_urls?: string[];
     parent_id?: string;
     reply_to_name?: string;
   }>(req);
@@ -78,8 +77,6 @@ export async function POST(
 
   if (!content)
     return NextResponse.json({ error: 'content is required' }, { status: 400 });
-
-  const imageUrls = Array.isArray(body?.image_urls) ? body.image_urls : [];
 
   const supabase = await createServerSupabase();
   const {
@@ -126,7 +123,6 @@ export async function POST(
     user_id: user.id,
     author_name: authorName,
     content,
-    image_urls: imageUrls,
     parent_id: resolvedParentId,
     reply_to_name: body?.reply_to_name ?? null,
   });

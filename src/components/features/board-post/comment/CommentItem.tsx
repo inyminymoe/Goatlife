@@ -35,7 +35,6 @@ export function CommentItem({
   postId,
   parent_id,
   user_id,
-  image_urls,
   author_name,
   content,
   created_at,
