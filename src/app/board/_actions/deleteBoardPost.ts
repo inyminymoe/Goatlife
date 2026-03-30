@@ -60,10 +60,17 @@ export async function deleteBoardPost(
   // CASCADE 삭제 전에 Storage 경로를 미리 수집
   // (board_post_images.post_id → board_posts.id ON DELETE CASCADE 로 인해
   //  게시글 삭제 후 조회하면 row가 이미 없음)
-  const { data: images } = await supabase
+  const { data: images, error: imagesError } = await supabase
     .from('board_post_images')
     .select('url')
     .eq('post_id', postId);
+
+  if (imagesError) {
+    console.error(
+      '[deleteBoardPost] image url fetch failed — storage cleanup will be skipped',
+      imagesError
+    );
+  }
 
   const storagePaths = (images ?? [])
     .map(img => extractStoragePath(img.url))
