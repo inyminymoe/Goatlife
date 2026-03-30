@@ -57,6 +57,7 @@ export function CommentSection({
           postAuthorId={postAuthorId}
           onDeleteComment={handleDelete}
           onPinComment={handlePin}
+          onReplyAdded={handleCommentAdded}
         />
       </div>
 

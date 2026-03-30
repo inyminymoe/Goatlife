@@ -8,7 +8,7 @@ import { formatDate } from '@/lib/formatDate';
 import { Comment } from '@/types/board';
 import { CommentActionMenu } from './CommentActionMenu';
 import { canDeleteComment, canPinComment } from './domain/commentPermissions';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchReplies } from './api/commentApi';
 import { CommentInput } from './CommentInput';
@@ -26,6 +26,8 @@ type CommentItemProps = Comment & {
   isReply?: boolean;
   /** 답글 아이템에서 "답글달기" 클릭 시 부모의 입력창을 열도록 위임 */
   onReplyClick?: () => void;
+  /** 답글(재답글 포함) 등록 시 상위 댓글 카운트 증가 */
+  onReplyAdded?: () => void;
 };
 
 export function CommentItem({
@@ -44,6 +46,7 @@ export function CommentItem({
   onPin,
   isReply = false,
   onReplyClick,
+  onReplyAdded,
 }: CommentItemProps) {
   const currentUser = useAtomValue(userAtom);
   const hasMenuAction =
@@ -62,11 +65,8 @@ export function CommentItem({
     enabled: showReplies,
   });
 
-  useEffect(() => {
-    if (showReplies) {
-      setLocalReplyCount(replies.length);
-    }
-  }, [replies.length, showReplies]);
+  const displayReplyCount =
+    showReplies && replies.length > 0 ? replies.length : localReplyCount;
 
   return (
     <div
@@ -135,12 +135,12 @@ export function CommentItem({
       </div>
 
       {/* 답글 더보기 / 숨기기 */}
-      {!isReply && localReplyCount > 0 && (
+      {!isReply && displayReplyCount > 0 && (
         <button
           className="py-2 text-xs text-primary-500 hover:text-primary-700 transition-colors"
           onClick={() => setShowReplies(v => !v)}
         >
-          {showReplies ? '답글 숨기기' : `답글 ${localReplyCount}개 더보기`}
+          {showReplies ? '답글 숨기기' : `답글 ${displayReplyCount}개 더보기`}
         </button>
       )}
 
@@ -179,6 +179,7 @@ export function CommentItem({
               setShowReplyInput(false);
               setShowReplies(true);
               setLocalReplyCount(c => c + 1);
+              onReplyAdded?.();
             }}
             replyToName={replyToName}
           />
