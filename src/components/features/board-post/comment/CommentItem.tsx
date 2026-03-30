@@ -156,7 +156,10 @@ export function CommentItem({
                 {...reply}
                 postId={postId}
                 postAuthorId={postAuthorId}
-                onDelete={onDelete}
+                onDelete={(commentId, parentId) => {
+                  setLocalReplyCount(c => Math.max(c - 1, 0));
+                  onDelete?.(commentId, parentId);
+                }}
                 onPin={onPin}
                 isReply={true}
                 onReplyClick={() => {
