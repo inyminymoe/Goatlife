@@ -24,10 +24,13 @@ export function CommentSection({
   const [currentPage, setCurrentPage] = useState(1);
   const queryClient = useQueryClient();
 
-  const { data: comments = [], isLoading } = useQuery({
+  const { data: commentsResult, isLoading } = useQuery({
     queryKey: ['comments', postId, currentPage],
     queryFn: () => fetchComments(postId, currentPage),
   });
+
+  const comments = commentsResult?.data ?? [];
+  const rootCommentTotal = commentsResult?.total ?? 0;
 
   const { commentCount, handleDelete, handlePin, handleCommentAdded } =
     useCommentActions(postId, initialCommentCount);
@@ -38,7 +41,9 @@ export function CommentSection({
     queryClient.invalidateQueries({ queryKey: ['comments', postId] });
   };
 
-  const totalPages = Math.ceil(commentCount / COMMENTS_PER_PAGE);
+  // rootCommentTotal: 루트 댓글만의 수 (답글 제외) — API가 parent_id IS NULL로 필터링한 count
+  // commentCount(전체)를 쓰면 답글 포함으로 totalPages가 부풀어 빈 페이지가 생김
+  const totalPages = Math.ceil(rootCommentTotal / COMMENTS_PER_PAGE);
 
   return (
     <section className="bg-grey-100 rounded-[5px]">

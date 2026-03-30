@@ -3,7 +3,7 @@ import { Comment } from '@/types/board';
 export async function fetchComments(
   postId: string,
   page: number
-): Promise<Comment[]> {
+): Promise<{ data: Comment[]; total: number }> {
   const res = await fetch(`/api/board/posts/${postId}/comments?page=${page}`);
   if (!res.ok) {
     throw new Error('댓글 조회 실패');
