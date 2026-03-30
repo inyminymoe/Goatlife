@@ -11,25 +11,11 @@ function extractStoragePath(url: string): string | null {
   return idx !== -1 ? url.slice(idx + marker.length) : null;
 }
 
-async function cleanupPostImages(postId: string): Promise<void> {
-  const { data: images, error } = await admin
-    .from('board_post_images')
-    .select('url')
-    .eq('post_id', postId);
-
-  if (error || !images?.length) return;
-
-  const paths = images
-    .map(img => extractStoragePath(img.url))
-    .filter((p): p is string => p !== null);
-
-  if (paths.length > 0) {
-    const { error: storageError } = await admin.storage
-      .from(BUCKET)
-      .remove(paths);
-    if (storageError) {
-      console.error('[deleteBoardPost] storage cleanup failed', storageError);
-    }
+async function cleanupStoragePaths(paths: string[]): Promise<void> {
+  if (paths.length === 0) return;
+  const { error } = await admin.storage.from(BUCKET).remove(paths);
+  if (error) {
+    console.error('[deleteBoardPost] storage cleanup failed', error);
   }
 }
 
@@ -71,9 +57,21 @@ export async function deleteBoardPost(
     }
   }
 
-  // DB 삭제 먼저 — 성공한 경우에만 Storage 정리
-  // admin 클라이언트 사용: RLS "Allow delete own posts" (auth.uid() = author_id)가 관리자를 막으므로
-  const { error: deleteError } = await admin
+  // CASCADE 삭제 전에 Storage 경로를 미리 수집
+  // (board_post_images.post_id → board_posts.id ON DELETE CASCADE 로 인해
+  //  게시글 삭제 후 조회하면 row가 이미 없음)
+  const { data: images } = await supabase
+    .from('board_post_images')
+    .select('url')
+    .eq('post_id', postId);
+
+  const storagePaths = (images ?? [])
+    .map(img => extractStoragePath(img.url))
+    .filter((p): p is string => p !== null);
+
+  // RLS "Allow delete own posts" + "Allow delete by admin" 정책이 처리
+  // → 유저 세션 클라이언트 사용 (exec_quotes 패턴과 일관성 유지)
+  const { error: deleteError } = await supabase
     .from('board_posts')
     .delete()
     .eq('id', postId);
@@ -83,8 +81,8 @@ export async function deleteBoardPost(
     return { ok: false, error: '게시글 삭제 중 오류가 발생했습니다.' };
   }
 
-  // Storage 정리는 best-effort — 실패해도 게시글 삭제는 이미 완료
-  await cleanupPostImages(postId);
+  // DB 삭제 성공 후 Storage 정리 (best-effort)
+  await cleanupStoragePaths(storagePaths);
 
   return { ok: true };
 }
