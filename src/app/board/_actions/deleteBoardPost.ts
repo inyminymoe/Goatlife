@@ -46,11 +46,16 @@ export async function deleteBoardPost(
   const isAuthor = existing.author_id === user.id;
 
   if (!isAuthor) {
-    const { data: adminRow } = await supabase
+    const { data: adminRow, error: adminError } = await supabase
       .from('exec_admins')
       .select('user_id')
       .eq('user_id', user.id)
       .maybeSingle();
+
+    if (adminError) {
+      console.error('[deleteBoardPost] admin lookup failed', adminError);
+      return { ok: false, error: '권한 확인 중 오류가 발생했습니다.' };
+    }
 
     if (!adminRow) {
       return { ok: false, error: '삭제 권한이 없습니다.' };
