@@ -11,7 +11,7 @@ function extractStoragePath(url: string): string | null {
   return idx !== -1 ? url.slice(idx + marker.length) : null;
 }
 
-async function deletePostImages(postId: string): Promise<void> {
+async function cleanupPostImages(postId: string): Promise<void> {
   const { data: images, error } = await admin
     .from('board_post_images')
     .select('url')
@@ -71,9 +71,9 @@ export async function deleteBoardPost(
     }
   }
 
-  await deletePostImages(postId);
-
-  const { error: deleteError } = await supabase
+  // DB 삭제 먼저 — 성공한 경우에만 Storage 정리
+  // admin 클라이언트 사용: RLS "Allow delete own posts" (auth.uid() = author_id)가 관리자를 막으므로
+  const { error: deleteError } = await admin
     .from('board_posts')
     .delete()
     .eq('id', postId);
@@ -82,6 +82,9 @@ export async function deleteBoardPost(
     console.error('[deleteBoardPost] delete failed', deleteError);
     return { ok: false, error: '게시글 삭제 중 오류가 발생했습니다.' };
   }
+
+  // Storage 정리는 best-effort — 실패해도 게시글 삭제는 이미 완료
+  await cleanupPostImages(postId);
 
   return { ok: true };
 }
