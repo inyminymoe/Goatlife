@@ -1,6 +1,37 @@
 'use server';
 
+import { admin } from '@/lib/supabase/admin';
 import { createServerSupabase } from '@/lib/supabase/server';
+
+const BUCKET = 'post-images';
+
+function extractStoragePath(url: string): string | null {
+  const marker = `/${BUCKET}/`;
+  const idx = url.indexOf(marker);
+  return idx !== -1 ? url.slice(idx + marker.length) : null;
+}
+
+async function deletePostImages(postId: string): Promise<void> {
+  const { data: images, error } = await admin
+    .from('board_post_images')
+    .select('url')
+    .eq('post_id', postId);
+
+  if (error || !images?.length) return;
+
+  const paths = images
+    .map(img => extractStoragePath(img.url))
+    .filter((p): p is string => p !== null);
+
+  if (paths.length > 0) {
+    const { error: storageError } = await admin.storage
+      .from(BUCKET)
+      .remove(paths);
+    if (storageError) {
+      console.error('[deleteBoardPost] storage cleanup failed', storageError);
+    }
+  }
+}
 
 export async function deleteBoardPost(
   postId: string
@@ -26,9 +57,21 @@ export async function deleteBoardPost(
     return { ok: false, error: '게시글을 찾을 수 없습니다.' };
   }
 
-  if (existing.author_id !== user.id) {
-    return { ok: false, error: '삭제 권한이 없습니다.' };
+  const isAuthor = existing.author_id === user.id;
+
+  if (!isAuthor) {
+    const { data: adminRow } = await supabase
+      .from('exec_admins')
+      .select('user_id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+
+    if (!adminRow) {
+      return { ok: false, error: '삭제 권한이 없습니다.' };
+    }
   }
+
+  await deletePostImages(postId);
 
   const { error: deleteError } = await supabase
     .from('board_posts')

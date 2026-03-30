@@ -12,6 +12,7 @@ import IconButton from '@/components/ui/IconButton';
 interface PostActionMenuProps {
   postId: string;
   isAuthor: boolean;
+  isAdmin: boolean;
   scope: string;
   board?: string;
   dept?: string;
@@ -22,6 +23,7 @@ interface PostActionMenuProps {
 export function PostActionMenu({
   postId,
   isAuthor,
+  isAdmin,
   scope,
   board,
   dept,
@@ -51,6 +53,8 @@ export function PostActionMenu({
             </DropdownMenuItem>
             <DropdownMenuItem onClick={onDelete}>삭제</DropdownMenuItem>
           </>
+        ) : isAdmin ? (
+          <DropdownMenuItem onClick={onDelete}>삭제</DropdownMenuItem>
         ) : (
           <DropdownMenuItem onClick={onReport}>신고</DropdownMenuItem>
         )}
