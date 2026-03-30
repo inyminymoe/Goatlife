@@ -1,7 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  keepPreviousData,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 import Pagination from '@/components/ui/Pagination';
 import { CommentInput } from './CommentInput';
 import { CommentList } from './CommentList';
@@ -27,6 +31,7 @@ export function CommentSection({
   const { data: commentsResult, isLoading } = useQuery({
     queryKey: ['comments', postId, currentPage],
     queryFn: () => fetchComments(postId, currentPage),
+    placeholderData: keepPreviousData,
   });
 
   const comments = commentsResult?.data ?? [];
