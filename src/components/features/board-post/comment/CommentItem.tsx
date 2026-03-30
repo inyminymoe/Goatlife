@@ -7,16 +7,23 @@ import { parseTextWithLinks } from './ParserTextWithLinks';
 import { formatDate } from '@/lib/formatDate';
 import { Comment } from '@/types/board';
 import { CommentActionMenu } from './CommentActionMenu';
-import { canDeleteComment, canPinComment } from './domain/commentPermissions';
+import {
+  canDeleteComment,
+  canEditComment,
+  canPinComment,
+} from './domain/commentPermissions';
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { fetchReplies } from './api/commentApi';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { fetchReplies, updateCommentContent } from './api/commentApi';
 import { CommentInput } from './CommentInput';
 import IconButton from '@/components/ui/IconButton';
 import { overlay } from 'overlay-kit';
 import BottomSheet from '@/components/ui/BottomSheet';
 import { userAtom } from '@/store/atoms';
 import { useAtomValue } from 'jotai';
+import { useToast } from '@/providers/ToastProvider';
+import TextArea from '@/components/ui/TextArea';
+import Button from '@/components/ui/Button';
 
 type CommentItemProps = Comment & {
   postId: string;
@@ -57,6 +64,30 @@ export function CommentItem({
   const [showReplies, setShowReplies] = useState(false);
   const [localReplyCount, setLocalReplyCount] = useState(reply_count);
   const [replyToName, setReplyToName] = useState(author_name);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editContent, setEditContent] = useState(content);
+  const [localContent, setLocalContent] = useState(content);
+
+  const queryClient = useQueryClient();
+  const toast = useToast();
+
+  const { mutate: submitEdit, isPending: isEditPending } = useMutation({
+    mutationFn: () => updateCommentContent(postId, id, editContent.trim()),
+    onSuccess: () => {
+      setLocalContent(editContent.trim());
+      setIsEditing(false);
+      if (parent_id) {
+        queryClient.invalidateQueries({ queryKey: ['replies', parent_id] });
+      } else {
+        queryClient.invalidateQueries({ queryKey: ['comments', postId] });
+      }
+    },
+    onError: () =>
+      toast.error('수정에 실패했습니다. 잠시 후 다시 시도해주세요.'),
+  });
+
+  const canEdit =
+    !!currentUser && canEditComment(currentUser.id, user_id, is_pinned);
 
   const { data: replies = [], isFetching } = useQuery({
     queryKey: ['replies', id],
@@ -117,6 +148,15 @@ export function CommentItem({
                       onPin?.(commentId, isPinned);
                       close();
                     }}
+                    onEdit={
+                      canEdit
+                        ? () => {
+                            setEditContent(localContent);
+                            setIsEditing(true);
+                            close();
+                          }
+                        : undefined
+                    }
                   />
                 </BottomSheet>
               ))
@@ -125,14 +165,46 @@ export function CommentItem({
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
-        {is_pinned && (
-          <Badge variant="blue" size="xs">
-            고정댓글
-          </Badge>
-        )}
-        {parseTextWithLinks(content)}
-      </div>
+      {isEditing ? (
+        <div className="mr-6">
+          <TextArea
+            value={editContent}
+            onChange={e => setEditContent(e.target.value)}
+            maxLength={1000}
+            className="border-grey-200 rounded-none"
+            autoFocus
+          />
+          <div className="flex justify-end gap-2 mt-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              type="button"
+              onClick={() => setIsEditing(false)}
+              disabled={isEditPending}
+            >
+              취소
+            </Button>
+            <Button
+              variant="primary"
+              size="sm"
+              type="button"
+              disabled={!editContent.trim() || isEditPending}
+              onClick={() => submitEdit()}
+            >
+              {isEditPending ? '저장 중...' : '저장'}
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div className="flex items-center gap-2">
+          {is_pinned && (
+            <Badge variant="blue" size="xs">
+              고정댓글
+            </Badge>
+          )}
+          {parseTextWithLinks(localContent)}
+        </div>
+      )}
 
       {/* 답글 더보기 / 숨기기 */}
       {!isReply && displayReplyCount > 0 && (

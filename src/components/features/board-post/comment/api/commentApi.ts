@@ -64,3 +64,18 @@ export async function patchComment(
     throw new Error('pin failed');
   }
 }
+
+export async function updateCommentContent(
+  postId: string,
+  commentId: string,
+  content: string
+) {
+  const res = await fetch(`/api/board/posts/${postId}/comments/${commentId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ content }),
+  });
+  if (!res.ok) {
+    throw new Error('edit failed');
+  }
+}
