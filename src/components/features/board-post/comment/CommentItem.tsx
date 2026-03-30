@@ -90,6 +90,7 @@ export function CommentItem({
               if (isReply) {
                 onReplyClick?.();
               } else {
+                setReplyToName(author_name);
                 setShowReplyInput(v => !v);
               }
             }}
