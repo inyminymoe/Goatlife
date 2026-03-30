@@ -47,14 +47,6 @@ type BoardListItem = {
 
 const ITEMS_PER_PAGE = 15;
 
-const COMPANY_BOARDS = [
-  '공지사항',
-  '성과보고',
-  '체력단련실',
-  '브레인연료',
-  '사내신문고',
-] as const;
-
 /**
  * 확장 포인트 ①: scope별 토픽 집합
  *  - 전사/부서 스코프에 따라 노출되는 토픽 버튼을 다르게 구성할 수 있음
@@ -62,243 +54,6 @@ const COMPANY_BOARDS = [
  */
 const COMPANY_TOPICS = ['공지', '정보', '질문', '잡담', '모집'] as const;
 const DEPARTMENT_TOPICS = ['공지', '정보', '질문', '모집', '잡담'] as const;
-
-const DEMO_POST_ID = '24c0a64c-70bd-4d97-8996-e9d836a0466c';
-const isUuid = (id: string) =>
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
-
-const mockList: Omit<BoardListItem, 'board'>[] = [
-  {
-    id: '1',
-    topic: '공지',
-    title: '03/31 공지사항입니다.',
-    commentCount: 3,
-    userName: 'CTO 갓햄',
-    viewCount: 10000,
-    dateCreated: '2025.03.31',
-  },
-  {
-    id: '2',
-    topic: '모집',
-    title: '프론트엔드팀 팀원 모집',
-    commentCount: 2,
-    userName: 'COO 갓냥',
-    viewCount: 15,
-    dateCreated: '2025.03.31',
-  },
-  {
-    id: '3',
-    topic: '정보',
-    title: '8월 오프라인 세미나 일정',
-    commentCount: 12,
-    userName: 'COO 갓냥',
-    viewCount: 22,
-    dateCreated: '2025.03.31',
-  },
-  {
-    id: '4',
-    topic: '잡담',
-    title: '이건 무슨 벌레인가요?',
-    commentCount: 5,
-    userName: 'COO 갓냥',
-    viewCount: 0,
-    dateCreated: '2025.03.31',
-  },
-  {
-    id: '5',
-    topic: '질문',
-    title: 'React 18 마이그레이션 질문',
-    commentCount: 8,
-    userName: 'CTO 갓햄',
-    viewCount: 45,
-    dateCreated: '2025.03.30',
-  },
-  {
-    id: '6',
-    topic: '정보',
-    title: '신규 프로젝트 킥오프 미팅',
-    commentCount: 15,
-    userName: 'CEO 갓끼',
-    viewCount: 89,
-    dateCreated: '2025.03.30',
-  },
-  {
-    id: '7',
-    topic: '모집',
-    title: '백엔드 개발자 모집합니다',
-    commentCount: 7,
-    userName: 'CTO 갓햄',
-    viewCount: 123,
-    dateCreated: '2025.03.29',
-  },
-  {
-    id: '8',
-    topic: '잡담',
-    title: '점심 메뉴 추천해주세요',
-    commentCount: 20,
-    userName: '백 팀장',
-    viewCount: 156,
-    dateCreated: '2025.03.29',
-  },
-  {
-    id: '9',
-    topic: '공지',
-    title: '4월 정기 회식 공지',
-    commentCount: 5,
-    userName: 'CEO 갓끼',
-    viewCount: 234,
-    dateCreated: '2025.03.28',
-  },
-  {
-    id: '10',
-    topic: '질문',
-    title: 'TypeScript 타입 에러 해결 방법',
-    commentCount: 11,
-    userName: 'CTO 갓햄',
-    viewCount: 78,
-    dateCreated: '2025.03.28',
-  },
-  {
-    id: '11',
-    topic: '정보',
-    title: '새로운 디자인 시스템 도입',
-    commentCount: 9,
-    userName: 'CTO 갓햄',
-    viewCount: 98,
-    dateCreated: '2025.03.27',
-  },
-  {
-    id: '12',
-    topic: '모집',
-    title: 'UI/UX 디자이너 구합니다',
-    commentCount: 4,
-    userName: 'COO 갓냥',
-    viewCount: 67,
-    dateCreated: '2025.03.27',
-  },
-  {
-    id: '13',
-    topic: '잡담',
-    title: '주말에 뭐하셨나요?',
-    commentCount: 18,
-    userName: '남궁 사원',
-    viewCount: 145,
-    dateCreated: '2025.03.26',
-  },
-  {
-    id: '14',
-    topic: '질문',
-    title: 'Next.js 14 App Router 관련 질문',
-    commentCount: 6,
-    userName: '김 인턴',
-    viewCount: 92,
-    dateCreated: '2025.03.26',
-  },
-  {
-    id: '15',
-    topic: '공지',
-    title: '보안 정책 업데이트 안내',
-    commentCount: 2,
-    userName: 'CTO 갓햄',
-    viewCount: 189,
-    dateCreated: '2025.03.25',
-  },
-  {
-    id: '16',
-    topic: '정보',
-    title: '코드 리뷰 가이드라인',
-    commentCount: 13,
-    userName: 'CTO 갓햄',
-    viewCount: 167,
-    dateCreated: '2025.03.25',
-  },
-  {
-    id: '17',
-    topic: '모집',
-    title: 'DevOps 엔지니어 채용',
-    commentCount: 3,
-    userName: 'COO 갓냥',
-    viewCount: 54,
-    dateCreated: '2025.03.24',
-  },
-  {
-    id: '18',
-    topic: '잡담',
-    title: '추천하는 개발 도서 있나요?',
-    commentCount: 22,
-    userName: '강 인턴',
-    viewCount: 198,
-    dateCreated: '2025.03.24',
-  },
-  {
-    id: '19',
-    topic: '질문',
-    title: 'Git 브랜치 전략 문의',
-    commentCount: 8,
-    userName: '이 주임',
-    viewCount: 76,
-    dateCreated: '2025.03.23',
-  },
-  {
-    id: '20',
-    topic: '정보',
-    title: '5월 컨퍼런스 참가 안내',
-    commentCount: 7,
-    userName: 'COO 갓냥',
-    viewCount: 134,
-    dateCreated: '2025.03.23',
-  },
-  {
-    id: '21',
-    topic: '공지',
-    title: '재택근무 정책 변경',
-    commentCount: 16,
-    userName: 'COO 갓냥',
-    viewCount: 456,
-    dateCreated: '2025.03.22',
-  },
-  {
-    id: '22',
-    topic: '모집',
-    title: 'QA 엔지니어 모집',
-    commentCount: 5,
-    userName: 'CTO 갓햄',
-    viewCount: 88,
-    dateCreated: '2025.03.22',
-  },
-  {
-    id: '23',
-    topic: '잡담',
-    title: '요즘 핫한 기술 스택',
-    commentCount: 25,
-    userName: 'CTO 갓햄',
-    viewCount: 267,
-    dateCreated: '2025.03.21',
-  },
-  {
-    id: '24',
-    topic: '질문',
-    title: 'Docker 컨테이너 최적화 방법',
-    commentCount: 10,
-    userName: '이 주임',
-    viewCount: 112,
-    dateCreated: '2025.03.21',
-  },
-  {
-    id: '25',
-    topic: '정보',
-    title: 'API 문서 작성 가이드',
-    commentCount: 4,
-    userName: 'CTO 갓햄',
-    viewCount: 95,
-    dateCreated: '2025.03.20',
-  },
-];
-
-const mockListWithBoard: BoardListItem[] = mockList.map((item, index) => ({
-  ...item,
-  board: COMPANY_BOARDS[index % COMPANY_BOARDS.length],
-}));
 
 function formatDate(dateIso: string) {
   const d = new Date(dateIso);
@@ -338,10 +93,7 @@ export default function BoardListView({ livePosts = [] }: BoardListViewProps) {
     [livePosts]
   );
 
-  const allList: BoardListItem[] = useMemo(
-    () => [...supabaseList, ...mockListWithBoard],
-    [supabaseList]
-  );
+  const allList = supabaseList;
 
   // scope에 따라 노출할 토픽 집합을 분기
   const availableTopics = useMemo(() => {
@@ -400,23 +152,14 @@ export default function BoardListView({ livePosts = [] }: BoardListViewProps) {
   };
 
   const filteredList = useMemo(() => {
-    // 확장 포인트 ②: scope/board/dept 기준으로 리스트 분기
-    // - API 연동 시 여기에서 scope/board/dept를 서버 액션 인자로 전달하거나,
-    //   이미 받아온 데이터에서 필터링하는 자리로 활용
     let result = allList;
 
     if (scope === 'company' && board) {
-      result = result.filter((item: BoardListItem) => {
-        // item.board가 없으면 그대로 통과시켜 mock 데이터도 쉽게 재사용 가능
-        return !('board' in item) || item.board === board;
-      });
+      result = result.filter(item => item.board === board);
     }
 
     if (scope === 'department' && dept) {
-      result = result.filter((item: BoardListItem) => {
-        // item.dept가 없으면 그대로 통과시켜 현재 목 데이터도 보이도록 함
-        return !('dept' in item) || item.dept === dept;
-      });
+      result = result.filter(item => item.dept === dept);
     }
 
     // 토픽 필터
@@ -483,10 +226,9 @@ export default function BoardListView({ livePosts = [] }: BoardListViewProps) {
                 }
 
                 const query = params.toString();
-                const postIdForHref = isUuid(item.id) ? item.id : DEMO_POST_ID;
                 const detailHref = query
-                  ? `/board/${postIdForHref}?${query}`
-                  : `/board/${postIdForHref}`;
+                  ? `/board/${item.id}?${query}`
+                  : `/board/${item.id}`;
 
                 return <BoardItem key={item.id} {...item} href={detailHref} />;
               })}

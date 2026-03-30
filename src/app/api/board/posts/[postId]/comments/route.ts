@@ -64,7 +64,6 @@ export async function POST(
 
   const { data: body, error: parseError } = await parseJsonBody<{
     content?: string;
-    image_urls?: string[];
     parent_id?: string;
     reply_to_name?: string;
   }>(req);
@@ -78,8 +77,6 @@ export async function POST(
 
   if (!content)
     return NextResponse.json({ error: 'content is required' }, { status: 400 });
-
-  const imageUrls = Array.isArray(body?.image_urls) ? body.image_urls : [];
 
   const supabase = await createServerSupabase();
   const {
@@ -102,13 +99,30 @@ export async function POST(
     resolvedParentId = parentComment?.parent_id ?? parentId;
   }
 
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('last_name, rank')
+    .eq('id', user.id)
+    .maybeSingle();
+
   const metadata = user.user_metadata ?? {};
+  const lastName =
+    profile?.last_name?.trim() ||
+    (metadata['last_name'] as string | undefined)?.trim() ||
+    (metadata['profile_nickname'] as string | undefined)?.trim() ||
+    (metadata['nickname'] as string | undefined)?.trim() ||
+    (metadata['name'] as string | undefined)?.trim() ||
+    (metadata['full_name'] as string | undefined)?.trim() ||
+    user.email?.split('@')[0];
+  const rank = profile?.rank?.trim();
+  const authorName =
+    lastName && rank ? `${lastName} ${rank}` : lastName || rank || '익명';
+
   const { error } = await supabase.from('board_post_comments').insert({
     post_id: postId,
     user_id: user.id,
-    author_name: metadata.firstName + metadata.lastName,
+    author_name: authorName,
     content,
-    image_urls: imageUrls,
     parent_id: resolvedParentId,
     reply_to_name: body?.reply_to_name ?? null,
   });

@@ -28,7 +28,7 @@ export async function fetchReplies(
 
 export async function createComment(
   postId: string,
-  payload: { content: string; image_urls: string[]; parent_id: string | null }
+  payload: { content: string; parent_id: string | null }
 ): Promise<void> {
   const res = await fetch(`/api/board/posts/${postId}/comments`, {
     method: 'POST',

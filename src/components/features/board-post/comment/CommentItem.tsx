@@ -7,13 +7,16 @@ import { parseTextWithLinks } from './ParserTextWithLinks';
 import { formatDate } from '@/lib/formatDate';
 import { Comment } from '@/types/board';
 import { CommentActionMenu } from './CommentActionMenu';
-import { useEffect, useState } from 'react';
+import { canDeleteComment, canPinComment } from './domain/commentPermissions';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchReplies } from './api/commentApi';
 import { CommentInput } from './CommentInput';
 import IconButton from '@/components/ui/IconButton';
 import { overlay } from 'overlay-kit';
 import BottomSheet from '@/components/ui/BottomSheet';
+import { userAtom } from '@/store/atoms';
+import { useAtomValue } from 'jotai';
 
 type CommentItemProps = Comment & {
   postId: string;
@@ -23,6 +26,8 @@ type CommentItemProps = Comment & {
   isReply?: boolean;
   /** 답글 아이템에서 "답글달기" 클릭 시 부모의 입력창을 열도록 위임 */
   onReplyClick?: () => void;
+  /** 답글(재답글 포함) 등록 시 상위 댓글 카운트 증가 */
+  onReplyAdded?: () => void;
 };
 
 export function CommentItem({
@@ -30,7 +35,6 @@ export function CommentItem({
   postId,
   parent_id,
   user_id,
-  image_urls,
   author_name,
   content,
   created_at,
@@ -41,10 +45,18 @@ export function CommentItem({
   onPin,
   isReply = false,
   onReplyClick,
+  onReplyAdded,
 }: CommentItemProps) {
+  const currentUser = useAtomValue(userAtom);
+  const hasMenuAction =
+    !!currentUser &&
+    (canDeleteComment(currentUser.id, user_id) ||
+      canPinComment(currentUser.id, postAuthorId));
+
   const [showReplyInput, setShowReplyInput] = useState(false);
   const [showReplies, setShowReplies] = useState(false);
   const [localReplyCount, setLocalReplyCount] = useState(reply_count);
+  const [replyToName, setReplyToName] = useState(author_name);
 
   const { data: replies = [], isFetching } = useQuery({
     queryKey: ['replies', id],
@@ -52,11 +64,8 @@ export function CommentItem({
     enabled: showReplies,
   });
 
-  useEffect(() => {
-    if (replies.length > 0) {
-      setLocalReplyCount(replies.length);
-    }
-  }, [replies.length]);
+  const displayReplyCount =
+    showReplies && replies.length > 0 ? replies.length : localReplyCount;
 
   return (
     <div
@@ -68,7 +77,10 @@ export function CommentItem({
     >
       <div className="flex justify-between mb-3">
         <div className="flex flex-1 items-center gap-2">
-          <Avatar name={author_name ?? '익명'} size="sm" />
+          <Avatar size="sm" showName={false} />
+          <span className="text-sm font-medium text-grey-900">
+            {author_name ?? '익명'}
+          </span>
           <p className="text-xs text-grey-500">{formatDate(created_at)}</p>
         </div>
         <div className="flex items-center">
@@ -78,6 +90,7 @@ export function CommentItem({
               if (isReply) {
                 onReplyClick?.();
               } else {
+                setReplyToName(author_name);
                 setShowReplyInput(v => !v);
               }
             }}
@@ -87,7 +100,7 @@ export function CommentItem({
           <IconButton
             icon="icon-park:more-one"
             variant="ghost"
-            className="icon-dark-invert"
+            className={cn('icon-dark-invert', !hasMenuAction && 'invisible')}
             onClick={() =>
               overlay.open(({ isOpen, close, unmount }) => (
                 <BottomSheet open={isOpen} onClose={unmount} title="댓글 설정">
@@ -121,30 +134,13 @@ export function CommentItem({
         {parseTextWithLinks(content)}
       </div>
 
-      {image_urls.length > 0 && (
-        <div className="flex flex-wrap gap-2 mt-2">
-          {image_urls.map((url, i) => (
-            <div
-              key={i}
-              className="size-20 overflow-hidden border border-dark rounded-lg"
-            >
-              <img
-                src={url}
-                alt={`comment-image-${i}`}
-                className="size-full object-contain"
-              />
-            </div>
-          ))}
-        </div>
-      )}
-
       {/* 답글 더보기 / 숨기기 */}
-      {!isReply && localReplyCount > 0 && (
+      {!isReply && displayReplyCount > 0 && (
         <button
           className="py-2 text-xs text-primary-500 hover:text-primary-700 transition-colors"
           onClick={() => setShowReplies(v => !v)}
         >
-          {showReplies ? '답글 숨기기' : `답글 ${localReplyCount}개 더보기`}
+          {showReplies ? '답글 숨기기' : `답글 ${displayReplyCount}개 더보기`}
         </button>
       )}
 
@@ -160,10 +156,16 @@ export function CommentItem({
                 {...reply}
                 postId={postId}
                 postAuthorId={postAuthorId}
-                onDelete={onDelete}
+                onDelete={(commentId, parentId) => {
+                  setLocalReplyCount(c => Math.max(c - 1, 0));
+                  onDelete?.(commentId, parentId);
+                }}
                 onPin={onPin}
                 isReply={true}
-                onReplyClick={() => setShowReplyInput(v => !v)}
+                onReplyClick={() => {
+                  setShowReplyInput(v => !v);
+                  setReplyToName(reply.author_name);
+                }}
               />
             ))
           )}
@@ -180,7 +182,9 @@ export function CommentItem({
               setShowReplyInput(false);
               setShowReplies(true);
               setLocalReplyCount(c => c + 1);
+              onReplyAdded?.();
             }}
+            replyToName={replyToName}
           />
         </div>
       )}

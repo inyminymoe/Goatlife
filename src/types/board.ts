@@ -37,7 +37,6 @@ export type Comment = {
   author_name: string | null;
   content: string;
   is_pinned: boolean;
-  image_urls: string[];
   created_at: string;
   updated_at: string;
   parent_id: string | null; // 루트 댓글이면 null, 답글이면 부모 댓글 id

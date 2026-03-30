@@ -24,7 +24,7 @@ export function CommentSection({
   const [currentPage, setCurrentPage] = useState(1);
   const queryClient = useQueryClient();
 
-  const { data: comments = [] } = useQuery({
+  const { data: comments = [], isLoading } = useQuery({
     queryKey: ['comments', postId, currentPage],
     queryFn: () => fetchComments(postId, currentPage),
   });
@@ -52,10 +52,12 @@ export function CommentSection({
       <div className="mb-8 grow-1">
         <CommentList
           comments={comments}
+          isLoading={isLoading}
           postId={postId}
           postAuthorId={postAuthorId}
           onDeleteComment={handleDelete}
           onPinComment={handlePin}
+          onReplyAdded={handleCommentAdded}
         />
       </div>
 
