@@ -7,12 +7,13 @@ import { PostContent } from './PostContent';
 type PostCardProps = {
   post: PostForView;
   isAuthor: boolean;
+  isAdmin: boolean;
 };
 
-export function PostCard({ post, isAuthor }: PostCardProps) {
+export function PostCard({ post, isAuthor, isAdmin }: PostCardProps) {
   return (
     <>
-      <PostCardHeader {...post} isAuthor={isAuthor} />
+      <PostCardHeader {...post} isAuthor={isAuthor} isAdmin={isAdmin} />
       <PostContent content={post.content} />
       <Hashtags hashtags={post.hashtags} />
       <PostActionBar

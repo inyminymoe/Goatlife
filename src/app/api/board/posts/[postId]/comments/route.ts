@@ -38,9 +38,9 @@ export async function GET(
   }
 
   // 루트 댓글 fetch — 뷰에서 조회
-  const { data, error } = await supabase
+  const { data, error, count } = await supabase
     .from('board_post_comments_with_reply_count')
-    .select('*')
+    .select('*', { count: 'exact' })
     .eq('post_id', postId)
     .is('parent_id', null)
     .order('is_pinned', { ascending: false })
@@ -50,7 +50,7 @@ export async function GET(
   if (error)
     return NextResponse.json({ error: 'Request failed' }, { status: 500 });
 
-  return NextResponse.json(data);
+  return NextResponse.json({ data, total: count ?? 0 });
 }
 
 export async function POST(
