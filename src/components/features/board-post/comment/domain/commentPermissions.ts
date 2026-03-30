@@ -5,6 +5,14 @@ export function canDeleteComment(
   return currentUserId === commentAuthorId;
 }
 
+export function canEditComment(
+  currentUserId: string,
+  commentAuthorId: string,
+  isPinned: boolean
+) {
+  return currentUserId === commentAuthorId && !isPinned;
+}
+
 export function canPinComment(currentUserId: string, postAuthorId: string) {
   return currentUserId === postAuthorId;
 }
