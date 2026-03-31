@@ -2,6 +2,30 @@
 @plugin "@tailwindcss/typography";
 @custom-variant dark (:root.dark &);
 
+@font-face {
+  font-family: 'SCoreDream';
+  src: url('../assets/fonts/SCoreDream-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'SCoreDream';
+  src: url('../assets/fonts/SCoreDream-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'SCoreDream';
+  src: url('../assets/fonts/SCoreDream-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 .scrollbar-none {
   scrollbar-width: none;
 }
@@ -77,8 +101,8 @@ body {
     var(--font-brand, 'DNF Bit Bit v2'), 'Apple SD Gothic Neo', 'Malgun Gothic',
     'Noto Sans KR', system-ui, sans-serif;
   --gl-font-body:
-    var(--font-body, 'S-Core Dream'), 'Apple SD Gothic Neo', 'Malgun Gothic',
-    'Noto Sans KR', system-ui, sans-serif;
+    'SCoreDream', 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR',
+    system-ui, sans-serif;
 
   /* Semantic tokens - Light mode */
   --color-dark-bg: hsl(0 0% 100%);
