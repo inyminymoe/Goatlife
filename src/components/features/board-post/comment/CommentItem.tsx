@@ -103,13 +103,13 @@ export function CommentItem({
       className={cn(
         'pl-6 py-4 border-b border-grey-200 w-full',
         is_pinned ? 'bg-accent-orange-100' : undefined,
-        isReply ? 'bg-grey-50 pl-5 border-none' : undefined
+        isReply ? 'bg-grey-100 pl-5 border-none' : undefined
       )}
     >
       <div className="flex justify-between mb-3">
         <div className="flex flex-1 items-center gap-2">
           <Avatar size="sm" showName={false} />
-          <span className="text-sm font-medium text-grey-900">
+          <span className="text-sm font-medium text-dark">
             {author_name ?? '익명'}
           </span>
           <p className="text-xs text-grey-500">{formatDate(created_at)}</p>
