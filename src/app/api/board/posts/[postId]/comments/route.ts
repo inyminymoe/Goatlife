@@ -18,6 +18,9 @@ export async function GET(
   const parentId = searchParams.get('parent_id');
 
   const supabase = await createServerSupabase();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   // 답글 더보기 버튼 클릭 시
   if (parentId) {
@@ -26,7 +29,7 @@ export async function GET(
 
     const { data, error } = await supabase
       .from('board_post_comments')
-      .select('*')
+      .select('*, board_post_comment_likes(user_id)')
       .eq('post_id', postId)
       .eq('parent_id', parentId)
       .order('created_at', { ascending: true });
@@ -34,13 +37,23 @@ export async function GET(
     if (error)
       return NextResponse.json({ error: 'Request failed' }, { status: 500 });
 
-    return NextResponse.json(data);
+    const result = data.map(c => {
+      const likes: { user_id: string }[] = c.board_post_comment_likes ?? [];
+      return {
+        ...c,
+        like_count: likes.length,
+        is_liked: user ? likes.some(l => l.user_id === user.id) : false,
+        board_post_comment_likes: undefined,
+      };
+    });
+
+    return NextResponse.json(result);
   }
 
-  // 루트 댓글 fetch — 뷰에서 조회
+  // 루트 댓글 fetch — 뷰에서 조회 (like_count 포함)
   const { data, error, count } = await supabase
     .from('board_post_comments_with_reply_count')
-    .select('*', { count: 'exact' })
+    .select('*, board_post_comment_likes(user_id)', { count: 'exact' })
     .eq('post_id', postId)
     .is('parent_id', null)
     .order('is_pinned', { ascending: false })
@@ -50,7 +63,17 @@ export async function GET(
   if (error)
     return NextResponse.json({ error: 'Request failed' }, { status: 500 });
 
-  return NextResponse.json({ data, total: count ?? 0 });
+  const result = data.map(c => {
+    const likes: { user_id: string }[] = c.board_post_comment_likes ?? [];
+    return {
+      ...c,
+      like_count: likes.length,
+      is_liked: user ? likes.some(l => l.user_id === user.id) : false,
+      board_post_comment_likes: undefined,
+    };
+  });
+
+  return NextResponse.json({ data: result, total: count ?? 0 });
 }
 
 export async function POST(

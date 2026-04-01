@@ -13,6 +13,7 @@ import {
   canPinComment,
 } from './domain/commentPermissions';
 import { useState } from 'react';
+import { useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchReplies, updateCommentContent } from './api/commentApi';
 import { CommentInput } from './CommentInput';
@@ -24,6 +25,7 @@ import { useAtomValue } from 'jotai';
 import { useToast } from '@/providers/ToastProvider';
 import TextArea from '@/components/ui/TextArea';
 import Button from '@/components/ui/Button';
+import { Icon } from '@iconify/react';
 
 type CommentItemProps = Comment & {
   postId: string;
@@ -47,6 +49,8 @@ export function CommentItem({
   created_at,
   is_pinned,
   reply_count,
+  like_count: initialLikeCount,
+  is_liked: initialIsLiked,
   postAuthorId,
   onDelete,
   onPin,
@@ -59,6 +63,33 @@ export function CommentItem({
     !!currentUser &&
     (canDeleteComment(currentUser.id, user_id) ||
       canPinComment(currentUser.id, postAuthorId));
+
+  const [isLiked, setIsLiked] = useState(initialIsLiked);
+  const [likeCount, setLikeCount] = useState(initialLikeCount);
+
+  useEffect(() => {
+    setIsLiked(initialIsLiked);
+    setLikeCount(initialLikeCount);
+  }, [initialIsLiked, initialLikeCount]);
+
+  const likeMutation = useMutation({
+    mutationFn: async (currentIsLiked: boolean) => {
+      const res = await fetch(
+        `/api/board/posts/${postId}/comments/${id}/like`,
+        { method: currentIsLiked ? 'DELETE' : 'POST' }
+      );
+      if (!res.ok) throw new Error('like failed');
+    },
+    onMutate: (currentIsLiked: boolean) => {
+      setIsLiked(!currentIsLiked);
+      setLikeCount(prev => (currentIsLiked ? prev - 1 : prev + 1));
+    },
+    onError: (_err, currentIsLiked) => {
+      setIsLiked(currentIsLiked);
+      setLikeCount(prev => (currentIsLiked ? prev + 1 : prev - 1));
+      toast.error('잠시 후 다시 시도해주세요.');
+    },
+  });
 
   const [showReplyInput, setShowReplyInput] = useState(false);
   const [showReplies, setShowReplies] = useState(false);
@@ -114,9 +145,28 @@ export function CommentItem({
           </span>
           <p className="text-xs text-grey-500">{formatDate(created_at)}</p>
         </div>
-        <div className="flex items-center">
+        <div className="flex items-center gap-1">
           <button
-            className="text-xs text-grey-500 hover:text-grey-700 transition-colors"
+            className="flex items-center gap-1 text-xs text-grey-500 hover:text-grey-700 transition-colors disabled:opacity-40"
+            disabled={likeMutation.isPending}
+            onClick={() => likeMutation.mutate(isLiked)}
+          >
+            <Icon
+              icon={
+                isLiked
+                  ? 'material-symbols:favorite-rounded'
+                  : 'material-symbols:favorite-outline-rounded'
+              }
+              className={cn('size-4', isLiked ? 'text-primary-500' : '')}
+            />
+            {likeCount > 0 && (
+              <span className={isLiked ? 'text-primary-500' : ''}>
+                {likeCount}
+              </span>
+            )}
+          </button>
+          <button
+            className="text-xs text-grey-500 hover:text-grey-700 transition-colors ml-2"
             onClick={() => {
               if (isReply) {
                 onReplyClick?.();
