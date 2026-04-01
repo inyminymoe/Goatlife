@@ -6,12 +6,14 @@ interface BoardPostViewProps {
   post: PostForView;
   listHref: string;
   isAuthor: boolean;
+  isAdmin: boolean;
 }
 
 export function BoardPostView({
   post,
   listHref,
   isAuthor,
+  isAdmin,
 }: BoardPostViewProps) {
   return (
     <div className="bg-grey-100 mb-5 rounded-[5px] py-5">
@@ -24,7 +26,7 @@ export function BoardPostView({
           목록보기
         </Link>
       </div>
-      <PostCard post={post} isAuthor={isAuthor} />
+      <PostCard post={post} isAuthor={isAuthor} isAdmin={isAdmin} />
     </div>
   );
 }

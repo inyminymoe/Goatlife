@@ -51,9 +51,9 @@ export async function GET(
   }
 
   // 루트 댓글 fetch — 뷰에서 조회 (like_count 포함)
-  const { data, error } = await supabase
+  const { data, error, count } = await supabase
     .from('board_post_comments_with_reply_count')
-    .select('*, board_post_comment_likes(user_id)')
+    .select('*, board_post_comment_likes(user_id)', { count: 'exact' })
     .eq('post_id', postId)
     .is('parent_id', null)
     .order('is_pinned', { ascending: false })
@@ -73,7 +73,7 @@ export async function GET(
     };
   });
 
-  return NextResponse.json(result);
+  return NextResponse.json({ data: result, total: count ?? 0 });
 }
 
 export async function POST(
