@@ -63,15 +63,15 @@ export async function GET(
   if (error)
     return NextResponse.json({ error: 'Request failed' }, { status: 500 });
 
-  const result = data.map(c => ({
-    ...c,
-    is_liked: user
-      ? (c.board_post_comment_likes ?? []).some(
-          (l: { user_id: string }) => l.user_id === user.id
-        )
-      : false,
-    board_post_comment_likes: undefined,
-  }));
+  const result = data.map(c => {
+    const likes: { user_id: string }[] = c.board_post_comment_likes ?? [];
+    return {
+      ...c,
+      like_count: likes.length,
+      is_liked: user ? likes.some(l => l.user_id === user.id) : false,
+      board_post_comment_likes: undefined,
+    };
+  });
 
   return NextResponse.json(result);
 }
