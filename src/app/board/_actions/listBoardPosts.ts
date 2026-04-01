@@ -36,7 +36,7 @@ export async function listBoardPostsForList({
   const query = supabase
     .from('board_posts')
     .select(
-      'id, scope, board, dept, topic, title, content, hashtags, author_name, created_at, comment_count'
+      'id, scope, board, dept, topic, title, content, hashtags, author_name, created_at, comment_count, view_count'
     )
     .eq('scope', scope)
     .order('created_at', { ascending: false })
