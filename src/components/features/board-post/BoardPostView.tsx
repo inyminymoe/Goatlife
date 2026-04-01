@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { PostCard } from './card/PostCard';
+import { ViewCountTracker } from './ViewCountTracker';
 import { PostForView } from '@/types/board';
 
 interface BoardPostViewProps {
@@ -26,6 +27,7 @@ export function BoardPostView({
           목록보기
         </Link>
       </div>
+      <ViewCountTracker postId={post.id} />
       <PostCard post={post} isAuthor={isAuthor} isAdmin={isAdmin} />
     </div>
   );
