@@ -27,6 +27,7 @@ export function CommentSection({
   const { data: comments = [], isLoading } = useQuery({
     queryKey: ['comments', postId, currentPage],
     queryFn: () => fetchComments(postId, currentPage),
+    refetchOnMount: 'always',
   });
 
   const { commentCount, handleDelete, handlePin, handleCommentAdded } =
