@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { brandFont, bodyFont } from '../lib/fonts';
+import { brandFont } from '../lib/fonts';
 import Providers from '../components/Providers';
 import LayoutWrapper from '../components/LayoutWrapper';
 import './globals.css';
@@ -100,7 +100,7 @@ export default async function RootLayout({
   const initialUser = await getInitialUser();
 
   return (
-    <html lang="ko" className={`${brandFont.variable} ${bodyFont.variable}`}>
+    <html lang="ko" className={brandFont.variable}>
       <body>
         <Providers initialUser={initialUser}>
           <LayoutWrapper>{children}</LayoutWrapper>

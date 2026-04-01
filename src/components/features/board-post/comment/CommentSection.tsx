@@ -54,7 +54,7 @@ export function CommentSection({
   return (
     <section className="bg-grey-100 rounded-[5px]">
       <div className="px-6 py-5">
-        <h3 className="text-grey-900 mb-6 font-medium">
+        <h3 className="text-dark mb-6 font-medium">
           댓글 <span className="text-primary-500">{commentCount}</span>
         </h3>
         <CommentInput postId={postId} onCommentAdded={onCommentAdded} />
