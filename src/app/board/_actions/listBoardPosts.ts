@@ -70,7 +70,9 @@ export async function listBoardPostsForList({
   }
 
   if (keyword.trim()) {
-    query = query.ilike('title', `%${keyword.trim()}%`);
+    query = query.or(
+      `title.ilike.%${keyword.trim()}%,content.ilike.%${keyword.trim()}%`
+    );
   }
 
   const { data, error, count } = await query;
