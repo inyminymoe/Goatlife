@@ -3,6 +3,26 @@ import { Comment } from '@/types/board';
 type RawComment = Partial<Comment> &
   Pick<Comment, 'id' | 'post_id' | 'user_id'>;
 
+function getCommentArray(
+  value: unknown,
+  context: 'comments' | 'replies'
+): RawComment[] {
+  if (Array.isArray(value)) {
+    return value as RawComment[];
+  }
+
+  if (
+    value &&
+    typeof value === 'object' &&
+    'data' in value &&
+    Array.isArray(value.data)
+  ) {
+    return value.data as RawComment[];
+  }
+
+  throw new Error(`Unexpected ${context} response shape`);
+}
+
 function normalizeComment(raw: RawComment): Comment {
   return {
     id: raw.id,
@@ -31,7 +51,7 @@ export async function fetchComments(
   if (!res.ok) {
     throw new Error('댓글 조회 실패');
   }
-  const data = (await res.json()) as RawComment[];
+  const data = getCommentArray(await res.json(), 'comments');
   return data.map(normalizeComment);
 }
 
@@ -47,7 +67,7 @@ export async function fetchReplies(
     throw new Error('답글 조회 실패');
   }
 
-  const data = (await res.json()) as RawComment[];
+  const data = getCommentArray(await res.json(), 'replies');
   return data.map(normalizeComment);
 }
 
