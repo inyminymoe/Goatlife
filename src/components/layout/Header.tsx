@@ -7,6 +7,7 @@ import Avatar from '../ui/Avatar';
 import { createClient } from '@/lib/supabase/index';
 import { useSetAtom } from 'jotai';
 import { userAtom } from '@/store/atoms';
+import { cn } from '@/lib/utils';
 
 interface HeaderProps {
   isLoggedIn?: boolean;
@@ -15,6 +16,7 @@ interface HeaderProps {
     avatar?: string;
     rank?: string;
     provider?: string;
+    email: string;
   };
   locale?: 'ko' | 'en';
   onMenuToggle?: () => void;
@@ -164,15 +166,29 @@ export default function Header({
                   role="menu"
                   className="absolute right-0 mt-3 w-48 rounded-lg bg-dark shadow-[0_10px_30px_rgba(15,23,42,0.2)] overflow-hidden z-50"
                 >
-                  <button
-                    type="button"
-                    onClick={handleLogout}
-                    disabled={isSigningOut}
-                    className="text-left px-4 py-2 body-sm text-dark hover:bg-grey-200 focus-visible:outline disabled:opacity-50 transition-colors"
-                    role="menuitem"
+                  <MenuButton
+                    onClick={() => setIsMenuOpen(prev => !prev)}
+                    aria-haspopup="menu"
+                    aria-expanded={isMenuOpen}
                   >
+                    <Avatar
+                      src={userProfile.avatar}
+                      name={userProfile.displayName}
+                      rank={userProfile.rank}
+                      size="sm"
+                      showName={true}
+                    />
+                    <span className="text-sm">{userProfile.email}</span>
+                  </MenuButton>
+                  <MenuButton onClick={() => router.push('/user-info')}>
+                    사원정보 설정
+                  </MenuButton>
+                  <MenuButton onClick={() => router.push('/my')}>
+                    내 활동 모아보기
+                  </MenuButton>
+                  <MenuButton onClick={handleLogout} disabled={isSigningOut}>
                     {isSigningOut ? '로그아웃 중...' : '로그아웃'}
-                  </button>
+                  </MenuButton>
                 </div>
               )}
             </div>
@@ -189,3 +205,22 @@ export default function Header({
     </header>
   );
 }
+
+interface MenuButtonProps
+  extends React.ButtonHTMLAttributes<HTMLButtonElement> {}
+
+const MenuButton = ({ className, children, ...props }: MenuButtonProps) => {
+  return (
+    <button
+      type="button"
+      role="menuitem"
+      className={cn(
+        'cursor-pointer w-full text-left px-4 py-2 body-sm text-dark hover:bg-grey-200 focus-visible:outline disabled:opacity-50 transition-colors',
+        className
+      )}
+      {...props}
+    >
+      {children}
+    </button>
+  );
+};
