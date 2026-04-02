@@ -1,6 +1,7 @@
 import { Comment } from '@/types/board';
 
-type RawComment = Partial<Comment> & Pick<Comment, 'id' | 'post_id' | 'user_id'>;
+type RawComment = Partial<Comment> &
+  Pick<Comment, 'id' | 'post_id' | 'user_id'>;
 
 function normalizeComment(raw: RawComment): Comment {
   return {
