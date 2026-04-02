@@ -18,10 +18,18 @@ export type BoardPostRow = {
   created_at: string;
 };
 
+export type BoardPostListResult = {
+  posts: BoardPostRow[];
+  total: number;
+};
+
 type ListParams = {
   scope: BoardScope;
   board?: string;
   dept?: string;
+  topics?: string[];
+  keyword?: string;
+  page?: number;
   limit?: number;
 };
 
@@ -29,33 +37,50 @@ export async function listBoardPostsForList({
   scope,
   board,
   dept,
-  limit = 20,
-}: ListParams): Promise<BoardPostRow[]> {
+  topics = [],
+  keyword = '',
+  page = 1,
+  limit = 15,
+}: ListParams): Promise<BoardPostListResult> {
   const supabase = await createServerSupabase();
 
-  const query = supabase
+  const from = (page - 1) * limit;
+  const to = from + limit - 1;
+
+  let query = supabase
     .from('board_posts')
     .select(
-      'id, scope, board, dept, topic, title, content, hashtags, author_name, created_at, comment_count, view_count'
+      'id, scope, board, dept, topic, title, content, hashtags, author_name, created_at, comment_count, view_count',
+      { count: 'exact' }
     )
     .eq('scope', scope)
     .order('created_at', { ascending: false })
-    .limit(limit);
+    .range(from, to);
 
   if (scope === 'company' && board) {
-    query.eq('board', board);
+    query = query.eq('board', board);
   }
 
   if (scope === 'department' && dept) {
-    query.eq('dept', dept);
+    query = query.eq('dept', dept);
   }
 
-  const { data, error } = await query;
+  if (topics.length > 0) {
+    query = query.in('topic', topics);
+  }
+
+  if (keyword.trim()) {
+    query = query.or(
+      `title.ilike.%${keyword.trim()}%,content.ilike.%${keyword.trim()}%`
+    );
+  }
+
+  const { data, error, count } = await query;
 
   if (error || !data) {
     console.error('[listBoardPostsForList] fetch failed', error);
-    return [];
+    return { posts: [], total: 0 };
   }
 
-  return data as BoardPostRow[];
+  return { posts: data as BoardPostRow[], total: count ?? 0 };
 }
