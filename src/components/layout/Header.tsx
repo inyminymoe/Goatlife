@@ -175,16 +175,13 @@ export default function Header({
                   role="menu"
                   className="absolute right-0 mt-3 w-48 rounded-lg bg-dark shadow-[0_10px_30px_rgba(15,23,42,0.2)] overflow-hidden z-50"
                 >
-                  <MenuButton
-                    onClick={() => setIsMenuOpen(prev => !prev)}
-                    aria-haspopup="menu"
-                    aria-expanded={isMenuOpen}
-                  >
+                  <div role="presentation" className="px-5 py-2 pt-5">
                     <Avatar {...avatarProps!} />
-                    <p className="text-grey-500 text-sm pl-1 mt-2">
+                    <p className="text-grey-500 text-xs pl-1 mt-2">
                       {userProfile.email}
                     </p>
-                  </MenuButton>
+                  </div>
+
                   <MenuButton onClick={() => navigateFromMenu('/user-info')}>
                     사원정보 설정
                   </MenuButton>
@@ -193,7 +190,11 @@ export default function Header({
                   >
                     내 활동 모아보기
                   </MenuButton>
-                  <MenuButton onClick={handleLogout} disabled={isSigningOut}>
+                  <MenuButton
+                    onClick={handleLogout}
+                    disabled={isSigningOut}
+                    className="mb-3"
+                  >
                     {isSigningOut ? '로그아웃 중...' : '로그아웃'}
                   </MenuButton>
                 </div>
@@ -222,7 +223,7 @@ const MenuButton = ({ className, children, ...props }: MenuButtonProps) => {
       type="button"
       role="menuitem"
       className={cn(
-        'cursor-pointer w-full text-left px-4 py-2 body-sm text-dark hover:bg-grey-200 focus-visible:outline disabled:opacity-50 transition-colors',
+        'cursor-pointer w-full text-left px-5 py-2 body-sm text-dark hover:bg-grey-200 focus-visible:outline disabled:opacity-40 transition-colors',
         className
       )}
       {...props}
