@@ -36,6 +36,16 @@ export default function Header({
   const supabase = useMemo(() => createClient(), []);
   const setUser = useSetAtom(userAtom);
 
+  const avatarProps = userProfile
+    ? {
+        src: userProfile.avatar,
+        name: userProfile.displayName,
+        rank: userProfile.rank,
+        size: 'sm' as const,
+        showName: true,
+      }
+    : null;
+
   const toggleTheme = () => {
     setIsDarkMode(!isDarkMode);
     document.documentElement.classList.toggle('dark');
@@ -152,13 +162,7 @@ export default function Header({
                 aria-haspopup="menu"
                 aria-expanded={isMenuOpen}
               >
-                <Avatar
-                  src={userProfile.avatar}
-                  name={userProfile.displayName}
-                  rank={userProfile.rank}
-                  size="sm"
-                  showName={true}
-                />
+                <Avatar {...avatarProps!} />
               </button>
 
               {isMenuOpen && (
@@ -171,19 +175,17 @@ export default function Header({
                     aria-haspopup="menu"
                     aria-expanded={isMenuOpen}
                   >
-                    <Avatar
-                      src={userProfile.avatar}
-                      name={userProfile.displayName}
-                      rank={userProfile.rank}
-                      size="sm"
-                      showName={true}
-                    />
-                    <span className="text-sm">{userProfile.email}</span>
+                    <Avatar {...avatarProps!} />
+                    <p className="text-grey-500 text-sm pl-1 mt-2">
+                      {userProfile.email}
+                    </p>
                   </MenuButton>
                   <MenuButton onClick={() => router.push('/user-info')}>
                     사원정보 설정
                   </MenuButton>
-                  <MenuButton onClick={() => router.push('/my')}>
+                  <MenuButton
+                    onClick={() => router.push('/my?category=bookmarks')}
+                  >
                     내 활동 모아보기
                   </MenuButton>
                   <MenuButton onClick={handleLogout} disabled={isSigningOut}>
