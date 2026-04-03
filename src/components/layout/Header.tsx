@@ -46,6 +46,11 @@ export default function Header({
       }
     : null;
 
+  const navigateFromMenu = (href: string) => {
+    setIsMenuOpen(false);
+    router.push(href);
+  };
+
   const toggleTheme = () => {
     setIsDarkMode(!isDarkMode);
     document.documentElement.classList.toggle('dark');
@@ -180,11 +185,11 @@ export default function Header({
                       {userProfile.email}
                     </p>
                   </MenuButton>
-                  <MenuButton onClick={() => router.push('/user-info')}>
+                  <MenuButton onClick={() => navigateFromMenu('/user-info')}>
                     사원정보 설정
                   </MenuButton>
                   <MenuButton
-                    onClick={() => router.push('/my?category=bookmarks')}
+                    onClick={() => navigateFromMenu('/my?category=bookmarks')}
                   >
                     내 활동 모아보기
                   </MenuButton>
