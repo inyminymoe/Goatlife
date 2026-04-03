@@ -75,7 +75,7 @@ export const MyActivityList = ({ category, items, total, page }: Props) => {
         />
       </div>
 
-      <div className="grow-1">
+      <div className="grow">
         {items.length === 0 ? (
           <p>{EMPTY_MESSAGES[category]}</p>
         ) : category === 'comments' ? (
