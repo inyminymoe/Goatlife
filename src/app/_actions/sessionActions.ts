@@ -74,32 +74,36 @@ export async function upsertActiveSession(input: {
   sessionMode: SessionMode;
   activeRoutine: ActiveRoutine | null;
   routineQueue?: { id: string; title: string }[] | null;
-}): Promise<MutationResponse> {
+}): Promise<ActiveSessionResponse> {
   const client = await getUserSupabaseClient();
   if (!client.ok) return client;
 
-  const { error } = await client.supabase.from('active_sessions').upsert(
-    {
-      user_id: client.user.id,
-      timer_mode: input.timerMode,
-      started_at: input.startedAt.toISOString(),
-      duration_seconds: input.durationSeconds,
-      total_focus_seconds: input.totalFocusSeconds,
-      remaining_seconds: input.remainingSeconds,
-      is_running: input.isRunning,
-      session_mode: input.sessionMode,
-      routine_id: input.activeRoutine?.id ?? null,
-      routine_title: input.activeRoutine?.title ?? null,
-      routine_index: input.activeRoutine?.index ?? null,
-      routine_total_count: input.activeRoutine?.totalCount ?? null,
-      routine_queue: input.routineQueue ?? null,
-      updated_at: new Date().toISOString(),
-    },
-    { onConflict: 'user_id' } // user_id 충돌 시 update
-  );
+  const { data, error } = await client.supabase
+    .from('active_sessions')
+    .upsert(
+      {
+        user_id: client.user.id,
+        timer_mode: input.timerMode,
+        started_at: input.startedAt.toISOString(),
+        duration_seconds: input.durationSeconds,
+        total_focus_seconds: input.totalFocusSeconds,
+        remaining_seconds: input.remainingSeconds,
+        is_running: input.isRunning,
+        session_mode: input.sessionMode,
+        routine_id: input.activeRoutine?.id ?? null,
+        routine_title: input.activeRoutine?.title ?? null,
+        routine_index: input.activeRoutine?.index ?? null,
+        routine_total_count: input.activeRoutine?.totalCount ?? null,
+        routine_queue: input.routineQueue ?? null,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'user_id' }
+    )
+    .select()
+    .single();
 
   if (error) return { ok: false, error: error.message };
-  return { ok: true };
+  return { ok: true, data: data as ActiveSessionRow };
 }
 
 // active session 삭제 (세션 종료 / 완료 시)
