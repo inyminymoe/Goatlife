@@ -32,6 +32,7 @@ export async function GET(
       .select('*, board_post_comment_likes(user_id)')
       .eq('post_id', postId)
       .eq('parent_id', parentId)
+      .is('deleted_at', null)
       .order('created_at', { ascending: true });
 
     if (error)
@@ -56,6 +57,7 @@ export async function GET(
     .select('*, board_post_comment_likes(user_id)', { count: 'exact' })
     .eq('post_id', postId)
     .is('parent_id', null)
+    .is('deleted_at', null)
     .order('is_pinned', { ascending: false })
     .order('created_at', { ascending: true })
     .range((page - 1) * COMMENTS_PER_PAGE, page * COMMENTS_PER_PAGE - 1);

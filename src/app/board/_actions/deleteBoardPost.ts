@@ -62,9 +62,8 @@ export async function deleteBoardPost(
     }
   }
 
-  // CASCADE 삭제 전에 Storage 경로를 미리 수집
-  // (board_post_images.post_id → board_posts.id ON DELETE CASCADE 로 인해
-  //  게시글 삭제 후 조회하면 row가 이미 없음)
+  // soft delete 전에 Storage 경로를 미리 수집
+  // (deleted_at 세팅 후에는 RLS SELECT 정책이 해당 row를 숨겨 조회 불가)
   const { data: images, error: imagesError } = await supabase
     .from('board_post_images')
     .select('url')
@@ -81,19 +80,20 @@ export async function deleteBoardPost(
     .map(img => extractStoragePath(img.url))
     .filter((p): p is string => p !== null);
 
-  // RLS "Allow delete own posts" + "Allow delete by admin" 정책이 처리
-  // → 유저 세션 클라이언트 사용 (exec_quotes 패턴과 일관성 유지)
-  const { error: deleteError } = await supabase
+  // soft delete: admin 클라이언트로 RLS 우회
+  // (작성자/관리자 권한 검사는 위에서 완료)
+  const { error: deleteError } = await admin
     .from('board_posts')
-    .delete()
+    .update({ deleted_at: new Date().toISOString() })
     .eq('id', postId);
 
   if (deleteError) {
-    console.error('[deleteBoardPost] delete failed', deleteError);
+    console.error('[deleteBoardPost] soft delete failed', deleteError);
     return { ok: false, error: '게시글 삭제 중 오류가 발생했습니다.' };
   }
 
-  // DB 삭제 성공 후 Storage 정리 (best-effort)
+  // DB soft delete 성공 후 Storage 정리 (best-effort)
+  // pg_cron이 30일 후 DB row를 purge할 때 board_post_images도 CASCADE 정리됨
   await cleanupStoragePaths(storagePaths);
 
   return { ok: true };
