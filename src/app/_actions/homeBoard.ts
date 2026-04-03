@@ -14,6 +14,7 @@ export async function getMemberAllBoards(
   const { data, error } = await supabase
     .from('board_posts')
     .select('id, scope, board, dept, title, created_at')
+    .is('deleted_at', null)
     .order('created_at', { ascending: false })
     .limit(limit);
 
@@ -45,6 +46,7 @@ export async function getGuestAnnouncements(
     .select('id, scope, board, title, created_at')
     .eq('scope', 'company')
     .eq('board', '공지사항')
+    .is('deleted_at', null)
     .order('created_at', { ascending: false })
     .limit(limit);
 
@@ -73,6 +75,7 @@ export async function getGuestCommunity(
   const { data, error } = await supabase
     .from('board_posts')
     .select('id, scope, board, dept, title, created_at')
+    .is('deleted_at', null)
     .order('created_at', { ascending: false })
     .limit(limit);
 

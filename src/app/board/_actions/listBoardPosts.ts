@@ -54,6 +54,7 @@ export async function listBoardPostsForList({
       { count: 'exact' }
     )
     .eq('scope', scope)
+    .is('deleted_at', null)
     .order('created_at', { ascending: false })
     .range(from, to);
 

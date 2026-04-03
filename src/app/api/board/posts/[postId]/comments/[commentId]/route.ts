@@ -70,6 +70,7 @@ export async function PATCH(req: Request, { params }: Params) {
     .select('user_id')
     .eq('id', commentId)
     .eq('post_id', postId)
+    .is('deleted_at', null)
     .single();
 
   if (!existing) {
@@ -111,6 +112,7 @@ export async function DELETE(_req: Request, { params }: Params) {
     .select('user_id')
     .eq('id', commentId)
     .eq('post_id', postId)
+    .is('deleted_at', null)
     .single();
 
   if (!existing) {
@@ -122,7 +124,7 @@ export async function DELETE(_req: Request, { params }: Params) {
 
   const { error } = await supabase
     .from('board_post_comments')
-    .delete()
+    .update({ deleted_at: new Date().toISOString() })
     .eq('id', commentId);
 
   if (error) {

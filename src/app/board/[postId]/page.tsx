@@ -48,7 +48,8 @@ export default async function BoardPostPage({
     board_post_bookmarks(user_id)
   `
     )
-    .eq('id', postId);
+    .eq('id', postId)
+    .is('deleted_at', null);
 
   if (user) {
     baseQuery
