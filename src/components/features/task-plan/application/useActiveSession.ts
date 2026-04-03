@@ -52,6 +52,7 @@ export function useTodayHistoryQuery() {
 // ─── active session upsert ──────────────────────────────
 
 export function useUpsertActiveSession() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (input: {
       timerMode: PomodoroMode;
@@ -64,6 +65,25 @@ export function useUpsertActiveSession() {
       activeRoutine: ActiveRoutine | null;
       routineQueue?: { id: string; title: string }[] | null;
     }) => upsertActiveSession(input),
+    onSuccess: (_, variables) => {
+      // upsert 성공 후 캐시를 서버 응답 없이 직접 갱신
+      // → staleTime: Infinity 환경에서 페이지 이동 후 복귀해도 최신 상태가 유지됨
+      queryClient.setQueryData(SESSION_QUERY_KEYS.active, {
+        timer_mode: variables.timerMode,
+        started_at: variables.startedAt.toISOString(),
+        duration_seconds: variables.durationSeconds,
+        total_focus_seconds: variables.totalFocusSeconds,
+        remaining_seconds: variables.remainingSeconds,
+        is_running: variables.isRunning,
+        updated_at: new Date().toISOString(),
+        session_mode: variables.sessionMode,
+        routine_id: variables.activeRoutine?.id ?? null,
+        routine_title: variables.activeRoutine?.title ?? null,
+        routine_index: variables.activeRoutine?.index ?? null,
+        routine_total_count: variables.activeRoutine?.totalCount ?? null,
+        routine_queue: variables.routineQueue ?? null,
+      });
+    },
     // 저장 실패해도 UI는 계속 동작해야 하므로 onError는 콘솔만
     onError: error => {
       console.error('[upsertActiveSession]', error);

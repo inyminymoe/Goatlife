@@ -9,6 +9,7 @@ import {
   useDeleteActiveSession,
   useCreateSessionHistory,
 } from '@/components/features/task-plan/application/useActiveSession';
+import type { PomodoroMode } from '@/hooks/usePomodoroTimer';
 import type { SessionMode, ActiveRoutine, TimerSettings } from '../types';
 import type { PomodoroSession } from '@/types/pomodoro';
 
@@ -106,23 +107,26 @@ export function useSessionOrchestrator({
     (overrides?: {
       sessionMode?: SessionMode;
       activeRoutine?: ActiveRoutine | null;
-      // toggleRunning 직후엔 timer.isRunning이 아직 이전 값 → 명시적으로 넘겨야 함
+      // 상태 전환 직후엔 timer 내부 상태가 아직 이전 값 → 명시적으로 넘겨야 함
       isRunning?: boolean;
+      timerMode?: PomodoroMode;
+      remainingSeconds?: number;
     }) => {
       if (!sessionStartedAtRef.current) return;
       // timerRef.current를 통해 항상 최신 timer 값을 읽음
       // (timer가 useCallback deps에 없어 stale closure가 되는 것을 방지)
       const t = timerRef.current!;
+      const resolvedMode = overrides?.timerMode ?? t.mode;
 
       upsertSession({
-        timerMode: t.mode,
+        timerMode: resolvedMode,
         startedAt: sessionStartedAtRef.current,
         durationSeconds:
-          t.mode === 'focus'
+          resolvedMode === 'focus'
             ? t.focusPresetMinutes * 60
             : t.breakPresetMinutes * 60,
         totalFocusSeconds: t.totalFocusSeconds,
-        remainingSeconds: t.remainingSeconds,
+        remainingSeconds: overrides?.remainingSeconds ?? t.remainingSeconds,
         isRunning: overrides?.isRunning ?? t.isRunning,
         sessionMode: overrides?.sessionMode ?? sessionMode,
         activeRoutine:
@@ -406,7 +410,13 @@ export function useSessionOrchestrator({
       }
 
       timer.startBreak();
-      syncActiveSession();
+      // startBreak()는 setMode/setRemainingSeconds를 예약 → 아직 이전 focus 값
+      // → 전환 후 상태를 명시적으로 넘겨 stale snapshot 저장을 방지
+      syncActiveSession({
+        timerMode: 'break',
+        remainingSeconds: timer.breakPresetMinutes * 60,
+        isRunning: true,
+      });
       onToast?.('휴식 시간으로 넘어갔어요.', 'info');
       return;
     }
@@ -418,14 +428,24 @@ export function useSessionOrchestrator({
       advanceToNextRoutineRef.current();
     } else {
       timer.skipToFocus();
-      syncActiveSession();
+      // skipToFocus()도 동일 이유로 명시적 override 전달
+      syncActiveSession({
+        timerMode: 'focus',
+        remainingSeconds: timer.focusPresetMinutes * 60,
+        isRunning: false,
+      });
       onToast?.("'다음 작업'을 시작하려면 재생버튼을 눌러주세요.", 'info');
     }
   }, [timer, addRecord, syncActiveSession, sessionMode, onToast]);
 
   const handleReset = useCallback(() => {
     timer.resetTimer();
-    syncActiveSession();
+    // resetTimer()는 setIsRunning(false)/setRemainingSeconds를 예약 → 명시적 override 전달
+    const resetRemaining =
+      timer.mode === 'focus'
+        ? timer.focusPresetMinutes * 60
+        : timer.breakPresetMinutes * 60;
+    syncActiveSession({ isRunning: false, remainingSeconds: resetRemaining });
     onToast?.('현재 타이머를 초기화했어요.', 'info');
   }, [timer, syncActiveSession, onToast]);
 
