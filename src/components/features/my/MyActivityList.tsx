@@ -3,6 +3,7 @@
 import { useRouter, useSearchParams } from 'next/navigation';
 import MyActivityTabs from './MyActivityTabs';
 import MyPostCard from './MyPostCard';
+import MyCommentCard from './MyCommentCard';
 import Pagination from '@/components/ui/Pagination';
 import { ActivityKeys } from '@/app/my/page';
 import {
@@ -35,8 +36,12 @@ function buildPostHref(post: {
 }) {
   const params = new URLSearchParams();
   params.set('scope', post.scope);
-  if (post.board) params.set('board', post.board);
-  if (post.dept) params.set('dept', post.dept);
+  if (post.board) {
+    params.set('board', post.board);
+  }
+  if (post.dept) {
+    params.set('dept', post.dept);
+  }
   return `/board/${post.id}?${params.toString()}`;
 }
 
@@ -80,18 +85,14 @@ export const MyActivityList = ({ category, items, total, page }: Props) => {
           <p>{EMPTY_MESSAGES[category]}</p>
         ) : category === 'comments' ? (
           (items as MyActivityComment[]).map(item => (
-            <MyPostCard
+            <MyCommentCard
               key={item.id}
-              id={item.post.id}
-              topic={item.post.topic}
-              title={item.post.title}
-              userName={item.post.author_name}
-              dateCreated={formatDate(item.post.created_at)}
-              href={buildPostHref(item.post)}
-              content={{
-                content: item.content,
-                author_name: item.author_name,
-              }}
+              postTopic={item.post.topic}
+              postTitle={item.post.title}
+              postHref={buildPostHref(item.post)}
+              content={item.content}
+              authorName={item.author_name}
+              dateCreated={formatDate(item.created_at)}
             />
           ))
         ) : (
@@ -104,6 +105,7 @@ export const MyActivityList = ({ category, items, total, page }: Props) => {
               userName={item.author_name}
               dateCreated={formatDate(item.created_at)}
               href={buildPostHref(item)}
+              showBookmark={category === 'bookmarks'}
             />
           ))
         )}
