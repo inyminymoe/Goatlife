@@ -1,3 +1,4 @@
+import { notFound } from 'next/navigation';
 import { MyActivityList } from '@/components/features/my/MyActivityList';
 import {
   getMyBookmarks,
@@ -12,10 +13,29 @@ interface MyPageProps {
 
 export type ActivityKeys = 'bookmarks' | 'likes' | 'boards' | 'comments';
 
+const VALID_CATEGORIES: ActivityKeys[] = [
+  'bookmarks',
+  'likes',
+  'boards',
+  'comments',
+];
+
+function parseCategory(value: unknown): ActivityKeys {
+  if (VALID_CATEGORIES.includes(value as ActivityKeys)) {
+    return value as ActivityKeys;
+  }
+  notFound();
+}
+
+function parsePage(value: unknown): number {
+  const n = Number(value);
+  return Number.isInteger(n) && n >= 1 ? n : 1;
+}
+
 export default async function MyPage({ searchParams }: MyPageProps) {
   const params = (await searchParams) || {};
-  const category = (params.category as ActivityKeys) || 'bookmarks';
-  const page = typeof params.page === 'string' ? Number(params.page) || 1 : 1;
+  const category = parseCategory(params.category);
+  const page = parsePage(params.page);
 
   const result = await (category === 'bookmarks'
     ? getMyBookmarks(page)
