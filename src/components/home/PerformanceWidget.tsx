@@ -1,60 +1,66 @@
 'use client';
 
-import { useState } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Icon } from '@iconify/react';
 import TodoItem from '@/components/ui/TodoItem';
-import Toast from '@/components/ui/Toast';
 import TodoDrawer from '@/components/TodoDrawer';
-import { useTasks } from '@/hooks/useTasks';
+import { useKanbanData } from '../features/kanban/hooks/useKanbanData';
+import { useKanbanMutations } from '../features/kanban/hooks/useKanbanMutations';
+import { useTaskDrawer } from '../features/kanban/hooks/useTaskDrawer';
+import { useToast } from '@/providers/ToastProvider';
+import { updateTaskStatus } from '@/app/_actions/tasks';
 
 export interface PerformanceWidgetProps {
   mode?: 'card' | 'page';
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export default function PerformanceWidget(props: PerformanceWidgetProps) {
-  const { lifecycle, items, toast, dismissToast, actions } = useTasks({
-    autoLoad: true,
-    limit: 4,
+  const toast = useToast();
+  const queryClient = useQueryClient();
+  const { tasks, isLoading, error } = useKanbanData();
+  const { isOpen, selectedTask, open, close } = useTaskDrawer();
+  const mutations = useKanbanMutations(toast);
+
+  const formatTasks = tasks.filter(item => item.status !== 'done').slice(0, 4);
+
+  const toggleMutation = useMutation({
+    mutationFn: (id: string) => updateTaskStatus(id, 'done'),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+    },
+    onError: () => {
+      toast.error('상태 변경 중 문제가 발생했어요.');
+    },
   });
 
-  const [drawerOpen, setDrawerOpen] = useState(false);
-  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
-
-  const selectedTask = items.find(item => item.id === selectedTaskId);
-
   const handleToggle = (id: string) => {
-    actions.markDone(id);
+    toggleMutation.mutate(id);
   };
 
   const handleSettings = (id: string) => {
-    setSelectedTaskId(id);
-    setDrawerOpen(true);
+    const task = tasks.find(t => t.id === id);
+    if (task) open(task);
   };
 
   const handleSave = (data: {
     id?: string;
     title: string;
     description: string;
-    estimatedTime: string;
   }) => {
     if (data.id) {
-      actions.update(data.id, {
-        title: data.title,
-        description: data.description,
-        estimated_time: data.estimatedTime,
+      mutations.updateTask.mutate({
+        taskId: data.id,
+        updates: { title: data.title, description: data.description },
       });
     }
-    setDrawerOpen(false);
   };
 
   const handleDelete = (id: string) => {
-    actions.remove(id);
-    setDrawerOpen(false);
+    mutations.deleteTask.mutate(id);
   };
 
   // 로딩 스켈레톤
-  if (lifecycle === 'loading') {
+  if (isLoading) {
     return (
       <section className="bg-grey-100 rounded-[5px] p-6 md:min-h-[304px]">
         <div className="flex items-center gap-1 mb-4">
@@ -77,7 +83,7 @@ export default function PerformanceWidget(props: PerformanceWidgetProps) {
   }
 
   // 에러 상태
-  if (lifecycle === 'error') {
+  if (error != null) {
     return (
       <section className="bg-grey-100 rounded-[5px] p-6 md:min-h-[304px]">
         <div className="flex items-center gap-1 mb-4">
@@ -96,8 +102,7 @@ export default function PerformanceWidget(props: PerformanceWidgetProps) {
     );
   }
 
-  // 빈 상태
-  const isEmpty = items.length === 0;
+  const isEmpty = formatTasks.length === 0;
 
   return (
     <>
@@ -118,7 +123,7 @@ export default function PerformanceWidget(props: PerformanceWidgetProps) {
           </div>
         ) : (
           <div className="flex flex-col gap-3">
-            {items.map(item => (
+            {formatTasks.map(item => (
               <TodoItem
                 key={item.id}
                 id={item.id}
@@ -132,18 +137,9 @@ export default function PerformanceWidget(props: PerformanceWidgetProps) {
         )}
       </section>
 
-      {toast && (
-        <Toast
-          show={true}
-          message={toast.message}
-          type={toast.type}
-          onClose={dismissToast}
-        />
-      )}
-
       <TodoDrawer
-        isOpen={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
+        isOpen={isOpen}
+        onClose={close}
         todo={
           selectedTask
             ? {
