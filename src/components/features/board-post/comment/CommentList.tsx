@@ -7,6 +7,7 @@ interface CommentListProps {
   isLoading?: boolean;
   postId: string;
   postAuthorId: string;
+  onAuthError?: () => void;
   onDeleteComment?: (commentId: string, parentId?: string) => void;
   onPinComment?: (commentId: string, is_pinned: boolean) => void;
   onReplyAdded?: () => void;
@@ -17,6 +18,7 @@ export function CommentList({
   isLoading,
   postId,
   postAuthorId,
+  onAuthError,
   onDeleteComment,
   onPinComment,
   onReplyAdded,
@@ -47,6 +49,7 @@ export function CommentList({
           {...comment}
           postId={postId}
           postAuthorId={postAuthorId}
+          onAuthError={onAuthError}
           onReplyAdded={onReplyAdded}
           onDelete={onDeleteComment}
           onPin={onPinComment}

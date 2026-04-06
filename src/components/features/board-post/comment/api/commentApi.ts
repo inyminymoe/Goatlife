@@ -1,12 +1,44 @@
 import { Comment } from '@/types/board';
 
+export class CommentApiError extends Error {
+  constructor(
+    message: string,
+    readonly status: number
+  ) {
+    super(message);
+    this.name = 'CommentApiError';
+  }
+}
+
+export function isCommentUnauthorizedError(
+  error: unknown
+): error is CommentApiError {
+  return error instanceof CommentApiError && error.status === 401;
+}
+
+async function createCommentApiError(
+  res: Response,
+  fallbackMessage: string
+): Promise<CommentApiError> {
+  try {
+    const data = (await res.json()) as { error?: unknown };
+    if (typeof data.error === 'string' && data.error.trim()) {
+      return new CommentApiError(data.error, res.status);
+    }
+  } catch {
+    // Ignore non-JSON error bodies and use the fallback message.
+  }
+
+  return new CommentApiError(fallbackMessage, res.status);
+}
+
 export async function fetchComments(
   postId: string,
   page: number
 ): Promise<{ data: Comment[]; total: number }> {
   const res = await fetch(`/api/board/posts/${postId}/comments?page=${page}`);
   if (!res.ok) {
-    throw new Error('댓글 조회 실패');
+    throw await createCommentApiError(res, '댓글 조회 실패');
   }
   return res.json();
 }
@@ -20,7 +52,7 @@ export async function fetchReplies(
   );
 
   if (!res.ok) {
-    throw new Error('답글 조회 실패');
+    throw await createCommentApiError(res, '답글 조회 실패');
   }
 
   return res.json();

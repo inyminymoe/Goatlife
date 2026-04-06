@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Avatar from '@/components/ui/Avatar';
 import Badge from '@/components/ui/Badge';
 import { cn } from '@/lib/utils';
@@ -12,10 +13,12 @@ import {
   canEditComment,
   canPinComment,
 } from './domain/commentPermissions';
-import { useState } from 'react';
-import { useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { fetchReplies, updateCommentContent } from './api/commentApi';
+import {
+  fetchReplies,
+  isCommentUnauthorizedError,
+  updateCommentContent,
+} from './api/commentApi';
 import { CommentInput } from './CommentInput';
 import IconButton from '@/components/ui/IconButton';
 import { overlay } from 'overlay-kit';
@@ -30,6 +33,7 @@ import { Icon } from '@iconify/react';
 type CommentItemProps = Comment & {
   postId: string;
   postAuthorId: string;
+  onAuthError?: () => void;
   onDelete?: (commentId: string, parentId?: string) => void;
   onPin?: (commentId: string, is_pinned: boolean) => void;
   isReply?: boolean;
@@ -52,6 +56,7 @@ export function CommentItem({
   like_count: initialLikeCount,
   is_liked: initialIsLiked,
   postAuthorId,
+  onAuthError,
   onDelete,
   onPin,
   isReply = false,
@@ -59,6 +64,7 @@ export function CommentItem({
   onReplyAdded,
 }: CommentItemProps) {
   const currentUser = useAtomValue(userAtom);
+  const toast = useToast();
   const hasMenuAction =
     !!currentUser &&
     (canDeleteComment(currentUser.id, user_id) ||
@@ -100,7 +106,6 @@ export function CommentItem({
   const [localContent, setLocalContent] = useState(content);
 
   const queryClient = useQueryClient();
-  const toast = useToast();
 
   const { mutate: submitEdit, isPending: isEditPending } = useMutation({
     mutationFn: () => updateCommentContent(postId, id, editContent.trim()),
@@ -120,11 +125,25 @@ export function CommentItem({
   const canEdit =
     !!currentUser && canEditComment(currentUser.id, user_id, is_pinned);
 
-  const { data: replies = [], isFetching } = useQuery({
+  const {
+    data: replies = [],
+    error: repliesError,
+    isFetching,
+  } = useQuery({
     queryKey: ['replies', id],
     queryFn: () => fetchReplies(postId, id),
     enabled: showReplies,
+    retry: (failureCount, queryError) =>
+      !isCommentUnauthorizedError(queryError) && failureCount < 3,
   });
+
+  useEffect(() => {
+    if (!isCommentUnauthorizedError(repliesError)) {
+      return;
+    }
+
+    onAuthError?.();
+  }, [onAuthError, repliesError]);
 
   const displayReplyCount =
     showReplies && replies.length > 0 ? replies.length : localReplyCount;
@@ -278,6 +297,7 @@ export function CommentItem({
                 {...reply}
                 postId={postId}
                 postAuthorId={postAuthorId}
+                onAuthError={onAuthError}
                 onDelete={(commentId, parentId) => {
                   setLocalReplyCount(c => Math.max(c - 1, 0));
                   onDelete?.(commentId, parentId);

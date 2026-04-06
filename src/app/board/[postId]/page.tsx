@@ -1,6 +1,7 @@
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { BoardPostView } from '@/components/features/board-post/BoardPostView';
 import { CommentSection } from '@/components/features/board-post/comment/CommentSection';
+import { buildLoginRedirectHref } from '@/lib/boardAccess';
 import { createServerSupabase } from '@/lib/supabase/server';
 import { PostForView } from '@/types/board';
 
@@ -25,6 +26,17 @@ export default async function BoardPostPage({
       : 'company';
   const board = typeof query.board === 'string' ? query.board : undefined;
   const dept = typeof query.dept === 'string' ? query.dept : undefined;
+  const detailSearchParams = new URLSearchParams({ scope });
+
+  if (scope === 'company' && board) {
+    detailSearchParams.set('board', board);
+  }
+
+  if (scope === 'department' && dept) {
+    detailSearchParams.set('dept', dept);
+  }
+
+  const detailHref = `/board/${postId}?${detailSearchParams.toString()}`;
 
   const listHref =
     scope === 'company'
@@ -39,6 +51,10 @@ export default async function BoardPostPage({
     data: { user },
   } = await supabase.auth.getUser();
 
+  if (!user) {
+    redirect(buildLoginRedirectHref(detailHref));
+  }
+
   const baseQuery = supabase
     .from('board_posts')
     .select(
@@ -51,11 +67,9 @@ export default async function BoardPostPage({
     .eq('id', postId)
     .is('deleted_at', null);
 
-  if (user) {
-    baseQuery
-      .eq('board_post_likes.user_id', user.id)
-      .eq('board_post_bookmarks.user_id', user.id);
-  }
+  baseQuery
+    .eq('board_post_likes.user_id', user.id)
+    .eq('board_post_bookmarks.user_id', user.id);
 
   const { data: post, error } = await baseQuery.maybeSingle();
 

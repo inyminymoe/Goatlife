@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { isSafeRedirectPath } from '@/lib/boardAccess';
 import { createServerSupabase } from '@/lib/supabase/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -8,6 +9,21 @@ const DEFAULT_DEPARTMENT = 'IT부';
 const DEFAULT_WORK_HOURS = '주간(09:00-18:00)';
 const DEFAULT_WORK_TYPE = '풀타임';
 const DEFAULT_RANK = '인턴';
+
+const buildLoginRedirectUrl = (
+  requestUrl: URL,
+  error: 'oauth_failed' | 'missing_code' | 'session_exchange_failed',
+  redirectDestination: string
+) => {
+  const loginUrl = new URL('/login', requestUrl.origin);
+  loginUrl.searchParams.set('error', error);
+
+  if (isSafeRedirectPath(redirectDestination) && redirectDestination !== '/') {
+    loginUrl.searchParams.set('redirect_to', redirectDestination);
+  }
+
+  return loginUrl;
+};
 
 const sanitizeHandle = (raw: string | null | undefined) => {
   if (!raw) return null;
@@ -138,7 +154,10 @@ export async function GET(request: Request) {
     try {
       const redirectUrl = new URL(redirectToParam, requestUrl.origin);
       if (redirectUrl.origin === requestUrl.origin) {
-        redirectDestination = `${redirectUrl.pathname}${redirectUrl.search}${redirectUrl.hash}`;
+        const candidate = `${redirectUrl.pathname}${redirectUrl.search}${redirectUrl.hash}`;
+        if (isSafeRedirectPath(candidate)) {
+          redirectDestination = candidate;
+        }
       }
     } catch (error) {
       console.error('[auth/callback] failed to parse redirect_to', error);
@@ -147,15 +166,21 @@ export async function GET(request: Request) {
 
   if (errorDescription) {
     console.error('[auth/callback] provider error', errorDescription);
-    const loginUrl = new URL('/login', requestUrl.origin);
-    loginUrl.searchParams.set('error', 'oauth_failed');
+    const loginUrl = buildLoginRedirectUrl(
+      requestUrl,
+      'oauth_failed',
+      redirectDestination
+    );
     return NextResponse.redirect(loginUrl, { status: 303 });
   }
 
   if (!code) {
     console.error('[auth/callback] missing auth code');
-    const loginUrl = new URL('/login', requestUrl.origin);
-    loginUrl.searchParams.set('error', 'missing_code');
+    const loginUrl = buildLoginRedirectUrl(
+      requestUrl,
+      'missing_code',
+      redirectDestination
+    );
     return NextResponse.redirect(loginUrl, { status: 303 });
   }
 
@@ -167,8 +192,11 @@ export async function GET(request: Request) {
       code: error.code,
       message: error.message,
     });
-    const loginUrl = new URL('/login', requestUrl.origin);
-    loginUrl.searchParams.set('error', 'session_exchange_failed');
+    const loginUrl = buildLoginRedirectUrl(
+      requestUrl,
+      'session_exchange_failed',
+      redirectDestination
+    );
     return NextResponse.redirect(loginUrl, { status: 303 });
   }
 

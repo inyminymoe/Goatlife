@@ -22,6 +22,10 @@ export async function GET(
     data: { user },
   } = await supabase.auth.getUser();
 
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
   // 답글 더보기 버튼 클릭 시
   if (parentId) {
     if (!isValidUuid(parentId))
@@ -153,6 +157,7 @@ export async function POST(
   });
 
   if (error) {
+    console.error('[comments/POST] insert failed', error);
     return NextResponse.json({ error: 'Request failed' }, { status: 500 });
   }
 

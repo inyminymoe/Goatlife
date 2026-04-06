@@ -1,16 +1,19 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   keepPreviousData,
   useQuery,
   useQueryClient,
 } from '@tanstack/react-query';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import Pagination from '@/components/ui/Pagination';
+import { buildLoginRedirectHref } from '@/lib/boardAccess';
+import { useToast } from '@/providers/ToastProvider';
 import { CommentInput } from './CommentInput';
 import { CommentList } from './CommentList';
 import { useCommentActions } from './application/useCommentActions';
-import { fetchComments } from './api/commentApi';
+import { fetchComments, isCommentUnauthorizedError } from './api/commentApi';
 
 const COMMENTS_PER_PAGE = 10;
 
@@ -27,13 +30,46 @@ export function CommentSection({
 }: CommentSectionProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const queryClient = useQueryClient();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const toast = useToast();
+  const hasHandledAuthError = useRef(false);
 
-  const { data: commentsResult, isLoading } = useQuery({
+  const handleAuthError = useCallback(() => {
+    if (hasHandledAuthError.current) {
+      return;
+    }
+
+    hasHandledAuthError.current = true;
+
+    const query = searchParams.toString();
+    const redirectTo = `${pathname}${query ? `?${query}` : ''}`;
+
+    toast.error('세션이 만료되었습니다. 다시 로그인해주세요.');
+    router.replace(buildLoginRedirectHref(redirectTo));
+  }, [pathname, router, searchParams, toast]);
+
+  const {
+    data: commentsResult,
+    error,
+    isLoading,
+  } = useQuery({
     queryKey: ['comments', postId, currentPage],
     queryFn: () => fetchComments(postId, currentPage),
     refetchOnMount: 'always',
     placeholderData: keepPreviousData,
+    retry: (failureCount, queryError) =>
+      !isCommentUnauthorizedError(queryError) && failureCount < 3,
   });
+
+  useEffect(() => {
+    if (!isCommentUnauthorizedError(error)) {
+      return;
+    }
+
+    handleAuthError();
+  }, [error, handleAuthError]);
 
   const comments = commentsResult?.data ?? [];
   const rootCommentTotal = commentsResult?.total ?? 0;
@@ -66,6 +102,7 @@ export function CommentSection({
           isLoading={isLoading}
           postId={postId}
           postAuthorId={postAuthorId}
+          onAuthError={handleAuthError}
           onDeleteComment={handleDelete}
           onPinComment={handlePin}
           onReplyAdded={handleCommentAdded}

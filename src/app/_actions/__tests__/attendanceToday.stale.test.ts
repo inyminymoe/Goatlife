@@ -63,6 +63,7 @@ function makeRow(overrides: Partial<AttendanceRow> = {}): AttendanceRow {
     work_minutes: 0,
     note: null,
     status: 'present',
+    is_manual_close: null,
     created_at: '2026-03-27T00:00:00.000Z',
     updated_at: '2026-03-27T00:00:00.000Z',
     ...overrides,
