@@ -1,10 +1,8 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import Avatar from '@/components/ui/Avatar';
 import Badge from '@/components/ui/Badge';
-import { buildLoginRedirectHref } from '@/lib/boardAccess';
 import { cn } from '@/lib/utils';
 import { parseTextWithLinks } from './ParserTextWithLinks';
 import { formatDate } from '@/lib/formatDate';
@@ -35,6 +33,7 @@ import { Icon } from '@iconify/react';
 type CommentItemProps = Comment & {
   postId: string;
   postAuthorId: string;
+  onAuthError?: () => void;
   onDelete?: (commentId: string, parentId?: string) => void;
   onPin?: (commentId: string, is_pinned: boolean) => void;
   isReply?: boolean;
@@ -57,6 +56,7 @@ export function CommentItem({
   like_count: initialLikeCount,
   is_liked: initialIsLiked,
   postAuthorId,
+  onAuthError,
   onDelete,
   onPin,
   isReply = false,
@@ -64,11 +64,7 @@ export function CommentItem({
   onReplyAdded,
 }: CommentItemProps) {
   const currentUser = useAtomValue(userAtom);
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
   const toast = useToast();
-  const hasHandledRepliesAuthError = useRef(false);
   const hasMenuAction =
     !!currentUser &&
     (canDeleteComment(currentUser.id, user_id) ||
@@ -142,21 +138,12 @@ export function CommentItem({
   });
 
   useEffect(() => {
-    if (
-      !isCommentUnauthorizedError(repliesError) ||
-      hasHandledRepliesAuthError.current
-    ) {
+    if (!isCommentUnauthorizedError(repliesError)) {
       return;
     }
 
-    hasHandledRepliesAuthError.current = true;
-
-    const query = searchParams.toString();
-    const redirectTo = `${pathname}${query ? `?${query}` : ''}`;
-
-    toast.error('세션이 만료되었습니다. 다시 로그인해주세요.');
-    router.replace(buildLoginRedirectHref(redirectTo));
-  }, [pathname, repliesError, router, searchParams, toast]);
+    onAuthError?.();
+  }, [onAuthError, repliesError]);
 
   const displayReplyCount =
     showReplies && replies.length > 0 ? replies.length : localReplyCount;
@@ -310,6 +297,7 @@ export function CommentItem({
                 {...reply}
                 postId={postId}
                 postAuthorId={postAuthorId}
+                onAuthError={onAuthError}
                 onDelete={(commentId, parentId) => {
                   setLocalReplyCount(c => Math.max(c - 1, 0));
                   onDelete?.(commentId, parentId);

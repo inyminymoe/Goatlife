@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   keepPreviousData,
   useQuery,
@@ -36,6 +36,20 @@ export function CommentSection({
   const toast = useToast();
   const hasHandledAuthError = useRef(false);
 
+  const handleAuthError = useCallback(() => {
+    if (hasHandledAuthError.current) {
+      return;
+    }
+
+    hasHandledAuthError.current = true;
+
+    const query = searchParams.toString();
+    const redirectTo = `${pathname}${query ? `?${query}` : ''}`;
+
+    toast.error('세션이 만료되었습니다. 다시 로그인해주세요.');
+    router.replace(buildLoginRedirectHref(redirectTo));
+  }, [pathname, router, searchParams, toast]);
+
   const {
     data: commentsResult,
     error,
@@ -50,18 +64,12 @@ export function CommentSection({
   });
 
   useEffect(() => {
-    if (!isCommentUnauthorizedError(error) || hasHandledAuthError.current) {
+    if (!isCommentUnauthorizedError(error)) {
       return;
     }
 
-    hasHandledAuthError.current = true;
-
-    const query = searchParams.toString();
-    const redirectTo = `${pathname}${query ? `?${query}` : ''}`;
-
-    toast.error('세션이 만료되었습니다. 다시 로그인해주세요.');
-    router.replace(buildLoginRedirectHref(redirectTo));
-  }, [error, pathname, router, searchParams, toast]);
+    handleAuthError();
+  }, [error, handleAuthError]);
 
   const comments = commentsResult?.data ?? [];
   const rootCommentTotal = commentsResult?.total ?? 0;
@@ -94,6 +102,7 @@ export function CommentSection({
           isLoading={isLoading}
           postId={postId}
           postAuthorId={postAuthorId}
+          onAuthError={handleAuthError}
           onDeleteComment={handleDelete}
           onPinComment={handlePin}
           onReplyAdded={handleCommentAdded}

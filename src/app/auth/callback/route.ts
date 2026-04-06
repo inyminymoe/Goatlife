@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { isSafeRedirectPath } from '@/lib/boardAccess';
 import { createServerSupabase } from '@/lib/supabase/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
@@ -17,7 +18,7 @@ const buildLoginRedirectUrl = (
   const loginUrl = new URL('/login', requestUrl.origin);
   loginUrl.searchParams.set('error', error);
 
-  if (redirectDestination !== '/') {
+  if (isSafeRedirectPath(redirectDestination) && redirectDestination !== '/') {
     loginUrl.searchParams.set('redirect_to', redirectDestination);
   }
 
@@ -153,7 +154,10 @@ export async function GET(request: Request) {
     try {
       const redirectUrl = new URL(redirectToParam, requestUrl.origin);
       if (redirectUrl.origin === requestUrl.origin) {
-        redirectDestination = `${redirectUrl.pathname}${redirectUrl.search}${redirectUrl.hash}`;
+        const candidate = `${redirectUrl.pathname}${redirectUrl.search}${redirectUrl.hash}`;
+        if (isSafeRedirectPath(candidate)) {
+          redirectDestination = candidate;
+        }
       }
     } catch (error) {
       console.error('[auth/callback] failed to parse redirect_to', error);
