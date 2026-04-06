@@ -25,11 +25,12 @@ export default function PerformanceWidget(props: PerformanceWidgetProps) {
 
   const toggleMutation = useMutation({
     mutationFn: (id: string) => updateTaskStatus(id, 'done'),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tasks'] });
-    },
-    onError: () => {
-      toast.error('상태 변경 중 문제가 발생했어요.');
+    onSuccess: result => {
+      if (result.ok) {
+        queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      } else {
+        toast.error('상태 변경 중 문제가 발생했어요');
+      }
     },
   });
 
