@@ -36,7 +36,11 @@ export function CommentSection({
   const toast = useToast();
   const hasHandledAuthError = useRef(false);
 
-  const { data: commentsResult, error, isLoading } = useQuery({
+  const {
+    data: commentsResult,
+    error,
+    isLoading,
+  } = useQuery({
     queryKey: ['comments', postId, currentPage],
     queryFn: () => fetchComments(postId, currentPage),
     refetchOnMount: 'always',
