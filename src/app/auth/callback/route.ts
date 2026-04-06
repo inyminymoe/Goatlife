@@ -9,6 +9,21 @@ const DEFAULT_WORK_HOURS = '주간(09:00-18:00)';
 const DEFAULT_WORK_TYPE = '풀타임';
 const DEFAULT_RANK = '인턴';
 
+const buildLoginRedirectUrl = (
+  requestUrl: URL,
+  error: 'oauth_failed' | 'missing_code' | 'session_exchange_failed',
+  redirectDestination: string
+) => {
+  const loginUrl = new URL('/login', requestUrl.origin);
+  loginUrl.searchParams.set('error', error);
+
+  if (redirectDestination !== '/') {
+    loginUrl.searchParams.set('redirect_to', redirectDestination);
+  }
+
+  return loginUrl;
+};
+
 const sanitizeHandle = (raw: string | null | undefined) => {
   if (!raw) return null;
   const trimmed = raw.trim().toLowerCase();
@@ -147,15 +162,21 @@ export async function GET(request: Request) {
 
   if (errorDescription) {
     console.error('[auth/callback] provider error', errorDescription);
-    const loginUrl = new URL('/login', requestUrl.origin);
-    loginUrl.searchParams.set('error', 'oauth_failed');
+    const loginUrl = buildLoginRedirectUrl(
+      requestUrl,
+      'oauth_failed',
+      redirectDestination
+    );
     return NextResponse.redirect(loginUrl, { status: 303 });
   }
 
   if (!code) {
     console.error('[auth/callback] missing auth code');
-    const loginUrl = new URL('/login', requestUrl.origin);
-    loginUrl.searchParams.set('error', 'missing_code');
+    const loginUrl = buildLoginRedirectUrl(
+      requestUrl,
+      'missing_code',
+      redirectDestination
+    );
     return NextResponse.redirect(loginUrl, { status: 303 });
   }
 
@@ -167,8 +188,11 @@ export async function GET(request: Request) {
       code: error.code,
       message: error.message,
     });
-    const loginUrl = new URL('/login', requestUrl.origin);
-    loginUrl.searchParams.set('error', 'session_exchange_failed');
+    const loginUrl = buildLoginRedirectUrl(
+      requestUrl,
+      'session_exchange_failed',
+      redirectDestination
+    );
     return NextResponse.redirect(loginUrl, { status: 303 });
   }
 
