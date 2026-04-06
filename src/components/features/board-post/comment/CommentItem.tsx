@@ -1,7 +1,10 @@
 'use client';
 
+import { useEffect, useRef, useState } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import Avatar from '@/components/ui/Avatar';
 import Badge from '@/components/ui/Badge';
+import { buildLoginRedirectHref } from '@/lib/boardAccess';
 import { cn } from '@/lib/utils';
 import { parseTextWithLinks } from './ParserTextWithLinks';
 import { formatDate } from '@/lib/formatDate';
@@ -12,10 +15,12 @@ import {
   canEditComment,
   canPinComment,
 } from './domain/commentPermissions';
-import { useState } from 'react';
-import { useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { fetchReplies, updateCommentContent } from './api/commentApi';
+import {
+  fetchReplies,
+  isCommentUnauthorizedError,
+  updateCommentContent,
+} from './api/commentApi';
 import { CommentInput } from './CommentInput';
 import IconButton from '@/components/ui/IconButton';
 import { overlay } from 'overlay-kit';
@@ -59,6 +64,11 @@ export function CommentItem({
   onReplyAdded,
 }: CommentItemProps) {
   const currentUser = useAtomValue(userAtom);
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const toast = useToast();
+  const hasHandledRepliesAuthError = useRef(false);
   const hasMenuAction =
     !!currentUser &&
     (canDeleteComment(currentUser.id, user_id) ||
@@ -100,7 +110,6 @@ export function CommentItem({
   const [localContent, setLocalContent] = useState(content);
 
   const queryClient = useQueryClient();
-  const toast = useToast();
 
   const { mutate: submitEdit, isPending: isEditPending } = useMutation({
     mutationFn: () => updateCommentContent(postId, id, editContent.trim()),
@@ -120,11 +129,34 @@ export function CommentItem({
   const canEdit =
     !!currentUser && canEditComment(currentUser.id, user_id, is_pinned);
 
-  const { data: replies = [], isFetching } = useQuery({
+  const {
+    data: replies = [],
+    error: repliesError,
+    isFetching,
+  } = useQuery({
     queryKey: ['replies', id],
     queryFn: () => fetchReplies(postId, id),
     enabled: showReplies,
+    retry: (failureCount, queryError) =>
+      !isCommentUnauthorizedError(queryError) && failureCount < 3,
   });
+
+  useEffect(() => {
+    if (
+      !isCommentUnauthorizedError(repliesError) ||
+      hasHandledRepliesAuthError.current
+    ) {
+      return;
+    }
+
+    hasHandledRepliesAuthError.current = true;
+
+    const query = searchParams.toString();
+    const redirectTo = `${pathname}${query ? `?${query}` : ''}`;
+
+    toast.error('세션이 만료되었습니다. 다시 로그인해주세요.');
+    router.replace(buildLoginRedirectHref(redirectTo));
+  }, [pathname, repliesError, router, searchParams, toast]);
 
   const displayReplyCount =
     showReplies && replies.length > 0 ? replies.length : localReplyCount;

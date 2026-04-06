@@ -67,11 +67,9 @@ export default async function BoardPostPage({
     .eq('id', postId)
     .is('deleted_at', null);
 
-  if (user) {
-    baseQuery
-      .eq('board_post_likes.user_id', user.id)
-      .eq('board_post_bookmarks.user_id', user.id);
-  }
+  baseQuery
+    .eq('board_post_likes.user_id', user.id)
+    .eq('board_post_bookmarks.user_id', user.id);
 
   const { data: post, error } = await baseQuery.maybeSingle();
 
