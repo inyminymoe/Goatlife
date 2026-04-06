@@ -1,48 +1,5 @@
 import { Comment } from '@/types/board';
 
-type RawComment = Partial<Comment> &
-  Pick<Comment, 'id' | 'post_id' | 'user_id'>;
-
-function getCommentArray(
-  value: unknown,
-  context: 'comments' | 'replies'
-): RawComment[] {
-  if (Array.isArray(value)) {
-    return value as RawComment[];
-  }
-
-  if (
-    value &&
-    typeof value === 'object' &&
-    'data' in value &&
-    Array.isArray(value.data)
-  ) {
-    return value.data as RawComment[];
-  }
-
-  throw new Error(`Unexpected ${context} response shape`);
-}
-
-function normalizeComment(raw: RawComment): Comment {
-  return {
-    id: raw.id,
-    post_id: raw.post_id,
-    user_id: raw.user_id,
-    author_name: raw.author_name ?? null,
-    content: raw.content ?? '',
-    is_pinned: raw.is_pinned ?? false,
-    image_urls: Array.isArray(raw.image_urls) ? raw.image_urls : [],
-    created_at: raw.created_at ?? '',
-    updated_at: raw.updated_at ?? '',
-    parent_id: raw.parent_id ?? null,
-    reply_to_name: raw.reply_to_name ?? null,
-    reply_count:
-      typeof raw.reply_count === 'number' && Number.isFinite(raw.reply_count)
-        ? raw.reply_count
-        : 0,
-  };
-}
-
 export async function fetchComments(
   postId: string,
   page: number
@@ -51,8 +8,7 @@ export async function fetchComments(
   if (!res.ok) {
     throw new Error('댓글 조회 실패');
   }
-  const data = getCommentArray(await res.json(), 'comments');
-  return data.map(normalizeComment);
+  return res.json();
 }
 
 export async function fetchReplies(
@@ -67,8 +23,7 @@ export async function fetchReplies(
     throw new Error('답글 조회 실패');
   }
 
-  const data = getCommentArray(await res.json(), 'replies');
-  return data.map(normalizeComment);
+  return res.json();
 }
 
 export async function createComment(
