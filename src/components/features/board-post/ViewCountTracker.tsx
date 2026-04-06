@@ -32,8 +32,11 @@ export function ViewCountTracker({ postId }: ViewCountTrackerProps) {
 
     if (last !== null && Date.now() - last < ONE_DAY) return;
 
-    fetch(`/api/board/posts/${postId}/view`, { method: 'POST' }).then(res => {
-      if (res.ok) setLastViewed(key);
+    // fetch 전에 먼저 세팅 — 동시 마운트로 인한 중복 요청 방지
+    setLastViewed(key);
+    fetch(`/api/board/posts/${postId}/view`, { method: 'POST' }).catch(() => {
+      // 실패 시 다음 방문에서 재시도할 수 있도록 롤백
+      localStorage.removeItem(key);
     });
   }, [postId]);
 
