@@ -25,7 +25,7 @@ type PostCardHeaderProps = Pick<
   | 'scope'
   | 'board'
   | 'dept'
-> & { isAuthor: boolean };
+> & { isAuthor: boolean; isAdmin: boolean };
 
 export default function PostCardHeader({
   id,
@@ -37,6 +37,7 @@ export default function PostCardHeader({
   dateCreated,
   dateUpdated,
   isAuthor,
+  isAdmin,
   scope,
   board,
   dept,
@@ -110,6 +111,7 @@ export default function PostCardHeader({
         <PostActionMenu
           postId={id}
           isAuthor={isAuthor}
+          isAdmin={isAdmin}
           scope={scope}
           board={board}
           dept={dept}
@@ -121,9 +123,7 @@ export default function PostCardHeader({
       </div>
 
       <div className="flex gap-2 mb-[10px] items-center">
-        <strong className="text-xl font-semibold text-fixed-grey-900">
-          {title}
-        </strong>
+        <strong className="text-xl font-semibold text-dark">{title}</strong>
       </div>
 
       <div className="flex items-center gap-5 text-xs text-grey-500">

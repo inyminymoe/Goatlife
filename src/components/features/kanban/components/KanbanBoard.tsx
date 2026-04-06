@@ -101,19 +101,13 @@ export function KanbanBoard() {
   );
 
   const handleSave = useCallback(
-    (data: {
-      id?: string;
-      title: string;
-      description: string;
-      estimatedTime: string;
-    }) => {
+    (data: { id?: string; title: string; description: string }) => {
       if (data.id) {
         mutations.updateTask.mutate({
           taskId: data.id,
           updates: {
             title: data.title,
             description: data.description,
-            estimated_time: data.estimatedTime,
           },
         });
       }

@@ -10,12 +10,7 @@ interface TodoDrawerProps {
     text: string;
     description?: string;
   } | null;
-  onSave?: (data: {
-    id?: string;
-    title: string;
-    description: string;
-    estimatedTime: string;
-  }) => void;
+  onSave?: (data: { id?: string; title: string; description: string }) => void;
   onDelete?: (id: string) => void;
 }
 

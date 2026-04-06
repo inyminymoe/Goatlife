@@ -19,10 +19,29 @@ export async function uploadBoardImage(
   const file = formData.get('file') as File | null;
   if (!file) return { ok: false, error: '파일이 없습니다.' };
 
-  const ext = file.name.split('.').pop() ?? 'jpg';
-  const timestamp = Date.now();
-  const fileName = `${user.id}/${timestamp}.${ext}`;
-  const safeFile = new File([file], `${timestamp}.${ext}`, { type: file.type });
+  const maxFileSize = 1.5 * 1024 * 1024;
+  const mimeToExt: Record<string, string> = {
+    'image/jpeg': 'jpg',
+    'image/png': 'png',
+    'image/webp': 'webp',
+    'image/gif': 'gif',
+  };
+  if (file.size > maxFileSize) {
+    return {
+      ok: false,
+      error: '1.5MB 이하의 이미지 파일만 업로드할 수 있습니다.',
+    };
+  }
+  const ext = mimeToExt[file.type];
+  if (!ext) {
+    return {
+      ok: false,
+      error: 'JPEG, PNG, WebP, GIF 형식만 업로드할 수 있습니다.',
+    };
+  }
+  const unique = `${Date.now()}-${crypto.randomUUID()}`;
+  const fileName = `${user.id}/${unique}.${ext}`;
+  const safeFile = new File([file], `${unique}.${ext}`, { type: file.type });
 
   const { error: uploadError } = await supabase.storage
     .from('post-images')

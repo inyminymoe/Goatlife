@@ -37,10 +37,11 @@ export type Comment = {
   author_name: string | null;
   content: string;
   is_pinned: boolean;
-  image_urls: string[];
   created_at: string;
   updated_at: string;
-  parent_id: string | null; // 루트 댓글이면 null, 답글이면 부모 댓글 id
-  reply_to_name: string | null; // 나중에 @멘션 표시용, 지금은 null로
+  parent_id: string | null;
+  reply_to_name: string | null;
   reply_count: number;
+  like_count: number;
+  is_liked: boolean;
 };

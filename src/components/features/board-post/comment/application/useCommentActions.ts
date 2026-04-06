@@ -9,13 +9,8 @@ export function useCommentActions(postId: string, initialCommentCount: number) {
   const toast = useToast();
 
   const deleteMutation = useMutation({
-    mutationFn: ({
-      commentId,
-      parentId,
-    }: {
-      commentId: string;
-      parentId?: string;
-    }) => deleteComment(postId, commentId),
+    mutationFn: ({ commentId }: { commentId: string; parentId?: string }) =>
+      deleteComment(postId, commentId),
     onSuccess: (_data, variables) => {
       if (variables.parentId) {
         queryClient.invalidateQueries({
@@ -43,15 +38,11 @@ export function useCommentActions(postId: string, initialCommentCount: number) {
   });
 
   const handleDelete = (commentId: string, parentId?: string) => {
-    if (!parentId) {
-      setCommentCount(prev => Math.max(prev - 1, 0));
-    }
+    setCommentCount(prev => Math.max(prev - 1, 0));
     deleteMutation.mutate(
       { commentId, parentId },
       {
-        onError: () => {
-          if (!parentId) setCommentCount(prev => prev + 1);
-        },
+        onError: () => setCommentCount(prev => prev + 1),
       }
     );
   };

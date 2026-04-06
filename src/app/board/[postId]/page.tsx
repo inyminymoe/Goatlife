@@ -64,7 +64,8 @@ export default async function BoardPostPage({
     board_post_bookmarks(user_id)
   `
     )
-    .eq('id', postId);
+    .eq('id', postId)
+    .is('deleted_at', null);
 
   if (user) {
     baseQuery
@@ -80,6 +81,16 @@ export default async function BoardPostPage({
   }
 
   const isAuthor = !!user && user.id === post.author_id;
+
+  let isAdmin = false;
+  if (user && !isAuthor) {
+    const { data: adminRow } = await supabase
+      .from('exec_admins')
+      .select('user_id')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    isAdmin = !!adminRow;
+  }
 
   const postForView: PostForView = {
     id: post.id,
@@ -111,6 +122,7 @@ export default async function BoardPostPage({
         post={postForView}
         listHref={listHref}
         isAuthor={isAuthor}
+        isAdmin={isAdmin}
       />
       <CommentSection
         postId={postId}

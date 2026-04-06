@@ -46,7 +46,7 @@ function normalizeComment(raw: RawComment): Comment {
 export async function fetchComments(
   postId: string,
   page: number
-): Promise<Comment[]> {
+): Promise<{ data: Comment[]; total: number }> {
   const res = await fetch(`/api/board/posts/${postId}/comments?page=${page}`);
   if (!res.ok) {
     throw new Error('댓글 조회 실패');
@@ -73,7 +73,7 @@ export async function fetchReplies(
 
 export async function createComment(
   postId: string,
-  payload: { content: string; image_urls: string[]; parent_id: string | null }
+  payload: { content: string; parent_id: string | null }
 ): Promise<void> {
   const res = await fetch(`/api/board/posts/${postId}/comments`, {
     method: 'POST',
@@ -107,5 +107,20 @@ export async function patchComment(
   });
   if (!res.ok) {
     throw new Error('pin failed');
+  }
+}
+
+export async function updateCommentContent(
+  postId: string,
+  commentId: string,
+  content: string
+) {
+  const res = await fetch(`/api/board/posts/${postId}/comments/${commentId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ content }),
+  });
+  if (!res.ok) {
+    throw new Error('edit failed');
   }
 }

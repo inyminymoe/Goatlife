@@ -54,6 +54,7 @@ export default function LayoutWrapper({
                 avatar: user.avatar,
                 rank: deriveDisplayRank(user),
                 provider: user.provider,
+                email: user.email,
               }
             : undefined
         }

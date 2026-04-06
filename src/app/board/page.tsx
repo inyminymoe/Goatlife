@@ -22,12 +22,22 @@ export default async function BoardPage({ searchParams }: BoardPageProps) {
         ? params.tboard
         : '';
   const deptParam = typeof params.dept === 'string' ? params.dept : '';
+  const topicsParam = Array.isArray(params.topic)
+    ? params.topic
+    : typeof params.topic === 'string'
+      ? [params.topic]
+      : [];
+  const keywordParam = typeof params.keyword === 'string' ? params.keyword : '';
+  const pageParam =
+    typeof params.page === 'string' ? Number(params.page) || 1 : 1;
 
-  const livePosts = await listBoardPostsForList({
+  const { posts, total } = await listBoardPostsForList({
     scope: scopeParam,
     board: boardParam || undefined,
     dept: deptParam || undefined,
-    limit: 20,
+    topics: topicsParam,
+    keyword: keywordParam,
+    page: pageParam,
   });
 
   return (
@@ -44,7 +54,7 @@ export default async function BoardPage({ searchParams }: BoardPageProps) {
           </div>
         }
       >
-        <BoardListView livePosts={livePosts} />
+        <BoardListView livePosts={posts} total={total} />
       </Suspense>
     </main>
   );
