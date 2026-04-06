@@ -39,7 +39,6 @@ export function useKanbanMutations(
       updates: {
         title?: string;
         description?: string;
-        estimated_time?: string;
       };
     }) => updateTask(taskId, updates),
     onSuccess: () => {

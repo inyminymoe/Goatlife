@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import TextArea from '@/components/ui/TextArea';
-import Select from '@/components/ui/Select';
 
 interface TodoDrawerContentProps {
   todo?: {
@@ -12,12 +11,7 @@ interface TodoDrawerContentProps {
     text: string;
     description?: string;
   } | null;
-  onSave?: (data: {
-    id?: string;
-    title: string;
-    description: string;
-    estimatedTime: string;
-  }) => void;
+  onSave?: (data: { id?: string; title: string; description: string }) => void;
   onDelete?: (id: string) => void;
   onClose: () => void;
 }
@@ -30,7 +24,6 @@ export default function TodoDrawerContent({
 }: TodoDrawerContentProps) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [estimatedTime, setEstimatedTime] = useState('2');
 
   // todo prop이 변경될 때마다 state 업데이트
   useEffect(() => {
@@ -40,12 +33,11 @@ export default function TodoDrawerContent({
     } else {
       setTitle('');
       setDescription('');
-      setEstimatedTime('2');
     }
   }, [todo]);
 
   const handleSave = () => {
-    onSave?.({ id: todo?.id, title, description, estimatedTime });
+    onSave?.({ id: todo?.id, title, description });
     onClose();
   };
 
@@ -72,20 +64,6 @@ export default function TodoDrawerContent({
         onChange={e => setDescription(e.target.value)}
         placeholder="세부 내용을 입력하세요 (선택사항)"
         rows={4}
-      />
-
-      <Select
-        label="예상 포모도로 개수"
-        value={estimatedTime}
-        onChange={value => setEstimatedTime(value)}
-        options={[
-          { value: '1', label: '1개' },
-          { value: '2', label: '2개' },
-          { value: '3', label: '3개' },
-          { value: '4', label: '4개' },
-          { value: '5', label: '5개' },
-          { value: '6', label: '6개' },
-        ]}
       />
 
       {/* 버튼 - 2열 */}
