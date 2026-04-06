@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useMemo, useState, useActionState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useFormStatus } from 'react-dom';
 import Image from 'next/image';
 import Input from '@/components/ui/Input';
@@ -13,6 +13,7 @@ const initialState: LoginActionState = { ok: true };
 
 export default function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isKakaoLoading, setIsKakaoLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [toast, setToast] = useState<{
@@ -23,10 +24,12 @@ export default function LoginForm() {
 
   const supabase = useMemo(() => createClient(), []);
   const [actionState, formAction] = useActionState(loginAction, initialState);
+  const redirectTo = searchParams.get('redirect_to')?.trim() ?? '';
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const error = params.get('error');
+    const preservedRedirectTo = params.get('redirect_to');
 
     if (error) {
       const errorMessages: Record<string, string> = {
@@ -41,7 +44,16 @@ export default function LoginForm() {
         message: errorMessages[error] || '로그인에 실패했습니다.',
       });
 
-      window.history.replaceState({}, '', '/login');
+      const nextLoginParams = new URLSearchParams();
+      if (preservedRedirectTo) {
+        nextLoginParams.set('redirect_to', preservedRedirectTo);
+      }
+
+      const nextLoginPath = nextLoginParams.toString()
+        ? `/login?${nextLoginParams.toString()}`
+        : '/login';
+
+      window.history.replaceState({}, '', nextLoginPath);
     }
   }, []);
 
@@ -56,19 +68,29 @@ export default function LoginForm() {
   }, [actionState]);
 
   const getOAuthRedirectTo = () => {
+    const buildCallbackUrl = (baseUrl: string) => {
+      const callbackUrl = new URL('/auth/callback', baseUrl);
+
+      if (redirectTo) {
+        callbackUrl.searchParams.set('redirect_to', redirectTo);
+      }
+
+      return callbackUrl.toString();
+    };
+
     if (typeof window !== 'undefined') {
       const origin = window.location.origin.replace(/\/$/, '');
 
       if (/localhost(:\d+)?$/.test(window.location.host)) {
-        return `${origin}/auth/callback`;
+        return buildCallbackUrl(origin);
       }
 
       const site = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '');
-      return `${site || origin}/auth/callback`;
+      return buildCallbackUrl(site || origin);
     }
 
     const site = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, '');
-    return site ? `${site}/auth/callback` : undefined;
+    return site ? buildCallbackUrl(site) : undefined;
   };
 
   const handleKakaoLogin = async () => {
@@ -108,6 +130,8 @@ export default function LoginForm() {
   return (
     <>
       <form action={formAction} className="flex flex-col relative z-10">
+        <input type="hidden" name="redirectTo" value={redirectTo} />
+
         <div className="mb-6">
           <Input
             name="userId"

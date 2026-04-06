@@ -18,6 +18,13 @@ export async function GET(
   const parentId = searchParams.get('parent_id');
 
   const supabase = await createServerSupabase();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  }
 
   // 답글 더보기 버튼 클릭 시
   if (parentId) {

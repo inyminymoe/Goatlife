@@ -1,6 +1,7 @@
 'use server';
 
 import { admin } from '@/lib/supabase/admin';
+import { isSafeRedirectPath } from '@/lib/boardAccess';
 import { createServerSupabase } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
 
@@ -21,6 +22,15 @@ const errorToast = (message: string): ToastPayload => ({
   type: 'error',
   message,
 });
+
+const resolveRedirectDestination = (
+  rawRedirectTo: FormDataEntryValue | null
+) => {
+  const redirectTo =
+    typeof rawRedirectTo === 'string' ? rawRedirectTo.trim() : '';
+
+  return isSafeRedirectPath(redirectTo) ? redirectTo : '/';
+};
 
 const mapAuthErrorToMessage = (code?: string, message?: string) => {
   const normalizedMessage = message?.toLowerCase() ?? '';
@@ -91,6 +101,7 @@ export async function loginAction(
       .trim()
       .toLowerCase();
     const password = String(formData.get('password') ?? '');
+    const redirectTo = resolveRedirectDestination(formData.get('redirectTo'));
 
     if (!userId || !password) {
       return { ok: false, message: '아이디와 비밀번호를 모두 입력해주세요.' };
@@ -119,7 +130,7 @@ export async function loginAction(
       };
     }
 
-    redirect('/');
+    redirect(redirectTo);
   } catch (error) {
     if (isNextRedirect(error)) {
       throw error;

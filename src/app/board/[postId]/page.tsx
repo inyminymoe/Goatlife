@@ -1,6 +1,7 @@
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { BoardPostView } from '@/components/features/board-post/BoardPostView';
 import { CommentSection } from '@/components/features/board-post/comment/CommentSection';
+import { buildLoginRedirectHref } from '@/lib/boardAccess';
 import { createServerSupabase } from '@/lib/supabase/server';
 import { PostForView } from '@/types/board';
 
@@ -25,6 +26,17 @@ export default async function BoardPostPage({
       : 'company';
   const board = typeof query.board === 'string' ? query.board : undefined;
   const dept = typeof query.dept === 'string' ? query.dept : undefined;
+  const detailSearchParams = new URLSearchParams({ scope });
+
+  if (scope === 'company' && board) {
+    detailSearchParams.set('board', board);
+  }
+
+  if (scope === 'department' && dept) {
+    detailSearchParams.set('dept', dept);
+  }
+
+  const detailHref = `/board/${postId}?${detailSearchParams.toString()}`;
 
   const listHref =
     scope === 'company'
@@ -38,6 +50,10 @@ export default async function BoardPostPage({
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect(buildLoginRedirectHref(detailHref));
+  }
 
   const baseQuery = supabase
     .from('board_posts')
