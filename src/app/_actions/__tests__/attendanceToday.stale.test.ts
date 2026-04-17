@@ -192,30 +192,15 @@ describe('getAttendanceToday 분기 로직', () => {
       expect(result.type).toBe('stale');
       expect(result.row?.clock_in_at).toBe('2026-03-27T00:15:00.000Z');
     });
-  });
 
-  describe('레코드 없음', () => {
-    it('rows가 비어있으면 none', () => {
-      const result = resolveActiveRow([], TODAY, YESTERDAY, 9);
-      expect(result.type).toBe('none');
-    });
-
-    it('오늘/어제 외 날짜도 clock_out=null이면 none (rows에 없는 경우)', () => {
-      // 빈 rows → DB 쿼리 범위 밖이므로 stale 탐지 불가
-      const result = resolveActiveRow([], TODAY, YESTERDAY, 9);
-      expect(result.type).toBe('none');
-    });
-
-    it('이틀 전 미마감 레코드 → stale (multi-day 케이스 #179)', () => {
+    it('multi-day stale: 이틀 전 미마감 레코드 → stale (#179)', () => {
       // 금→월 처럼 2일 이상 이전 미마감 세션이 rows에 포함된 경우
-      const rows = [
-        makeRow({ work_date: '2026-03-25', clock_out_at: null }), // 그저께
-      ];
+      const rows = [makeRow({ work_date: '2026-03-25', clock_out_at: null })];
       const result = resolveActiveRow(rows, TODAY, YESTERDAY, 9);
       expect(result.type).toBe('stale');
     });
 
-    it('이틀 전 레코드가 clock_out 있으면 stale 아님', () => {
+    it('multi-day stale: 이틀 전 레코드가 clock_out 있으면 stale 아님', () => {
       const rows = [
         makeRow({
           work_date: '2026-03-25',

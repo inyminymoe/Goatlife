@@ -45,6 +45,10 @@ BEGIN
     RAISE EXCEPTION 'Session already closed';
   END IF;
 
+  IF p_clock_out_at IS NULL THEN
+    RAISE EXCEPTION 'Invalid clock_out_at: must not be null';
+  END IF;
+
   -- #168: 하한(clock_in_at) + 상한(clock_in_at + 8h) 양방향 캡 적용
   v_capped_out := GREATEST(p_clock_out_at, v_log.clock_in_at);
   v_capped_out := LEAST(v_capped_out, v_log.clock_in_at + INTERVAL '8 hours');
