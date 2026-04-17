@@ -27,8 +27,8 @@ CREATE TABLE public.goat_score_events (
                        'milestone',     -- 마일스톤 달성
                        'leisure'        -- 취미/휴식 활동
                      )),
-  ref_id           TEXT,                -- 연결된 엔티티 ID (task_id, post_id 등)
-  idempotency_key  TEXT        UNIQUE,  -- '{event_type}_{ref_id}' — 중복 방지
+  ref_id           TEXT,                -- 연결된 엔티티 ID (task_id, post_id 등 — 없는 이벤트는 NULL 허용)
+  idempotency_key  TEXT        NOT NULL UNIQUE,  -- '{event_type}_{ref_id}' — 중복 방지; 앱에서 항상 생성 필수
   stat_type        TEXT        NOT NULL
                      CHECK (stat_type IN ('intelligence', 'fitness', 'happiness', 'achievement')),
   delta            INTEGER     NOT NULL CHECK (delta > 0),
@@ -36,6 +36,10 @@ CREATE TABLE public.goat_score_events (
   note             TEXT,
   created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+
+-- fn_check_daily_cap 에서 (user_id, event_type, created_at) 필터를 사용하므로 복합 인덱스 필수
+CREATE INDEX idx_goat_score_events_user_type_created
+  ON public.goat_score_events (user_id, event_type, created_at DESC);
 
 ALTER TABLE public.goat_score_events ENABLE ROW LEVEL SECURITY;
 
@@ -84,26 +88,18 @@ BEGIN
   VALUES (NEW.user_id)
   ON CONFLICT (user_id) DO NOTHING;
 
-  -- Step 1: Apply delta to the correct stat column (floor at 0 via GREATEST)
-  UPDATE public.character_stats
+  -- delta > 0 (CHECK 제약), 스탯은 모두 >= 0 (CHECK 제약)이므로 결과는 항상 비음수.
+  -- goat_score = 4개 스탯 합산이고 stat_type 하나만 delta만큼 증가하므로
+  -- 전체 합에 NEW.delta를 한 번 더하는 것과 동일. 단일 UPDATE로 처리.
+  UPDATE public.character_stats AS cs
   SET
-    intelligence = CASE WHEN NEW.stat_type = 'intelligence'
-                        THEN GREATEST(0, intelligence + NEW.delta) ELSE intelligence END,
-    fitness      = CASE WHEN NEW.stat_type = 'fitness'
-                        THEN GREATEST(0, fitness      + NEW.delta) ELSE fitness      END,
-    happiness    = CASE WHEN NEW.stat_type = 'happiness'
-                        THEN GREATEST(0, happiness    + NEW.delta) ELSE happiness    END,
-    achievement  = CASE WHEN NEW.stat_type = 'achievement'
-                        THEN GREATEST(0, achievement  + NEW.delta) ELSE achievement  END,
+    intelligence = cs.intelligence + CASE WHEN NEW.stat_type = 'intelligence' THEN NEW.delta ELSE 0 END,
+    fitness      = cs.fitness      + CASE WHEN NEW.stat_type = 'fitness'      THEN NEW.delta ELSE 0 END,
+    happiness    = cs.happiness    + CASE WHEN NEW.stat_type = 'happiness'    THEN NEW.delta ELSE 0 END,
+    achievement  = cs.achievement  + CASE WHEN NEW.stat_type = 'achievement'  THEN NEW.delta ELSE 0 END,
+    goat_score   = cs.goat_score   + NEW.delta,
     updated_at   = NOW()
-  WHERE user_id = NEW.user_id;
-
-  -- Step 2: Recompute goat_score as the authoritative sum of all stats
-  UPDATE public.character_stats
-  SET
-    goat_score = intelligence + fitness + happiness + achievement,
-    updated_at = NOW()
-  WHERE user_id = NEW.user_id;
+  WHERE cs.user_id = NEW.user_id;
 
   RETURN NEW;
 END;
@@ -116,10 +112,10 @@ CREATE TRIGGER trg_update_character_stats
 
 
 -- ── fn_check_daily_cap ────────────────────────────────────────────────────────
--- Returns TRUE if the user can still earn score for this event_type today.
+-- Returns TRUE if the calling user is still under today's cap for event_type.
 -- Call this from the application layer before inserting a score event.
+-- SECURITY DEFINER 이지만 auth.uid() 검증으로 타인의 활동 빈도 노출을 차단.
 CREATE OR REPLACE FUNCTION public.fn_check_daily_cap(
-  p_user_id    UUID,
   p_event_type TEXT
 )
 RETURNS BOOLEAN
@@ -128,10 +124,15 @@ SECURITY DEFINER
 SET search_path TO 'public'
 AS $$
 DECLARE
+  v_user_id     UUID := auth.uid();
   v_daily_cap   INTEGER;
   v_today_start TIMESTAMPTZ;
   v_count       INTEGER;
 BEGIN
+  IF v_user_id IS NULL THEN
+    RAISE EXCEPTION 'not authenticated';
+  END IF;
+
   -- KST 기준 오늘 시작 시각
   v_today_start := date_trunc('day', NOW() AT TIME ZONE 'Asia/Seoul')
                      AT TIME ZONE 'Asia/Seoul';
@@ -148,7 +149,7 @@ BEGIN
 
   SELECT COUNT(*) INTO v_count
   FROM public.goat_score_events
-  WHERE user_id    = p_user_id
+  WHERE user_id    = v_user_id
     AND event_type = p_event_type
     AND created_at >= v_today_start
     AND created_at <  v_today_start + INTERVAL '1 day';
@@ -258,7 +259,8 @@ BEGIN
   RETURN new;
 EXCEPTION
   WHEN others THEN
-    RAISE WARNING 'handle_new_user failed: %', SQLERRM;
+    RAISE WARNING 'handle_new_user failed for user % (SQLSTATE=%): %',
+                  new.id, SQLSTATE, SQLERRM;
     RETURN new;
 END;
 $$;
