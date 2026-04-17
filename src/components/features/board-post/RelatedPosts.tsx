@@ -35,7 +35,8 @@ export default function RelatedPosts({
   return (
     <section className="mt-6 px-4 pb-10">
       <h2 className="text-sm font-semibold text-grey-500 mb-1">
-        같은 게시판 최근 글
+        {scope === 'company' ? (board ?? '전사게시판') : (dept ?? '부서게시판')}{' '}
+        최신 글
       </h2>
       <div>
         {posts.map(post => (
