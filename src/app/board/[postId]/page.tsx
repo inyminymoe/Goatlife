@@ -1,6 +1,7 @@
 import { notFound, redirect } from 'next/navigation';
 import { BoardPostView } from '@/components/features/board-post/BoardPostView';
 import { CommentSection } from '@/components/features/board-post/comment/CommentSection';
+import RelatedPosts from '@/components/features/board-post/RelatedPosts';
 import { buildLoginRedirectHref } from '@/lib/boardAccess';
 import { createServerSupabase } from '@/lib/supabase/server';
 import { PostForView } from '@/types/board';
@@ -80,6 +81,25 @@ export default async function BoardPostPage({
 
   const isAuthor = !!user && user.id === post.author_id;
 
+  const relatedQuery = supabase
+    .from('board_posts')
+    .select(
+      'id, topic, title, comment_count, author_name, view_count, created_at'
+    )
+    .eq('scope', post.scope)
+    .is('deleted_at', null)
+    .neq('id', postId)
+    .order('created_at', { ascending: false })
+    .limit(5);
+
+  if (post.scope === 'company') {
+    relatedQuery.eq('board', post.board ?? '');
+  } else {
+    relatedQuery.eq('dept', post.dept ?? '');
+  }
+
+  const { data: relatedPosts } = await relatedQuery;
+
   let isAdmin = false;
   if (user && !isAuthor) {
     const { data: adminRow } = await supabase
@@ -126,6 +146,12 @@ export default async function BoardPostPage({
         postId={postId}
         postAuthorId={post.author_id}
         commentCount={postForView.commentCount}
+      />
+      <RelatedPosts
+        posts={relatedPosts ?? []}
+        scope={post.scope}
+        board={post.board ?? undefined}
+        dept={post.dept ?? undefined}
       />
     </main>
   );
