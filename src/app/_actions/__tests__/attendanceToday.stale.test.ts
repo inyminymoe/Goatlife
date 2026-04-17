@@ -35,11 +35,12 @@ function resolveActiveRow(
 
   if (activeCarryOverRow) return { type: 'carryOver', row: activeCarryOverRow };
 
+  // work_date < today 로 multi-day stale 탐지 (#179)
   const staleRow =
     currentKstHour >= 6
       ? (rows.find(
           r =>
-            r.work_date === yesterday &&
+            r.work_date < today &&
             r.clock_in_at !== null &&
             r.clock_out_at === null
         ) ?? null)
@@ -199,8 +200,28 @@ describe('getAttendanceToday 분기 로직', () => {
       expect(result.type).toBe('none');
     });
 
-    it('어제/오늘 외 날짜만 있어도 none', () => {
-      const rows = [makeRow({ work_date: '2026-03-25' })]; // 그저께
+    it('오늘/어제 외 날짜도 clock_out=null이면 none (rows에 없는 경우)', () => {
+      // 빈 rows → DB 쿼리 범위 밖이므로 stale 탐지 불가
+      const result = resolveActiveRow([], TODAY, YESTERDAY, 9);
+      expect(result.type).toBe('none');
+    });
+
+    it('이틀 전 미마감 레코드 → stale (multi-day 케이스 #179)', () => {
+      // 금→월 처럼 2일 이상 이전 미마감 세션이 rows에 포함된 경우
+      const rows = [
+        makeRow({ work_date: '2026-03-25', clock_out_at: null }), // 그저께
+      ];
+      const result = resolveActiveRow(rows, TODAY, YESTERDAY, 9);
+      expect(result.type).toBe('stale');
+    });
+
+    it('이틀 전 레코드가 clock_out 있으면 stale 아님', () => {
+      const rows = [
+        makeRow({
+          work_date: '2026-03-25',
+          clock_out_at: '2026-03-25T09:00:00.000Z',
+        }),
+      ];
       const result = resolveActiveRow(rows, TODAY, YESTERDAY, 9);
       expect(result.type).toBe('none');
     });

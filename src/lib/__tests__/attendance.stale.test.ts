@@ -109,6 +109,26 @@ describe('mapAttendanceError', () => {
     expect(mapAttendanceError('Already clocked out')).toBe('ALREADY_FINALIZED');
   });
 
+  it('"Unauthorized: You can only close your own stale session" → UNAUTHENTICATED', () => {
+    expect(
+      mapAttendanceError(
+        'Unauthorized: You can only close your own stale session'
+      )
+    ).toBe('UNAUTHENTICATED');
+  });
+
+  it('"Unauthorized: You can only auto-close your own stale session" → UNAUTHENTICATED', () => {
+    expect(
+      mapAttendanceError(
+        'Unauthorized: You can only auto-close your own stale session'
+      )
+    ).toBe('UNAUTHENTICATED');
+  });
+
+  it('unauthorized 소문자도 처리 → UNAUTHENTICATED', () => {
+    expect(mapAttendanceError('unauthorized access')).toBe('UNAUTHENTICATED');
+  });
+
   it('"No clock-in record found for the given date" → NO_CHECK_IN_RECORD', () => {
     expect(
       mapAttendanceError('No clock-in record found for the given date')

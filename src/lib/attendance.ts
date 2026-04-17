@@ -300,6 +300,10 @@ export function createAttendanceSummary(
 export function mapAttendanceError(message: string | null | undefined) {
   const normalized = message?.toLowerCase() ?? '';
 
+  if (normalized.includes('unauthorized')) {
+    return 'UNAUTHENTICATED' satisfies AttendanceErrorCode;
+  }
+
   if (normalized.includes('clocked in')) {
     return 'ALREADY_CHECKED_IN' satisfies AttendanceErrorCode;
   }

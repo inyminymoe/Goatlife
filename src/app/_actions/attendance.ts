@@ -77,12 +77,16 @@ export async function getAttendanceToday(): Promise<
   const now = new Date();
   const today = getKstDateString(now);
   const yesterday = getKstDateOffsetString(-1, today);
+  // 주말·공휴일 연속으로 stale session이 2일 이상 이전인 경우도 탐지하기 위해
+  // 최근 7일을 조회한다 (#179)
+  const sevenDaysAgo = getKstDateOffsetString(-7, today);
 
   const { data, error } = await client.supabase
     .from('attendance_logs')
     .select('*')
     .eq('user_id', client.user.id)
-    .in('work_date', [today, yesterday])
+    .gte('work_date', sevenDaysAgo)
+    .lte('work_date', today)
     .order('work_date', { ascending: false });
 
   if (error) {
@@ -109,12 +113,14 @@ export async function getAttendanceToday(): Promise<
     return currentKstHour < 6;
   });
 
-  // 오전 6시 이후 어제 퇴근 기록 없음 → 미처리(stale) 세션
+  // 오전 6시 이후 미마감 세션 → stale
+  // work_date < today 로 체크해 금요일 출근 후 월요일 복귀 같은
+  // 다일(multi-day) 케이스도 탐지한다 (#179)
   const staleRow =
     !todayRow && !activeCarryOverRow && currentKstHour >= 6
       ? rows.find(
           row =>
-            row.work_date === yesterday &&
+            row.work_date < today &&
             row.clock_in_at !== null &&
             row.clock_out_at === null
         )
